@@ -1,0 +1,18 @@
+"use client";
+
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+let convexClientInstance: ConvexReactClient | null = null;
+
+export function getConvexClient(): ConvexReactClient {
+  if (!convexClientInstance) {
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) {
+      throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is not set");
+    }
+    convexClientInstance = new ConvexReactClient(url);
+  }
+  return convexClientInstance;
+}
+
+export { ConvexProvider };
