@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser, useAuth } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Menu, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,12 +30,10 @@ export function MobileNav({ open: externalOpen, onClose, onToggle }: MobileNavPr
   const isControlled = externalOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = isControlled ? externalOpen : internalOpen;
-
   const close = () => {
     if (isControlled) onClose?.();
     else setInternalOpen(false);
   };
-
   const toggle = () => {
     if (isControlled) onToggle?.();
     else setInternalOpen((prev) => !prev);
@@ -58,6 +59,9 @@ export function MobileNav({ open: externalOpen, onClose, onToggle }: MobileNavPr
 
 function MobileNavPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useUser();
+  const { signOut } = useAuth();
+  const isAdmin = useQuery(api.users.isAdmin);
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -132,6 +136,54 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
           >
             Talk to Our Team
           </Link>
+
+          {isLoaded && (
+            <div className="space-y-2 border-t border-border pt-4">
+              {!isSignedIn ? (
+                <>
+                  <Link
+                    href="/sign-in"
+                    onClick={onClose}
+                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={onClose}
+                    className="flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Create account
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/account"
+                    onClick={onClose}
+                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+                  >
+                    My Account
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={onClose}
+                      className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+                    >
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => signOut({ redirectUrl: "/" })}
+                    className="w-full rounded-lg bg-surface px-5 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface/80"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border px-5 pb-8 pt-5">

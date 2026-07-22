@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -46,9 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} h-full`}>
       <body className="font-body min-h-full flex flex-col antialiased">
-        <TooltipProvider>
-          <Providers>{children}</Providers>
-        </TooltipProvider>
+        <ClerkProvider>
+          <TooltipProvider>
+            <Providers>{children}</Providers>
+          </TooltipProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexReactClient } from "convex/react";
 
 let convexClientInstance: ConvexReactClient | null = null;
 
@@ -14,5 +14,3 @@ export function getConvexClient(): ConvexReactClient {
   }
   return convexClientInstance;
 }
-
-export { ConvexProvider };

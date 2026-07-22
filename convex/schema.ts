@@ -2,6 +2,29 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  users: defineTable({
+    clerkId: v.string(),
+    tokenIdentifier: v.string(),
+    email: v.string(),
+    name: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    role: v.union(v.literal("admin"), v.literal("customer")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
+
+  mediaFiles: defineTable({
+    name: v.string(),
+    contentType: v.string(),
+    folder: v.string(),
+    size: v.number(),
+    storageId: v.id("_storage"),
+    url: v.optional(v.string()),
+    createdAt: v.number(),
+  }),
+
   products: defineTable({
     name: v.string(),
     slug: v.string(),
@@ -72,6 +95,7 @@ export default defineSchema({
   })
     .index("by_orderNumber", ["orderNumber"])
     .index("by_customerId", ["customerId"])
+    .index("by_customerEmail", ["customerEmail"])
     .index("by_paymentStatus", ["paymentStatus"])
     .index("by_createdAt", ["createdAt"]),
 
@@ -103,7 +127,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_productId", ["productId"])
-    .index("by_customerId", ["customerId"]),
+    .index("by_customerId", ["customerId"])
+    .index("by_email", ["email"]),
 
   reviews: defineTable({
     productId: v.id("products"),

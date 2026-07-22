@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { ShoppingCart, Menu, Mail, Phone } from "lucide-react";
+import { useUser, UserButton } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard } from "lucide-react";
+import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import MobileNav from "@/components/layout/mobile-nav";
@@ -23,6 +26,8 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { totalItems } = useCart();
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useUser();
+  const isAdmin = useQuery(api.users.isAdmin);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -114,6 +119,26 @@ export default function Header() {
                   </span>
                 )}
               </Link>
+
+              {isLoaded && !isSignedIn && (
+                <Link
+                  href="/sign-in"
+                  className="hidden items-center rounded-lg border border-primary/20 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white sm:inline-flex"
+                >
+                  Sign in
+                </Link>
+              )}
+
+              {isLoaded && isSignedIn && (
+                <UserButton>
+                  <UserButton.MenuItems>
+                    <UserButton.Link label="My Account" labelIcon={<User className="h-4 w-4" />} href="/account" />
+                    {isAdmin && (
+                      <UserButton.Link label="Admin Dashboard" labelIcon={<LayoutDashboard className="h-4 w-4" />} href="/admin" />
+                    )}
+                  </UserButton.MenuItems>
+                </UserButton>
+              )}
 
               <Link
                 href="/store"

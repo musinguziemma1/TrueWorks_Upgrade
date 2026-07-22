@@ -1,0 +1,222 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { requireAdmin } from "./users";
+
+export const list = query({
+  args: {
+    category: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    status: v.optional(v.string()),
+    search: v.optional(v.string()),
+    featured: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const q = args.category
+      ? ctx.db.query("products").withIndex("by_category", (q) => q.eq("category", args.category!))
+      : args.industry
+      ? ctx.db.query("products").withIndex("by_industry", (q) => q.eq("industry", args.industry!))
+      : args.status
+      ? ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", args.status as "draft" | "published" | "archived"))
+      : args.featured !== undefined
+      ? ctx.db.query("products").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
+      : ctx.db.query("products");
+
+    if (args.search) {
+      const lower = args.search.toLowerCase();
+      const all = await q.collect();
+      return all.filter((p) =>
+        p.name.toLowerCase().includes(lower) ||
+        p.sku.toLowerCase().includes(lower) ||
+        p.shortDescription.toLowerCase().includes(lower)
+      );
+    }
+
+    return await q.order("desc").take(100);
+  },
+});
+
+export const getById = query({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query("products")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .collect();
+    return results[0] ?? null;
+  },
+});
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    slug: v.string(),
+    sku: v.string(),
+    shortDescription: v.string(),
+    description: v.string(),
+    price: v.number(),
+    salePrice: v.optional(v.number()),
+    category: v.string(),
+    industry: v.string(),
+    fileType: v.string(),
+    tags: v.array(v.string()),
+    galleryImages: v.array(v.string()),
+    thumbnail: v.string(),
+    downloadableFile: v.optional(v.string()),
+    fileSize: v.optional(v.string()),
+    version: v.optional(v.string()),
+    changelog: v.optional(v.string()),
+    downloadLimit: v.optional(v.number()),
+    downloadExpiry: v.optional(v.number()),
+    seoTitle: v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
+    faqs: v.array(v.object({ question: v.string(), answer: v.string() })),
+    demoVideo: v.optional(v.string()),
+    featured: v.boolean(),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const existing = await ctx.db
+      .query("products")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .collect();
+    if (existing.length > 0) {
+      throw new Error(`Product with slug "${args.slug}" already exists`);
+    }
+    const now = Date.now();
+    const id = await ctx.db.insert("products", {
+      ...args,
+      totalSales: 0,
+      rating: 0,
+      reviewCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return id;
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("products"),
+    name: v.optional(v.string()),
+    slug: v.optional(v.string()),
+    sku: v.optional(v.string()),
+    shortDescription: v.optional(v.string()),
+    description: v.optional(v.string()),
+    price: v.optional(v.number()),
+    salePrice: v.optional(v.number()),
+    category: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    fileType: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    galleryImages: v.optional(v.array(v.string())),
+    thumbnail: v.optional(v.string()),
+    downloadableFile: v.optional(v.string()),
+    fileSize: v.optional(v.string()),
+    version: v.optional(v.string()),
+    changelog: v.optional(v.string()),
+    downloadLimit: v.optional(v.number()),
+    downloadExpiry: v.optional(v.number()),
+    seoTitle: v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
+    faqs: v.optional(v.array(v.object({ question: v.string(), answer: v.string() }))),
+    demoVideo: v.optional(v.string()),
+    featured: v.optional(v.boolean()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const { id, ...updates } = args;
+    const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    await ctx.db.delete(args.id);
+  },
+});
+
+export const stats = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const all = await ctx.db.query("products").collect();
+    const published = all.filter((p) => p.status === "published").length;
+    const draft = all.filter((p) => p.status === "draft").length;
+    const archived = all.filter((p) => p.status === "archived").length;
+    const totalRevenue = all.reduce((sum, p) => sum + p.totalSales * (p.salePrice ?? p.price), 0);
+    return { total: all.length, published, draft, archived, totalRevenue };
+  },
+});
+
+export const bulkImport = mutation({
+  args: {
+    products: v.array(v.object({
+      name: v.string(),
+      slug: v.string(),
+      sku: v.string(),
+      shortDescription: v.string(),
+      description: v.string(),
+      price: v.number(),
+      salePrice: v.optional(v.number()),
+      category: v.string(),
+      industry: v.string(),
+      fileType: v.string(),
+      tags: v.array(v.string()),
+      galleryImages: v.array(v.string()),
+      thumbnail: v.string(),
+      downloadableFile: v.optional(v.string()),
+      fileSize: v.optional(v.string()),
+      version: v.optional(v.string()),
+      featured: v.boolean(),
+      status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const now = Date.now();
+    const results: { slug: string; success: boolean; error?: string }[] = [];
+
+    for (const p of args.products) {
+      try {
+        const existing = await ctx.db
+          .query("products")
+          .withIndex("by_slug", (q) => q.eq("slug", p.slug))
+          .collect();
+
+        if (existing.length > 0) {
+          await ctx.db.patch(existing[0]._id, { ...p, updatedAt: now });
+          results.push({ slug: p.slug, success: true });
+        } else {
+          await ctx.db.insert("products", {
+            ...p,
+            faqs: [],
+            totalSales: 0,
+            rating: 0,
+            reviewCount: 0,
+            createdAt: now,
+            updatedAt: now,
+          });
+          results.push({ slug: p.slug, success: true });
+        }
+      } catch (e) {
+        results.push({ slug: p.slug, success: false, error: String(e) });
+      }
+    }
+
+    return results;
+  },
+});

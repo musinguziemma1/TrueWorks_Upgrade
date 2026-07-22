@@ -1,24 +1,20 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
-import { ConvexProvider } from "@/lib/convex";
+import { useState, type ReactNode } from "react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { useAuth } from "@clerk/nextjs";
 import { getConvexClient } from "@/lib/convex";
 import { CartProvider } from "@/components/layout/cart-context";
 import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [client, setClient] = useState<ReturnType<typeof getConvexClient> | null>(null);
-
-  useEffect(() => {
+  const [client] = useState(() => {
     try {
-      // Convex client can only be created in the browser, so a one-time
-      // state sync on mount is intentional.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setClient(getConvexClient());
+      return getConvexClient();
     } catch {
-      // Convex not configured
+      return null;
     }
-  }, []);
+  });
 
   const wrapped = (
     <CartProvider>
@@ -30,8 +26,8 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!client) return wrapped;
 
   return (
-    <ConvexProvider client={client}>
+    <ConvexProviderWithClerk client={client} useAuth={useAuth}>
       {wrapped}
-    </ConvexProvider>
+    </ConvexProviderWithClerk>
   );
 }
