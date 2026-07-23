@@ -18,7 +18,7 @@ export function FooterNewsletter() {
     return (
       <p className="flex items-center gap-2 text-sm text-accent-light">
         <CheckCircle2 className="h-4 w-4 shrink-0" />
-        Thank you — you&apos;re on the list.
+        Thank you - you&apos;re on the list.
       </p>
     );
   }

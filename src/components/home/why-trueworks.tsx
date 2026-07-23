@@ -8,7 +8,7 @@ const features = [
     icon: Download,
     title: "Instant Download",
     description:
-      "Access your templates immediately after purchase — no waiting, no shipping, no subscriptions.",
+      "Access your templates immediately after purchase - no waiting, no shipping, no subscriptions.",
   },
   {
     icon: BadgeCheck,
@@ -26,7 +26,7 @@ const features = [
     icon: RefreshCw,
     title: "30-Day Guarantee",
     description:
-      "If a template doesn't fit your needs, we'll make it right or refund you — no questions asked.",
+      "If a template doesn't fit your needs, we'll make it right or refund you - no questions asked.",
   },
 ];
 

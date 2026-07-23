@@ -18,7 +18,7 @@ export async function generateMetadata({
   if (!product) return { title: "Product Not Found" };
   return {
     title: product.name,
-    description: `${product.tagline} — ${formatPrice(product.salePrice ?? product.price)}. Instant download.`,
+    description: `${product.tagline} - ${formatPrice(product.salePrice ?? product.price)}. Instant download.`,
   };
 }
 

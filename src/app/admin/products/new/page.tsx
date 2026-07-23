@@ -359,7 +359,7 @@ export default function NewProductPage() {
                       <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                     )}
                     <p className="text-sm text-muted-foreground">
-                      {downloadableFileUrl ? "File uploaded — click to replace" : "Upload downloadable file"}
+                      {downloadableFileUrl ? "File uploaded - click to replace" : "Upload downloadable file"}
                     </p>
                     {fileSize && <p className="text-xs text-muted-foreground mt-1">{fileSize}</p>}
                   </div>

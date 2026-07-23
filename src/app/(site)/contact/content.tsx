@@ -14,6 +14,7 @@ import {
   Handshake,
   ArrowRight,
   CheckCircle2,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,8 @@ import { Label } from "@/components/ui/label";
 
 const contactInfo = [
   { icon: Mail, title: "Email Us", detail: "hello@trueworksug.com", sub: "We respond within 24 hours", href: "mailto:hello@trueworksug.com" },
-  { icon: Phone, title: "Call / WhatsApp", detail: "+256 700 123 456", sub: "Available during business hours", href: "tel:+256700123456" },
+  { icon: Phone, title: "Call Us", detail: "+256 700 123 456", sub: "Available during business hours", href: "tel:+256700123456" },
+  { icon: MessageCircle, title: "WhatsApp", detail: "+256 700 123 456", sub: "Chat with us on WhatsApp", href: "https://wa.me/256700123456" },
   { icon: Clock, title: "Business Hours", detail: "Mon – Fri: 8:00 – 17:00", sub: "Saturday: 9:00 – 13:00 EAT", href: undefined },
   { icon: MapPin, title: "Location", detail: "Kampala, Uganda", sub: "Plot 42, Acacia Avenue", href: undefined },
 ];

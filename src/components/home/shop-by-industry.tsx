@@ -44,7 +44,7 @@ export default function ShopByIndustry() {
             Built for Your Sector
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted">
-            Every template is designed around the real workflows of your industry —
+            Every template is designed around the real workflows of your industry -
             not generic spreadsheets.
           </p>
         </motion.div>

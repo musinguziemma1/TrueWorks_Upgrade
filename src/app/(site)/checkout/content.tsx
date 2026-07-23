@@ -84,7 +84,7 @@ export default function CheckoutContent() {
             Secure Checkout
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Complete your purchase as a guest — no account required.
+            Complete your purchase as a guest - no account required.
           </p>
         </div>
 

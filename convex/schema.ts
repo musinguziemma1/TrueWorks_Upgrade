@@ -212,6 +212,27 @@ export default defineSchema({
   })
     .index("by_key", ["key"]),
 
+  resources: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    description: v.string(),
+    content: v.string(),
+    category: v.string(),
+    type: v.union(v.literal("document"), v.literal("video"), v.literal("link"), v.literal("download")),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    featured: v.boolean(),
+    externalUrl: v.optional(v.string()),
+    thumbnail: v.optional(v.string()),
+    tags: v.array(v.string()),
+    downloadCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_category", ["category"])
+    .index("by_status", ["status"])
+    .index("by_featured", ["featured"]),
+
   notifications: defineTable({
     type: v.string(),
     title: v.string(),

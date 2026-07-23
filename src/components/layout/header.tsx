@@ -45,7 +45,7 @@ export default function Header() {
       <div className="hidden bg-primary-dark text-white/70 md:block">
         <div className="mx-auto flex h-9 max-w-7xl items-center justify-between px-6 text-xs lg:px-8">
           <p className="tracking-wide">
-            Premium business systems for African organizations
+            Business Operating Systems for African organizations
           </p>
           <div className="flex items-center gap-6">
             <a

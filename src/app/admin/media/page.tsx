@@ -166,12 +166,12 @@ export default function MediaPage() {
               {filtered.map((file) => (
                 <Card key={file._id} className="overflow-hidden group">
                   <div className="h-32 bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center relative">
-                    {file.contentType.startsWith("image/") ? (
+                    {file.contentType.startsWith("image/") && file.url ? (
                       <img
-                        src={String(file.storageId)}
+                        src={file.url!}
                         alt={file.name}
                         className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => { setPreviewUrl(String(file.storageId)); setPreviewName(file.name) }}
+                        onClick={() => { setPreviewUrl(file.url!); setPreviewName(file.name) }}
                       />
                     ) : (
                       getTypeIcon(file.contentType)
@@ -181,10 +181,10 @@ export default function MediaPage() {
                         <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setPreviewUrl(String(file.storageId)); setPreviewName(file.name) }}>
+                        <DropdownMenuItem onClick={() => { setPreviewUrl(file.url ?? ''); setPreviewName(file.name) }}>
                           <Eye className="h-4 w-4 mr-2" /> Preview
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(String(file.url ?? file.storageId), '_blank')}>
+                        <DropdownMenuItem onClick={() => { if (file.url) window.open(file.url, '_blank') }}>
                           <Download className="h-4 w-4 mr-2" /> Download
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(file._id)}>
@@ -216,7 +216,9 @@ export default function MediaPage() {
             <DialogTitle>{previewName}</DialogTitle>
           </DialogHeader>
           <div className="flex justify-center">
-            {previewUrl && <img src={previewUrl} alt={previewName} className="max-h-[60vh] object-contain rounded-lg" />}
+            {previewUrl && (
+              <img src={previewUrl} alt={previewName} className="max-h-[60vh] object-contain rounded-lg" />
+            )}
           </div>
         </DialogContent>
       </Dialog>

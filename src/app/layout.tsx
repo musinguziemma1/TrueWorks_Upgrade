@@ -20,16 +20,19 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL("https://trueworksug.com"),
   title: {
-    default: "TrueWorks Limited — Premium Business Operating Systems",
+    default: "TrueWorks Limited - Business Operating Systems for African Organizations",
     template: "%s | TrueWorks Limited",
   },
   description:
-    "Premium Excel templates, financial models, dashboards and business systems built for hospitals, NGOs, churches, schools and growing businesses across Africa.",
+    "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across Africa.",
   keywords: [
-    "business templates",
-    "Excel dashboards",
+    "Business Operating Systems",
+    "Excel templates",
     "financial models",
     "KPI dashboards",
+    "hospital management",
+    "NGO systems",
+    "business automation",
     "Uganda",
     "Africa",
     "TrueWorks",
@@ -37,9 +40,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "TrueWorks Limited",
-    title: "TrueWorks Limited — Premium Business Operating Systems",
+    title: "TrueWorks Limited - Business Operating Systems for African Organizations",
     description:
-      "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",
+      "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, dashboards and business systems for African organizations.",
   },
 };
 

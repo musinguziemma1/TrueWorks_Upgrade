@@ -47,7 +47,7 @@ export default function FreeResource() {
               </h2>
               <p className="mt-4 max-w-md text-base leading-relaxed text-white/70">
                 Perfect for healthcare administrators. Monitor bed occupancy,
-                patient wait times, revenue per bed and more — free forever.
+                patient wait times, revenue per bed and more - free forever.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-8 max-w-md" noValidate>
@@ -90,7 +90,7 @@ export default function FreeResource() {
                 {status === "valid" && (
                   <p className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-300">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Check your inbox — the download link is on its way.
+                    Check your inbox - the download link is on its way.
                   </p>
                 )}
                 <p className="mt-3 text-xs text-white/40">

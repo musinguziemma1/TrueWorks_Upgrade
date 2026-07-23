@@ -9,6 +9,9 @@ const companyLinks = [
   { label: "About Us", href: "/about" },
   { label: "Resources", href: "/resources" },
   { label: "Contact", href: "/contact" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Terms", href: "/terms" },
+  { label: "Privacy", href: "/privacy" },
   { label: "Your Cart", href: "/cart" },
 ];
 

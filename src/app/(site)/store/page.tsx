@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import StoreContent from "./content";
 
 export const metadata: Metadata = {
-  title: "Store — Premium Templates & Business Systems",
+  title: "Store - Premium Templates & Business Systems",
   description:
     "Browse professional-grade Excel templates, financial models and dashboards for healthcare, NGOs, schools, churches and growing businesses. Instant download after purchase.",
 };

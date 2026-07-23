@@ -409,7 +409,7 @@ export default function EditProductPage() {
                 <CardContent className="space-y-4">
                   <div className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50" onClick={() => fileInputRef.current?.click()}>
                     {uploadingFile ? <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />}
-                    <p className="text-sm text-muted-foreground">{downloadableFileUrl ? "File uploaded — click to replace" : "Upload downloadable file"}</p>
+                    <p className="text-sm text-muted-foreground">{downloadableFileUrl ? "File uploaded - click to replace" : "Upload downloadable file"}</p>
                     {fileSize && <p className="text-xs text-muted-foreground mt-1">{fileSize}</p>}
                   </div>
                   <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />

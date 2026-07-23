@@ -62,7 +62,7 @@ export default function Hero() {
               className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg lg:mx-0"
             >
               Premium Excel templates, financial models, dashboards and business
-              systems — purpose-built for hospitals, NGOs, churches, schools and
+              systems - purpose-built for hospitals, NGOs, churches, schools and
               growing businesses across Africa.
             </motion.p>
 

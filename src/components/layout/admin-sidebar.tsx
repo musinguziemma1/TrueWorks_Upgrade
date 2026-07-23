@@ -24,6 +24,7 @@ import {
   UserCheck,
   X,
   ChevronRight,
+  BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +58,7 @@ const navSections: NavSection[] = [
     title: "Management",
     items: [
       { label: "Categories", href: "/admin/categories", icon: <FolderTree className="h-4 w-4" /> },
+      { label: "Resources", href: "/admin/resources", icon: <BookOpen className="h-4 w-4" /> },
       { label: "Coupons", href: "/admin/coupons", icon: <Percent className="h-4 w-4" /> },
       { label: "Content", href: "/admin/content", icon: <FileText className="h-4 w-4" /> },
       { label: "Media", href: "/admin/media", icon: <Image className="h-4 w-4" /> },

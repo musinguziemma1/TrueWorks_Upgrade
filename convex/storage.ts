@@ -16,16 +16,36 @@ export const uploadFile = action({
     if (!me || me.role !== "admin") throw new Error("Forbidden");
     const storageId = await ctx.storage.store(new Blob([args.content]));
 
+    const url = (await ctx.storage.getUrl(storageId)) ?? undefined;
+
     const fileId: Id<"mediaFiles"> = await ctx.runMutation(api.mediaFiles.create, {
       name: args.name,
       contentType: args.contentType,
       folder: args.folder ?? "General",
       size: args.content.byteLength,
       storageId,
+      url,
     });
 
-    const url = await ctx.storage.getUrl(storageId);
     return { storageId, url, fileId };
+  },
+});
+
+export const backfillFileUrls = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("mediaFiles").collect();
+    let patched = 0;
+    for (const f of all) {
+      if (!f.url && f.storageId) {
+        const url = await ctx.storage.getUrl(f.storageId as Id<"_storage">);
+        if (url) {
+          await ctx.db.patch(f._id, { url });
+          patched++;
+        }
+      }
+    }
+    return patched;
   },
 });
 

@@ -222,6 +222,52 @@ export const deleteNotification = {
   useMutation: () => useMutation(api.notifications.remove),
 };
 
+export type ResourceType = "document" | "video" | "link" | "download";
+export type ResourceStatus = "draft" | "published" | "archived";
+
+export interface ResourceInput {
+  title: string;
+  slug: string;
+  description: string;
+  content: string;
+  category: string;
+  type: ResourceType;
+  status: ResourceStatus;
+  featured: boolean;
+  externalUrl?: string;
+  thumbnail?: string;
+  tags: string[];
+}
+
+export function useResources(args?: {
+  category?: string;
+  status?: string;
+  search?: string;
+  featured?: boolean;
+}) {
+  return useQuery(api.resources.list, args ?? {});
+}
+
+export function useResource(id: Id<"resources">) {
+  return useQuery(api.resources.getById, { id });
+}
+
+export function useResourceStats() {
+  return useQuery(api.resources.stats);
+}
+
+export const createResource = {
+  useMutation: () => useMutation(api.resources.create),
+};
+
+export const updateResource = {
+  useMutation: () => useMutation(api.resources.update),
+};
+
+export const deleteResource = {
+  useMutation: () => useMutation(api.resources.remove),
+};
+
 export function useMediaFiles(folder?: string) {
   return useQuery(api.storage.listFiles, { folder: folder ?? "" });
 }

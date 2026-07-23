@@ -222,7 +222,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   className="h-12 flex-1 gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
                 >
                   <Zap className="mr-2 h-4 w-4" />
-                  Buy Now — {formatPrice(price)}
+                  Buy Now - {formatPrice(price)}
                 </Button>
               </div>
 

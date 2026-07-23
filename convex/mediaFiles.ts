@@ -9,6 +9,7 @@ export const create = mutation({
     folder: v.string(),
     size: v.number(),
     storageId: v.id("_storage"),
+    url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -18,6 +19,7 @@ export const create = mutation({
       folder: args.folder,
       size: args.size,
       storageId: args.storageId,
+      url: args.url,
       createdAt: Date.now(),
     });
   },

@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const categories = ["All", "Financial Modeling", "KPI Dashboards", "Business Plans", "Strategy", "Operations"];
+const categories = ["All", "Excel Tips", "Hospital Management", "Business Systems"];
 
 const featuredArticle = {
-  category: "KPI Dashboards",
+  category: "Hospital Management",
   title: "How to Build a Hospital KPI Dashboard That Drives Better Patient Outcomes",
   excerpt:
     "Learn how healthcare administrators can design and implement effective KPI dashboards that improve operational efficiency, patient care, and regulatory compliance.",
@@ -20,20 +20,18 @@ const featuredArticle = {
 };
 
 const articles = [
-  { category: "Financial Modeling", title: "Financial Modeling Best Practices for East African SMEs", excerpt: "A practical guide to building financial models that help small and medium enterprises secure funding and plan for growth.", readingTime: "6 min read", date: "Jun 10, 2026", author: "Samuel Mukasa" },
-  { category: "Business Plans", title: "The Modern Business Plan: What Investors Actually Want to See", excerpt: "Discover how to craft a compelling business plan that resonates with today's investors and stakeholders.", readingTime: "5 min read", date: "Jun 5, 2026", author: "Faith Nansubuga" },
-  { category: "Strategy", title: "Strategic Planning for Nonprofits: A Template-Driven Approach", excerpt: "How nonprofit organizations can use strategic planning templates to align teams, measure impact, and drive mission success.", readingTime: "7 min read", date: "May 28, 2026", author: "Daniel Okello" },
-  { category: "Operations", title: "Streamlining NGO Operations with Standard Operating Procedures", excerpt: "A step-by-step guide to creating SOPs that improve efficiency, accountability, and scalability in non-profit organizations.", readingTime: "5 min read", date: "May 20, 2026", author: "Grace Nakato" },
-  { category: "Financial Modeling", title: "Cash Flow Forecasting: A Guide for Growing Businesses", excerpt: "Master the art of cash flow forecasting to make informed decisions and keep your business financially healthy.", readingTime: "6 min read", date: "May 14, 2026", author: "Samuel Mukasa" },
-  { category: "KPI Dashboards", title: "Sales KPI Dashboards: Tracking What Matters Most", excerpt: "Learn which sales metrics to track and how to build a dashboard that gives your team real-time visibility into performance.", readingTime: "4 min read", date: "May 8, 2026", author: "Faith Nansubuga" },
+  { category: "Excel Tips", title: "Financial Modeling Best Practices for East African SMEs", excerpt: "A practical guide to building financial models that help small and medium enterprises secure funding and plan for growth.", readingTime: "6 min read", date: "Jun 10, 2026", author: "Samuel Mukasa" },
+  { category: "Business Systems", title: "The Modern Business Plan: What Investors Actually Want to See", excerpt: "Discover how to craft a compelling business plan that resonates with today's investors and stakeholders.", readingTime: "5 min read", date: "Jun 5, 2026", author: "Faith Nansubuga" },
+  { category: "Business Systems", title: "Strategic Planning for Nonprofits: A Template-Driven Approach", excerpt: "How nonprofit organizations can use strategic planning templates to align teams, measure impact, and drive mission success.", readingTime: "7 min read", date: "May 28, 2026", author: "Daniel Okello" },
+  { category: "Hospital Management", title: "Streamlining NGO Operations with Standard Operating Procedures", excerpt: "A step-by-step guide to creating SOPs that improve efficiency, accountability, and scalability in non-profit organizations.", readingTime: "5 min read", date: "May 20, 2026", author: "Grace Nakato" },
+  { category: "Excel Tips", title: "Cash Flow Forecasting: A Guide for Growing Businesses", excerpt: "Master the art of cash flow forecasting to make informed decisions and keep your business financially healthy.", readingTime: "6 min read", date: "May 14, 2026", author: "Samuel Mukasa" },
+  { category: "Hospital Management", title: "Sales KPI Dashboards: Tracking What Matters Most", excerpt: "Learn which sales metrics to track and how to build a dashboard that gives your team real-time visibility into performance.", readingTime: "4 min read", date: "May 8, 2026", author: "Faith Nansubuga" },
 ];
 
 const sidebarCategories = [
-  { name: "Financial Modeling", count: 12 },
-  { name: "KPI Dashboards", count: 9 },
-  { name: "Business Plans", count: 7 },
-  { name: "Strategy", count: 6 },
-  { name: "Operations", count: 5 },
+  { name: "Excel Tips", count: 12 },
+  { name: "Hospital Management", count: 9 },
+  { name: "Business Systems", count: 7 },
 ];
 
 function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -267,7 +265,7 @@ export default function ResourcesContent() {
                       The TrueWorks Brief
                     </h3>
                     <p className="mt-1.5 text-sm text-white/60">
-                      Practical insights for better organizations — once a month,
+                      Practical insights for better organizations - once a month,
                       no spam.
                     </p>
                     {subscribed ? (
@@ -308,7 +306,7 @@ export default function ResourcesContent() {
                     Popular Topics
                   </h3>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {["Financial Modeling", "KPI Dashboards", "Business Plans", "Strategy", "Operations"].map((topic) => (
+                    {["Excel Tips", "Hospital Management", "Business Systems"].map((topic) => (
                       <button
                         key={topic}
                         onClick={() => setActiveCategory(topic)}
