@@ -234,6 +234,8 @@ export interface ResourceInput {
   type: ResourceType;
   status: ResourceStatus;
   featured: boolean;
+  featuredImage?: string;
+  attachments: { name: string; url: string; size: number }[];
   externalUrl?: string;
   thumbnail?: string;
   tags: string[];

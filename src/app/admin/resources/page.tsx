@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Edit3, Trash2, Search, BookOpen, Loader2, ExternalLink, Download, Eye, Star } from "lucide-react"
+import { useState, useRef } from "react"
+import { Plus, Edit3, Trash2, Search, BookOpen, Loader2, ExternalLink, Download, Eye, Star, Upload, X, FileIcon } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -23,6 +23,7 @@ import {
   ResourceInput,
   ResourceStatus,
   ResourceType,
+  uploadFile,
 } from "@/lib/admin-queries"
 
 interface ResourceDoc {
@@ -35,6 +36,8 @@ interface ResourceDoc {
   type: ResourceType
   status: ResourceStatus
   featured: boolean
+  featuredImage?: string
+  attachments?: { name: string; url: string; size: number }[]
   externalUrl?: string
   thumbnail?: string
   tags: string[]
@@ -71,6 +74,12 @@ function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + " B"
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+}
+
 export default function ResourcesPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -78,6 +87,7 @@ export default function ResourcesPage() {
   const [editResource, setEditResource] = useState<ResourceDoc | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [uploading, setUploading] = useState(false)
 
   // Form fields
   const [title, setTitle] = useState("")
@@ -90,11 +100,17 @@ export default function ResourcesPage() {
   const [featured, setFeatured] = useState(false)
   const [externalUrl, setExternalUrl] = useState("")
   const [tags, setTags] = useState("")
+  const [featuredImage, setFeaturedImage] = useState("")
+  const [attachments, setAttachments] = useState<{ name: string; url: string; size: number }[]>([])
+
+  const featuredImageInputRef = useRef<HTMLInputElement>(null)
+  const attachmentsInputRef = useRef<HTMLInputElement>(null)
 
   const resources = useResources()
   const create = createResource.useMutation()
   const update = updateResource.useMutation()
   const remove = deleteResource.useMutation()
+  const doUpload = uploadFile.useAction()
 
   const isLoading = resources === undefined
 
@@ -123,6 +139,8 @@ export default function ResourcesPage() {
     setFeatured(false)
     setExternalUrl("")
     setTags("")
+    setFeaturedImage("")
+    setAttachments([])
   }
 
   const openNewDialog = () => {
@@ -143,7 +161,63 @@ export default function ResourcesPage() {
     setFeatured(res.featured)
     setExternalUrl(res.externalUrl ?? "")
     setTags(res.tags.join(", "))
+    setFeaturedImage(res.featuredImage ?? "")
+    setAttachments(res.attachments ?? [])
     setDialogOpen(true)
+  }
+
+  const handleUploadFeaturedImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const bytes = await file.arrayBuffer()
+      const result = await doUpload({
+        name: file.name,
+        content: bytes,
+        contentType: file.type,
+        folder: "Resources",
+      })
+      setFeaturedImage(result.url ?? "")
+      toast.success("Image uploaded")
+    } catch (err) {
+      toast.error(String(err))
+    } finally {
+      setUploading(false)
+      if (featuredImageInputRef.current) featuredImageInputRef.current.value = ""
+    }
+  }
+
+  const handleUploadAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    setUploading(true)
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const bytes = await file.arrayBuffer()
+        const result = await doUpload({
+          name: file.name,
+          content: bytes,
+          contentType: file.type,
+          folder: "Resources/Attachments",
+        })
+        setAttachments((prev) => [
+          ...prev,
+          { name: file.name, url: result.url ?? "", size: file.size },
+        ])
+      }
+      toast.success("Files uploaded")
+    } catch (err) {
+      toast.error(String(err))
+    } finally {
+      setUploading(false)
+      if (attachmentsInputRef.current) attachmentsInputRef.current.value = ""
+    }
+  }
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSave = async () => {
@@ -160,6 +234,8 @@ export default function ResourcesPage() {
       type,
       status,
       featured,
+      featuredImage: featuredImage || undefined,
+      attachments,
       externalUrl: externalUrl || undefined,
       tags: tags
         .split(",")
@@ -310,9 +386,22 @@ export default function ResourcesPage() {
                 {paginated.map((res) => (
                   <TableRow key={res._id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{res.title}</p>
-                        <p className="max-w-[300px] truncate text-xs text-muted-foreground">{res.description}</p>
+                      <div className="flex items-center gap-3">
+                        {res.featuredImage ? (
+                          <img
+                            src={res.featuredImage}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{res.title}</p>
+                          <p className="max-w-[300px] truncate text-xs text-muted-foreground">{res.description}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -405,7 +494,7 @@ export default function ResourcesPage() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editResource ? "Edit Resource" : "New Resource"}</DialogTitle>
           </DialogHeader>
@@ -516,9 +605,106 @@ export default function ResourcesPage() {
                 Featured resource
               </Label>
             </div>
+
+            {/* Featured Image Upload */}
+            <div className="space-y-2">
+              <Label>Featured Image</Label>
+              <input
+                ref={featuredImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleUploadFeaturedImage}
+              />
+              {featuredImage ? (
+                <div className="relative inline-block">
+                  <img
+                    src={featuredImage}
+                    alt="Featured"
+                    className="h-32 w-48 rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFeaturedImage("")}
+                    className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => featuredImageInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex h-32 w-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface transition-colors hover:border-primary/40 hover:bg-primary/[0.02]"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {uploading ? "Uploading..." : "Click to upload"}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Attachments Upload */}
+            <div className="space-y-2">
+              <Label>Attachments</Label>
+              <input
+                ref={attachmentsInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleUploadAttachment}
+              />
+              <button
+                type="button"
+                onClick={() => attachmentsInputRef.current?.click()}
+                disabled={uploading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.02]"
+              >
+                {uploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Upload className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {uploading ? "Uploading..." : "Click to upload files (PDF, DOC, XLS, etc.)"}
+                </span>
+              </button>
+              {attachments.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {attachments.map((att, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-white px-3 py-2"
+                    >
+                      <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{att.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(att.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter showCloseButton>
-            <Button onClick={handleSave}>{editResource ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={uploading}>
+              {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editResource ? "Update" : "Create"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

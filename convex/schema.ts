@@ -221,6 +221,12 @@ export default defineSchema({
     type: v.union(v.literal("document"), v.literal("video"), v.literal("link"), v.literal("download")),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
     featured: v.boolean(),
+    featuredImage: v.optional(v.string()),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      size: v.number(),
+    }))),
     externalUrl: v.optional(v.string()),
     thumbnail: v.optional(v.string()),
     tags: v.array(v.string()),

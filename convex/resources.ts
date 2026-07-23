@@ -32,6 +32,38 @@ export const list = query({
   },
 });
 
+export const listPublished = query({
+  args: {
+    category: v.optional(v.string()),
+    search: v.optional(v.string()),
+    featured: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const q = args.category
+      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", args.category!))
+      : args.featured !== undefined
+      ? ctx.db.query("resources").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
+      : ctx.db.query("resources").withIndex("by_status", (q) => q.eq("status", "published"));
+
+    let results = await q.collect();
+
+    if (args.category && !args.featured) {
+      results = results.filter((r) => r.status === "published");
+    }
+
+    if (args.search) {
+      const lower = args.search.toLowerCase();
+      results = results.filter((r) =>
+        r.title.toLowerCase().includes(lower) ||
+        r.description.toLowerCase().includes(lower) ||
+        r.category.toLowerCase().includes(lower)
+      );
+    }
+
+    return results.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+  },
+});
+
 export const getById = query({
   args: { id: v.id("resources") },
   handler: async (ctx, args) => {
@@ -60,6 +92,12 @@ export const create = mutation({
     type: v.union(v.literal("document"), v.literal("video"), v.literal("link"), v.literal("download")),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
     featured: v.boolean(),
+    featuredImage: v.optional(v.string()),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      size: v.number(),
+    }))),
     externalUrl: v.optional(v.string()),
     thumbnail: v.optional(v.string()),
     tags: v.array(v.string()),
@@ -76,6 +114,7 @@ export const create = mutation({
     const now = Date.now();
     return await ctx.db.insert("resources", {
       ...args,
+      attachments: args.attachments ?? [],
       downloadCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -94,6 +133,12 @@ export const update = mutation({
     type: v.optional(v.union(v.literal("document"), v.literal("video"), v.literal("link"), v.literal("download"))),
     status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
     featured: v.optional(v.boolean()),
+    featuredImage: v.optional(v.string()),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      size: v.number(),
+    }))),
     externalUrl: v.optional(v.string()),
     thumbnail: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),

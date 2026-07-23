@@ -546,6 +546,154 @@ const settingsSeed = [
   { key: "featuredProductSlugs", value: ["hospital-kpi-dashboard", "financial-model-bundle", "project-portfolio-tracker"] },
 ];
 
+const resourcesSeed = [
+  {
+    title: "How to Build a Hospital KPI Dashboard That Drives Better Patient Outcomes",
+    slug: "how-to-build-a-hospital-kpi-dashboard",
+    description: "Learn how healthcare administrators can design and implement effective KPI dashboards that improve operational efficiency, patient care, and regulatory compliance.",
+    content: "A comprehensive guide covering bed occupancy tracking, patient wait times, revenue per bed, and departmental performance metrics. Includes step-by-step instructions for setting up your dashboard in Excel or Google Sheets.",
+    category: "Guide",
+    type: "document" as const,
+    status: "published" as const,
+    featured: true,
+    featuredImage: "https://placehold.co/800x400/2563eb/ffffff?text=Hospital+KPI+Guide",
+    attachments: [],
+    tags: ["healthcare", "kpi", "dashboard", "hospital"],
+    downloadCount: 124,
+  },
+  {
+    title: "Financial Modeling Best Practices for East African SMEs",
+    slug: "financial-modeling-best-practices-east-african-smes",
+    description: "A practical guide to building financial models that help small and medium enterprises secure funding and plan for growth in the East African market.",
+    content: "Covers 3-statement modeling, DCF valuation, sensitivity analysis, and investor-ready presentation formats tailored for the East African business context.",
+    category: "Guide",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/16a34a/ffffff?text=Financial+Modeling+Guide",
+    attachments: [],
+    tags: ["finance", "modeling", " sme", "east-africa"],
+    downloadCount: 89,
+  },
+  {
+    title: "The Modern Business Plan: What Investors Actually Want to See",
+    slug: "modern-business-plan-what-investors-want",
+    description: "Discover how to craft a compelling business plan that resonates with today's investors and stakeholders.",
+    content: "An article breaking down the key sections investors focus on, common mistakes to avoid, and templates you can use to structure your plan.",
+    category: "Article",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/ca8a04/ffffff?text=Business+Plan+Guide",
+    attachments: [],
+    tags: ["business plan", "investors", "fundraising"],
+    downloadCount: 67,
+  },
+  {
+    title: "Strategic Planning for Nonprofits: A Template-Driven Approach",
+    slug: "strategic-planning-for-nonprofits",
+    description: "How nonprofit organizations can use strategic planning templates to align teams, measure impact, and drive mission success.",
+    content: "Step-by-step walkthrough of creating a strategic plan using our nonprofit template, including theory of change, logical framework, and M&E indicators.",
+    category: "Guide",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/db2777/ffffff?text=Nonprofit+Strategy",
+    attachments: [],
+    tags: ["nonprofit", "strategic planning", "ngo"],
+    downloadCount: 56,
+  },
+  {
+    title: "Cash Flow Forecasting: A Guide for Growing Businesses",
+    slug: "cash-flow-forecasting-guide",
+    description: "Master the art of cash flow forecasting to make informed decisions and keep your business financially healthy.",
+    content: "Covers daily, weekly, and monthly forecasting methods, working capital management, and scenario planning for cash flow gaps.",
+    category: "Guide",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/059669/ffffff?text=Cash+Flow+Guide",
+    attachments: [],
+    tags: ["cash flow", "forecasting", "finance"],
+    downloadCount: 78,
+  },
+  {
+    title: "Streamlining NGO Operations with Standard Operating Procedures",
+    slug: "streamlining-ngo-operations-with-sops",
+    description: "A step-by-step guide to creating SOPs that improve efficiency, accountability, and scalability in non-profit organizations.",
+    content: "Learn how to document processes, create reusable templates, and implement SOPs across your organization for consistent operations.",
+    category: "Article",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/9333ea/ffffff?text=NGO+Operations",
+    attachments: [],
+    tags: ["ngo", "operations", "sop", "efficiency"],
+    downloadCount: 45,
+  },
+  {
+    title: "Sales KPI Dashboards: Tracking What Matters Most",
+    slug: "sales-kpi-dashboards",
+    description: "Learn which sales metrics to track and how to build a dashboard that gives your team real-time visibility into performance.",
+    content: "Covers pipeline metrics, conversion rates, revenue forecasting, and team performance tracking with visual dashboard examples.",
+    category: "Guide",
+    type: "video" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/ea580c/ffffff?text=Sales+KPI+Dashboard",
+    attachments: [],
+    tags: ["sales", "kpi", "dashboard", "crm"],
+    downloadCount: 92,
+  },
+  {
+    title: "Grant Writing Checklist for African NGOs",
+    slug: "grant-writing-checklist-african-ngos",
+    description: "A comprehensive checklist to prepare your next grant application, tailored for African nonprofit organizations.",
+    content: "Downloadable checklist covering eligibility, budget preparation, narrative writing, supporting documents, and submission best practices.",
+    category: "Checklist",
+    type: "download" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/be185d/ffffff?text=Grant+Writing+Checklist",
+    attachments: [
+      { name: "Grant-Writing-Checklist.pdf", url: "#", size: 245000 },
+      { name: "Budget-Template.xlsx", url: "#", size: 180000 },
+    ],
+    tags: ["grant writing", "checklist", "ngo", "fundraising"],
+    downloadCount: 134,
+  },
+  {
+    title: "Introduction to Excel Dashboards for Beginners",
+    slug: "intro-to-excel-dashboards",
+    description: "A beginner-friendly video tutorial on building your first interactive dashboard in Microsoft Excel.",
+    content: "Covers pivot tables, charts, slicers, and conditional formatting to create professional dashboards from scratch.",
+    category: "Video",
+    type: "video" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/d97706/ffffff?text=Excel+Dashboard+Tutorial",
+    attachments: [],
+    tags: ["excel", "tutorial", "dashboard", "beginner"],
+    downloadCount: 203,
+  },
+  {
+    title: "TrueWorks Template Setup Guide",
+    slug: "trueworks-template-setup-guide",
+    description: "Step-by-step instructions for downloading, setting up, and customizing your TrueWorks template purchase.",
+    content: "Covers file formats, Google Sheets import, Excel customization, data entry best practices, and troubleshooting common issues.",
+    category: "Guide",
+    type: "document" as const,
+    status: "published" as const,
+    featured: false,
+    featuredImage: "https://placehold.co/800x400/0891b2/ffffff?text=Setup+Guide",
+    attachments: [
+      { name: "Quick-Start-Guide.pdf", url: "#", size: 320000 },
+    ],
+    tags: ["setup", "guide", "getting started", "template"],
+    downloadCount: 156,
+  },
+];
+
 export const run = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -884,6 +1032,23 @@ export const run = internalMutation({
     }
     results.downloads = downloadCount;
 
+    // Seed resources
+    let resourceCount = 0;
+    for (const r of resourcesSeed) {
+      const existing = await ctx.db
+        .query("resources")
+        .withIndex("by_slug", (q) => q.eq("slug", r.slug))
+        .collect();
+      if (existing.length > 0) continue;
+      await ctx.db.insert("resources", {
+        ...r,
+        createdAt: now - resourceCount * oneDay,
+        updatedAt: now - resourceCount * oneDay,
+      });
+      resourceCount++;
+    }
+    results.resources = resourceCount;
+
     return results;
   },
 });
@@ -907,6 +1072,7 @@ export const clear = internalMutation({
       "settings",
       "downloads",
       "mediaFiles",
+      "resources",
     ] as const;
 
     for (const table of tables) {
