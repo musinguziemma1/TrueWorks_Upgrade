@@ -78,10 +78,10 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((n) => (
-            <Card key={n._id} className={!n.read ? "border-l-4 border-l-[#C9A227]" : ""}>
+            <Card key={n._id} className={!n.read ? "border-l-4 border-l-accent" : ""}>
               <CardContent className="flex items-start gap-4 p-4">
                 <div className="mt-1 flex h-2 w-2 shrink-0">
-                  {!n.read && <span className="h-2 w-2 rounded-full bg-[#C9A227]" />}
+                  {!n.read && <span className="h-2 w-2 rounded-full bg-accent" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

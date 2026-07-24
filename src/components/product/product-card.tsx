@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { cn, formatPrice, slugify } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
+import { useFormatPrice } from "@/lib/use-format-price";
 import { Stars } from "@/components/product/stars";
 import { Button } from "@/components/ui/button";
 
@@ -48,6 +49,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
+  const formatPrice = useFormatPrice();
   const { addItem } = useCart();
   const href = `/store/${product.slug}`;
   const price = product.salePrice ?? product.price;

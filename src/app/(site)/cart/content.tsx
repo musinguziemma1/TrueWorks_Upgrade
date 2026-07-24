@@ -13,11 +13,13 @@ import {
   ArrowRight,
   Download,
 } from "lucide-react";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
+import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 
 export default function CartContent() {
+  const formatPrice = useFormatPrice();
   const { items, totalItems, totalPrice, removeItem, updateQuantity } = useCart();
 
   return (

@@ -5,8 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatPrice(price: number): string {
-  return `UGX ${price.toLocaleString("en-UG")}`
+const currencySymbols: Record<string, string> = {
+  UGX: "UGX",
+  USD: "$",
+  KES: "KES",
+}
+
+export function formatPrice(price: number, currency: string = "UGX"): string {
+  const symbol = currencySymbols[currency] || currency
+  return `${symbol} ${price.toLocaleString("en-UG")}`
 }
 
 export function slugify(text: string): string {

@@ -16,8 +16,9 @@ import {
   Loader2,
   Tag,
 } from "lucide-react";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
+import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,7 @@ const paymentMethods: { value: PaymentMethod; label: string; note: string; icon:
 ];
 
 export default function CheckoutContent() {
+  const formatPrice = useFormatPrice();
   const router = useRouter();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const [email, setEmail] = useState("");

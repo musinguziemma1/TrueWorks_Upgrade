@@ -53,7 +53,7 @@ export default function PaymentsPage() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total Processed</p><p className="text-lg font-bold text-[#0B2545]">{formatPrice(stats.total)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total Processed</p><p className="text-lg font-bold text-primary">{formatPrice(stats.total)}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Successful</p><p className="text-lg font-bold text-emerald-600">{stats.completed}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Failed</p><p className="text-lg font-bold text-red-600">{stats.failed}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pending</p><p className="text-lg font-bold text-amber-600">{stats.pending}</p></CardContent></Card>
@@ -83,7 +83,7 @@ export default function PaymentsPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
             <>

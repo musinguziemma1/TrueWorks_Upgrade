@@ -43,6 +43,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { useAdminSidebar } from "./admin-sidebar-context"
+import { useSettings } from "@/lib/settings-context"
 import { formatPrice } from "@/lib/utils"
 
 const searchLinks = [
@@ -71,6 +72,7 @@ export default function AdminHeader() {
 
   const notifications = useQuery(api.notifications.list, {})
   const markRead = useMutation(api.notifications.markRead)
+  const settings = useSettings()
 
   const pageTitle = getPageTitle(pathname)
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
@@ -102,7 +104,7 @@ export default function AdminHeader() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="hidden flex-col sm:flex">
-            <span className="text-sm font-semibold text-muted-foreground">TrueWorks Admin</span>
+            <span className="text-sm font-semibold text-muted-foreground">{settings.siteName} Admin</span>
             <span className="text-xs text-muted-foreground/70">{pageTitle}</span>
           </div>
         </div>
@@ -157,7 +159,7 @@ export default function AdminHeader() {
                   >
                     <div className="mt-0.5 flex h-2 w-2 shrink-0 pt-1">
                       {!n.read ? (
-                        <span className="h-2 w-2 rounded-full bg-[#C9A227]" />
+                        <span className="h-2 w-2 rounded-full bg-accent" />
                       ) : (
                         <Check className="h-3.5 w-3.5 text-muted-foreground/60" />
                       )}
@@ -185,7 +187,7 @@ export default function AdminHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-lg px-2 text-foreground outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar className="h-7 w-7" size="sm">
-                <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
+                <AvatarFallback className="bg-primary text-[11px] font-bold text-white">
                   TW
                 </AvatarFallback>
               </Avatar>
@@ -197,7 +199,7 @@ export default function AdminHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
+                  <AvatarFallback className="bg-primary text-xs font-bold text-white">
                     TW
                   </AvatarFallback>
                 </Avatar>

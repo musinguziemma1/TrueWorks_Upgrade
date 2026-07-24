@@ -18,8 +18,9 @@ import {
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
+import { useFormatPrice } from "@/lib/use-format-price";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Stars } from "@/components/product/stars";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const trustBadges = [
 ];
 
 export default function ProductDetail() {
+  const formatPrice = useFormatPrice();
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { addItem } = useCart();

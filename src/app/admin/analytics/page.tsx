@@ -12,8 +12,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Responsive
 import { formatPrice } from "@/lib/utils"
 import { useState } from "react"
 
-const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#34D399", "#94A3B8"]
-const chartConfig = { value: { label: "Value", color: "#0B2545" } }
+const COLORS = ["var(--color-primary)", "var(--color-secondary)", "var(--color-accent)", "#60A5FA", "#34D399", "#94A3B8"]
+const chartConfig = { value: { label: "Value", color: "var(--color-primary)" } }
 
 const paymentSeg = [
   { name: "MTN MoMo", value: 60, color: "#F59E0B" },
@@ -30,9 +30,9 @@ const funnelSteps = [
 ]
 
 const trafficSeg = [
-  { name: "Direct", value: 45, color: "#0B2545" },
-  { name: "Search", value: 30, color: "#4A6FA5" },
-  { name: "Social", value: 15, color: "#C9A227" },
+  { name: "Direct", value: 45, color: "var(--color-primary)" },
+  { name: "Search", value: 30, color: "var(--color-secondary)" },
+  { name: "Social", value: 15, color: "var(--color-accent)" },
   { name: "Email", value: 10, color: "#60A5FA" },
 ]
 
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}M`} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="revenue" stroke="#0B2545" strokeWidth={2} dot={{ fill: "#0B2545" }} />
+                <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} dot={{ fill: "var(--color-primary)" }} />
               </LineChart>
             </ChartContainer>
           </CardContent>
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="orders" fill="#0B2545" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="orders" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>

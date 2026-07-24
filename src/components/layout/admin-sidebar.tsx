@@ -114,7 +114,7 @@ export default function AdminSidebar() {
 
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-72 flex flex-col bg-[#0B2545] transition-transform duration-300 ease-out",
+          "fixed top-0 left-0 z-50 h-full w-72 flex flex-col bg-primary transition-transform duration-300 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -169,14 +169,14 @@ export default function AdminSidebar() {
                         >
                           {active && (
                             <span
-                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#C9A227]"
+                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-accent"
                               aria-hidden="true"
                             />
                           )}
                           <span
                             className={cn(
                               "shrink-0 transition-colors duration-200",
-                              active ? "text-[#D4B33A]" : "text-white/50 group-hover:text-white/80"
+                              active ? "text-accent" : "text-white/50 group-hover:text-white/80"
                             )}
                           >
                             {item.icon}
@@ -188,7 +188,7 @@ export default function AdminSidebar() {
                               className={cn(
                                 "h-auto shrink-0 border px-1.5 py-0 text-[10px] font-medium",
                                 comingSoon
-                                  ? "border-[#C9A227]/40 text-[#D4B33A] bg-[#C9A227]/10"
+                                  ? "border-accent/40 text-accent bg-accent/10"
                                   : "border-white/20 text-white/80 bg-white/5"
                               )}
                             >
@@ -211,7 +211,7 @@ export default function AdminSidebar() {
         {/* User mini profile */}
         <div className="shrink-0 border-t border-white/10 bg-white/[0.02] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent/30 to-accent/10 ring-1 ring-white/10">
               <span className="text-xs font-bold text-white">TW</span>
             </div>
             <div className="min-w-0 flex-1">

@@ -14,8 +14,9 @@ import {
   Mail,
   ShoppingBag,
 } from "lucide-react";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useFormatPrice } from "@/lib/use-format-price";
 
 const steps = ["Cart", "Checkout", "Confirmation"];
 
@@ -38,6 +39,7 @@ const nextSteps = [
 ];
 
 export default function OrderConfirmationContent() {
+  const formatPrice = useFormatPrice();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("order") || "";
   const total = Number(searchParams.get("total")) || 0;

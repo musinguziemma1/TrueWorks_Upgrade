@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { SocialIcon, socialLinks } from "@/components/layout/social-icons";
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
+import { FooterCopyright } from "@/components/layout/footer-copyright";
 const productCategories = [
   "Healthcare",
   "Business",
@@ -147,9 +148,7 @@ export default function Footer() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-white/40">
-            &copy; {new Date().getFullYear()} TrueWorks Limited. All rights reserved.
-          </p>
+          <FooterCopyright />
         </div>
       </div>
     </footer>

@@ -48,16 +48,16 @@ import {
 } from "recharts"
 import { formatPrice } from "@/lib/utils"
 
-const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#94A3B8"]
-const PIE_COLORS = ["#0B2545", "#4A6FA5", "#C9A227"]
+const COLORS = ["var(--color-primary)", "var(--color-secondary)", "var(--color-accent)", "#60A5FA", "#94A3B8"]
+const PIE_COLORS = ["var(--color-primary)", "var(--color-secondary)", "var(--color-accent)"]
 
 const chartConfig = {
-  sales: { label: "Sales", color: "#0B2545" },
-  revenue: { label: "Revenue (UGX)", color: "#0B2545" },
-  value: { label: "Score", color: "#4A6FA5" },
-  desktop: { label: "Desktop", color: "#0B2545" },
-  mobile: { label: "Mobile", color: "#4A6FA5" },
-  tablet: { label: "Tablet", color: "#C9A227" },
+  sales: { label: "Sales", color: "var(--color-primary)" },
+  revenue: { label: "Revenue (UGX)", color: "var(--color-primary)" },
+  value: { label: "Score", color: "var(--color-secondary)" },
+  desktop: { label: "Desktop", color: "var(--color-primary)" },
+  mobile: { label: "Mobile", color: "var(--color-secondary)" },
+  tablet: { label: "Tablet", color: "var(--color-accent)" },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0B2545] font-heading">Welcome back, Admin</h1>
+          <h1 className="text-3xl font-bold text-primary font-heading">Welcome back, Admin</h1>
           <p className="text-sm text-muted-foreground font-body flex items-center gap-2 mt-1">
             <CalendarDays className="h-4 w-4" />
             {today}
@@ -138,61 +138,61 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-6 rounded-xl bg-card border border-border px-5 py-3 shadow-soft">
             <div>
               <p className="text-xs text-muted-foreground font-body">Total Revenue</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{formatPrice(revenue)}</p>
+              <p className="text-lg font-bold text-primary font-heading">{formatPrice(revenue)}</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
               <p className="text-xs text-muted-foreground font-body">Total Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalOrders}</p>
+              <p className="text-lg font-bold text-primary font-heading">{totalOrders}</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
               <p className="text-xs text-muted-foreground font-body">Products</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{publishedProducts}</p>
+              <p className="text-lg font-bold text-primary font-heading">{publishedProducts}</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
               <p className="text-xs text-muted-foreground font-body">Subscribers</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalSubscribers}</p>
+              <p className="text-lg font-bold text-primary font-heading">{totalSubscribers}</p>
             </div>
           </div>
         </div>
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Key Performance Indicators</h2>
+        <h2 className="text-lg font-semibold text-primary font-heading">Key Performance Indicators</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
+                <div className="p-3 rounded-full bg-primary/10 text-primary">
                   <DollarSign className="h-6 w-6" />
                 </div>
               </div>
               <p className="text-sm text-muted-foreground font-body mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{formatPrice(revenue)}</p>
+              <p className="text-3xl font-bold text-primary font-heading">{formatPrice(revenue)}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#4A6FA5]/10 text-[#4A6FA5]">
+                <div className="p-3 rounded-full bg-secondary/10 text-secondary">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
               </div>
               <p className="text-sm text-muted-foreground font-body mb-1">Total Orders</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{totalOrders}</p>
+              <p className="text-3xl font-bold text-primary font-heading">{totalOrders}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#C9A227]/10 text-[#C9A227]">
+                <div className="p-3 rounded-full bg-accent/10 text-accent">
                   <Package className="h-6 w-6" />
                 </div>
               </div>
               <p className="text-sm text-muted-foreground font-body mb-1">Active Products</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{publishedProducts}</p>
+              <p className="text-3xl font-bold text-primary font-heading">{publishedProducts}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
@@ -203,14 +203,14 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground font-body mb-1">Completed Orders</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{completedOrders}</p>
+              <p className="text-3xl font-bold text-primary font-heading">{completedOrders}</p>
             </CardContent>
           </Card>
         </div>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Metric Overview</h2>
+        <h2 className="text-lg font-semibold text-primary font-heading">Metric Overview</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
@@ -220,29 +220,29 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Pending Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{pendingOrders}</p>
+              <p className="text-lg font-bold text-primary font-heading">{pendingOrders}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Star className="h-4 w-4" />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Total Products</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalProducts}</p>
+              <p className="text-lg font-bold text-primary font-heading">{totalProducts}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#4A6FA5]/10 text-[#4A6FA5]">
+                <div className="p-2 rounded-full bg-secondary/10 text-secondary">
                   <Download className="h-4 w-4" />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Total Downloads</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{analyticsSummary?.totalDownloads ?? 0}</p>
+              <p className="text-lg font-bold text-primary font-heading">{analyticsSummary?.totalDownloads ?? 0}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
@@ -253,18 +253,18 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Subscribers</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalSubscribers}</p>
+              <p className="text-lg font-bold text-primary font-heading">{totalSubscribers}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Activity className="h-4 w-4" />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Avg Order Value</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">
+              <p className="text-lg font-bold text-primary font-heading">
                 {completedOrders > 0 ? formatPrice(Math.round(revenue / completedOrders)) : "UGX 0"}
               </p>
             </CardContent>
@@ -273,11 +273,11 @@ export default function AdminDashboard() {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Analytics</h2>
+        <h2 className="text-lg font-semibold text-primary font-heading">Analytics</h2>
         <Card className="transition-shadow duration-200 hover:shadow-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-              <BarChart3 className="h-5 w-5 text-[#4A6FA5]" />
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <BarChart3 className="h-5 w-5 text-secondary" />
               Revenue Trend
             </CardTitle>
             <CardDescription>Revenue over time</CardDescription>
@@ -292,10 +292,10 @@ export default function AdminDashboard() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#0B2545"
+                  stroke="var(--color-primary)"
                   strokeWidth={3}
-                  dot={{ fill: "#0B2545", strokeWidth: 2, r: 4, stroke: "#fff" }}
-                  activeDot={{ r: 6, fill: "#C9A227", stroke: "#fff", strokeWidth: 2 }}
+                  dot={{ fill: "var(--color-primary)", strokeWidth: 2, r: 4, stroke: "#fff" }}
+                  activeDot={{ r: 6, fill: "var(--color-accent)", stroke: "#fff", strokeWidth: 2 }}
                 />
               </LineChart>
             </ChartContainer>
@@ -305,15 +305,15 @@ export default function AdminDashboard() {
 
       <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-            <ShoppingCart className="h-5 w-5 text-[#4A6FA5]" />
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <ShoppingCart className="h-5 w-5 text-secondary" />
             Recent Orders
           </CardTitle>
           <CardDescription>Latest customer orders</CardDescription>
           <CardAction>
             <Link
               href="/admin/orders"
-              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#4A6FA5] transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-secondary transition-colors hover:bg-muted"
             >
               View All
               <ArrowRight className="h-4 w-4" />
@@ -324,19 +324,19 @@ export default function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-heading text-[#0B2545]">Order #</TableHead>
-                <TableHead className="font-heading text-[#0B2545]">Customer</TableHead>
-                <TableHead className="text-right font-heading text-[#0B2545]">Total</TableHead>
-                <TableHead className="text-center font-heading text-[#0B2545]">Payment</TableHead>
-                <TableHead className="text-center font-heading text-[#0B2545]">Status</TableHead>
-                <TableHead className="text-right font-heading text-[#0B2545]">Date</TableHead>
+                <TableHead className="font-heading text-primary">Order #</TableHead>
+                <TableHead className="font-heading text-primary">Customer</TableHead>
+                <TableHead className="text-right font-heading text-primary">Total</TableHead>
+                <TableHead className="text-center font-heading text-primary">Payment</TableHead>
+                <TableHead className="text-center font-heading text-primary">Status</TableHead>
+                <TableHead className="text-right font-heading text-primary">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentOrders && recentOrders.length > 0 ? (
                 recentOrders.slice(0, 5).map((order) => (
                   <TableRow key={order._id} className="transition-colors hover:bg-muted/40">
-                    <TableCell className="font-medium text-[#0B2545]">{order.orderNumber}</TableCell>
+                    <TableCell className="font-medium text-primary">{order.orderNumber}</TableCell>
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
                     <TableCell className="text-center">
@@ -364,22 +364,22 @@ export default function AdminDashboard() {
 
       <Card className="transition-shadow duration-200 hover:shadow-card">
         <CardHeader>
-          <CardTitle className="text-[#0B2545]">Quick Actions</CardTitle>
+          <CardTitle className="text-primary">Quick Actions</CardTitle>
           <CardDescription>Frequently used admin tools</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-3">
             {[
-              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-[#0B2545]" },
-              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-[#4A6FA5]" },
-              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-[#C9A227]" },
+              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-primary" },
+              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary" },
+              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent" },
               { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600" },
               { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600" },
             ].map((action) => (
               <Link
                 key={action.label}
                 href={action.href}
-                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:bg-muted hover:border-[#4A6FA5]/30 hover:shadow-card"
+                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:bg-muted hover:border-secondary/30 hover:shadow-card"
               >
                 <span className={`p-2 rounded-lg text-white ${action.color}`}>
                   <action.icon className="h-4 w-4" />
