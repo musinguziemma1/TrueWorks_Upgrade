@@ -13,8 +13,9 @@ import {
   ChevronRight,
   Zap,
   Loader2,
+  Star,
 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
 import { cn, formatPrice } from "@/lib/utils";
@@ -26,6 +27,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import type { Id } from "@convex/_generated/dataModel";
 
 const trustBadges = [
   { icon: ShieldCheck, label: "Secure Payment" },
@@ -39,6 +43,13 @@ export default function ProductDetail() {
   const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
+
+  const [reviewName, setReviewName] = useState("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewContent, setReviewContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const createReview = useMutation(api.reviews.create);
 
   const product = useQuery(api.products.getBySlug, { slug: params.slug });
   const reviews = useQuery(
@@ -97,6 +108,33 @@ export default function ProductDetail() {
   const buyNow = () => {
     addToCart();
     router.push("/checkout");
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewName.trim() || !reviewContent.trim() || reviewRating === 0) {
+      toast.error("Please fill in all required fields and select a rating.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await createReview({
+        productId: product._id as Id<"products">,
+        customerName: reviewName.trim(),
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        content: reviewContent.trim(),
+      });
+      toast.success("Review submitted!", { description: "Thank you for your feedback." });
+      setReviewName("");
+      setReviewRating(0);
+      setReviewTitle("");
+      setReviewContent("");
+    } catch (err) {
+      toast.error("Failed to submit review", { description: "Please try again later." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDate = (ts: number) => {
@@ -346,6 +384,84 @@ export default function ProductDetail() {
                   ) : (
                     <p className="text-muted">No reviews yet. Be the first to review this product!</p>
                   )}
+                </div>
+
+                {/* Review Form */}
+                <div className="mt-10 border-t border-border pt-8">
+                  <h3 className="font-heading text-lg font-semibold text-primary">Write a Review</h3>
+                  <form onSubmit={handleReviewSubmit} className="mt-5 space-y-5">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-primary">Your Name *</label>
+                      <Input
+                        value={reviewName}
+                        onChange={(e) => setReviewName(e.target.value)}
+                        placeholder="John Doe"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-primary">Rating *</label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewRating(star)}
+                            className="transition-transform hover:scale-110 focus:outline-none"
+                            aria-label={`${star} star${star !== 1 ? "s" : ""}`}
+                          >
+                            <Star
+                              className={cn(
+                                "h-6 w-6 transition-colors",
+                                star <= reviewRating
+                                  ? "fill-accent text-accent"
+                                  : "fill-border text-border"
+                              )}
+                            />
+                          </button>
+                        ))}
+                        {reviewRating > 0 && (
+                          <span className="ml-2 text-sm text-muted">{reviewRating}/5</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-primary">Title <span className="text-muted">(optional)</span></label>
+                      <Input
+                        value={reviewTitle}
+                        onChange={(e) => setReviewTitle(e.target.value)}
+                        placeholder="Summarize your experience"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-primary">Review *</label>
+                      <Textarea
+                        value={reviewContent}
+                        onChange={(e) => setReviewContent(e.target.value)}
+                        placeholder="Tell others what you think about this product..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Review"
+                      )}
+                    </Button>
+                  </form>
                 </div>
               </TabsContent>
             </Tabs>
