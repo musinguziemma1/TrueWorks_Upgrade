@@ -16,6 +16,7 @@ import type * as clerk from "../clerk.js";
 import type * as coupons from "../coupons.js";
 import type * as customers from "../customers.js";
 import type * as downloads from "../downloads.js";
+import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as mediaFiles from "../mediaFiles.js";
 import type * as notifications from "../notifications.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   coupons: typeof coupons;
   customers: typeof customers;
   downloads: typeof downloads;
+  email: typeof email;
   http: typeof http;
   mediaFiles: typeof mediaFiles;
   notifications: typeof notifications;

@@ -4,6 +4,14 @@ import { Webhook } from "svix";
 import { internal } from "./_generated/api";
 import { initiatePayment, handleCallback } from "./pesapal";
 import { createCheckoutOrder } from "./checkout";
+import {
+  sendOrderConfirmation,
+  sendDownloadReady,
+  sendPaymentFailed,
+  sendRefundConfirmation,
+  sendWelcomeEmail,
+  sendNewsletter,
+} from "./email";
 
 const http = httpRouter();
 
@@ -121,6 +129,42 @@ http.route({
   path: "/checkout",
   method: "POST",
   handler: createCheckoutOrder,
+});
+
+http.route({
+  path: "/email/order-confirmation",
+  method: "POST",
+  handler: sendOrderConfirmation,
+});
+
+http.route({
+  path: "/email/download-ready",
+  method: "POST",
+  handler: sendDownloadReady,
+});
+
+http.route({
+  path: "/email/payment-failed",
+  method: "POST",
+  handler: sendPaymentFailed,
+});
+
+http.route({
+  path: "/email/refund",
+  method: "POST",
+  handler: sendRefundConfirmation,
+});
+
+http.route({
+  path: "/email/welcome",
+  method: "POST",
+  handler: sendWelcomeEmail,
+});
+
+http.route({
+  path: "/email/newsletter",
+  method: "POST",
+  handler: sendNewsletter,
 });
 
 export default http;

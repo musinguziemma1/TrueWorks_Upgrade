@@ -90,6 +90,27 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     link: `/admin/orders`,
   });
 
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    await fetch(`${siteUrl}/api/email/order-confirmation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderNumber,
+        customerEmail,
+        customerName,
+        items: orderItems.map((item) => ({
+          name: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        total,
+      }),
+    });
+  } catch {
+    // Email failure should not block checkout
+  }
+
   return new Response(JSON.stringify({
     success: true,
     orderId,
