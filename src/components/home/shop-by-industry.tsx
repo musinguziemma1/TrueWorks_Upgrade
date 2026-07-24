@@ -13,7 +13,6 @@ import {
   Sprout,
   ArrowUpRight,
 } from "lucide-react";
-import { getCategoryCount } from "@/lib/products";
 
 const industries = [
   { name: "Healthcare", icon: Stethoscope },
@@ -50,38 +49,35 @@ export default function ShopByIndustry() {
         </motion.div>
 
         <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
-          {industries.map((industry, i) => {
-            const count = getCategoryCount(industry.name);
-            return (
-              <motion.div
-                key={industry.name}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
+          {industries.map((industry, i) => (
+            <motion.div
+              key={industry.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+            >
+              <Link
+                href={`/store?category=${encodeURIComponent(industry.name)}`}
+                className="group flex h-full flex-col items-start gap-4 rounded-xl border border-border/70 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:bg-white hover:shadow-elevated"
               >
-                <Link
-                  href={`/store?category=${encodeURIComponent(industry.name)}`}
-                  className="group flex h-full flex-col items-start gap-4 rounded-xl border border-border/70 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:bg-white hover:shadow-elevated"
-                >
-                  <div className="flex w-full items-start justify-between">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white transition-colors duration-300 group-hover:bg-accent group-hover:text-primary-dark">
-                      <industry.icon className="h-5 w-5" />
-                    </span>
-                    <ArrowUpRight className="h-4 w-4 text-border transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-accent-dark" />
-                  </div>
-                  <div>
-                    <p className="font-heading text-base font-semibold text-primary">
-                      {industry.name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted">
-                      {count > 0 ? `${count} template${count === 1 ? "" : "s"}` : "Coming soon"}
-                    </p>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
+                <div className="flex w-full items-start justify-between">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white transition-colors duration-300 group-hover:bg-accent group-hover:text-primary-dark">
+                    <industry.icon className="h-5 w-5" />
+                  </span>
+                  <ArrowUpRight className="h-4 w-4 text-border transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-accent-dark" />
+                </div>
+                <div>
+                  <p className="font-heading text-base font-semibold text-primary">
+                    {industry.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    Browse templates
+                  </p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

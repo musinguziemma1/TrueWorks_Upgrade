@@ -2,11 +2,6 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
 
-/**
- * Email addresses that are automatically granted admin access.
- * Additional emails can be configured via the ADMIN_EMAILS environment variable
- * as a comma-separated list (e.g. `admin1@example.com,admin2@example.com`).
- */
 const DEFAULT_ADMIN_EMAILS = ["musinguzie612@gmail.com"];
 
 function getAdminEmails(): string[] {
@@ -50,6 +45,7 @@ export async function getCurrentUser(ctx: QueryCtx) {
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.db.query("users").order("desc").take(100);
   },
 });
@@ -104,6 +100,8 @@ export const upsertFromClerk = internalMutation({
         name: args.name,
         avatar: args.avatar,
         role: adminEmail ? "admin" : (args.publicRole ?? existing[0].role),
+        lastLoginAt: now,
+        loginCount: (existing[0].loginCount ?? 0) + 1,
         updatedAt: now,
       });
       return existing[0]._id;
@@ -116,6 +114,8 @@ export const upsertFromClerk = internalMutation({
       name: args.name,
       avatar: args.avatar,
       role: adminEmail ? "admin" : (args.publicRole ?? "customer"),
+      lastLoginAt: now,
+      loginCount: 1,
       createdAt: now,
       updatedAt: now,
     });

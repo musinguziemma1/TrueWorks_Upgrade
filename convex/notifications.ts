@@ -74,3 +74,19 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+export const createPublic = mutation({
+  args: {
+    type: v.string(),
+    title: v.string(),
+    message: v.string(),
+    link: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("notifications", {
+      ...args,
+      read: false,
+      createdAt: Date.now(),
+    });
+  },
+});

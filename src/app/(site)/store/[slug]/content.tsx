@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ShoppingCart,
@@ -12,12 +12,14 @@ import {
   RefreshCw,
   ChevronRight,
   Zap,
+  Loader2,
 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
-import { cn, formatPrice, slugify } from "@/lib/utils";
-import { getRelatedProducts, type Product } from "@/lib/products";
+import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
-import { ProductCard } from "@/components/product/product-card";
+import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Stars } from "@/components/product/stars";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,20 +33,22 @@ const trustBadges = [
   { icon: RefreshCw, label: "30-Day Guarantee" },
 ];
 
-const reviewData = [
-  { initials: "JK", name: "John K.", time: "2 weeks ago", rating: 5, text: "Excellent template! Saved me hours of work. The dashboard is very intuitive and the instructions are clear." },
-  { initials: "AM", name: "Alice M.", time: "1 month ago", rating: 4, text: "Good product overall. The KPI tracking is great. Would love to see more customization options in future updates." },
-  { initials: "PN", name: "Peter N.", time: "3 months ago", rating: 5, text: "Perfect for our organization. The board was impressed with the presentation-ready charts. Highly recommended." },
-];
-
-export default function ProductDetail({ product }: { product: Product }) {
+export default function ProductDetail() {
+  const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
 
-  const price = product.salePrice ?? product.price;
-  const related = getRelatedProducts(product, 3);
+  const product = useQuery(api.products.getBySlug, { slug: params.slug });
+  const reviews = useQuery(
+    api.reviews.listApproved,
+    product ? { productId: product._id } : "skip"
+  );
+  const relatedProducts = useQuery(
+    api.products.list,
+    product ? { status: "published", category: product.category } : "skip"
+  );
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 500);
@@ -52,15 +56,42 @@ export default function ProductDetail({ product }: { product: Product }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (product === undefined) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (product === null) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+        <h1 className="font-heading text-3xl font-semibold text-primary">Product Not Found</h1>
+        <p className="mt-2 text-muted">The product you are looking for does not exist.</p>
+        <Link href="/store" className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90">
+          Back to Store
+        </Link>
+      </div>
+    );
+  }
+
+  const p = product as StoreProduct;
+  const price = p.salePrice ?? p.price;
+  const gallery = p.galleryImages?.length > 0 ? p.galleryImages : [];
+  const related = (relatedProducts ?? [])
+    .filter((rp: StoreProduct) => rp._id !== p._id)
+    .slice(0, 3);
+
   const addToCart = () => {
     addItem({
-      id: product.id,
-      name: product.name,
+      id: p._id,
+      name: p.name,
       price,
-      image: product.gradient,
-      slug: slugify(product.name),
+      image: p.thumbnail || "",
+      slug: p.slug,
     });
-    toast.success("Added to cart", { description: product.name });
+    toast.success("Added to cart", { description: p.name });
   };
 
   const buyNow = () => {
@@ -68,24 +99,27 @@ export default function ProductDetail({ product }: { product: Product }) {
     router.push("/checkout");
   };
 
-  const galleryFrames = [
-    `bg-gradient-to-br ${product.gradient}`,
-    `bg-gradient-to-tr ${product.gradient}`,
-    `bg-gradient-to-bl ${product.gradient}`,
-    `bg-gradient-to-tl ${product.gradient}`,
-  ];
+  const formatDate = (ts: number) => {
+    const diff = Date.now() - ts;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  };
 
   return (
     <>
       <div className="min-h-screen bg-surface">
-        {/* Breadcrumb */}
         <div className="border-b border-border bg-white">
           <nav aria-label="Breadcrumb" className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 py-4 text-sm text-muted lg:px-8">
             <Link href="/" className="transition-colors hover:text-primary">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href="/store" className="transition-colors hover:text-primary">Store</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="truncate font-medium text-foreground">{product.name}</span>
+            <span className="truncate font-medium text-foreground">{p.name}</span>
           </nav>
         </div>
 
@@ -93,68 +127,85 @@ export default function ProductDetail({ product }: { product: Product }) {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Gallery */}
             <div>
-              <div className={cn("relative aspect-[4/3] overflow-hidden rounded-2xl shadow-card", galleryFrames[selectedImage])}>
-                <div className="absolute inset-0 flex flex-col justify-between p-7">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/30" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+              <div className={cn("relative aspect-[4/3] overflow-hidden rounded-2xl shadow-card bg-gradient-to-br from-primary/80 to-primary")}>
+                {gallery.length > 0 ? (
+                  <img
+                    src={gallery[selectedImage]}
+                    alt={p.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : p.thumbnail ? (
+                  <img
+                    src={p.thumbnail}
+                    alt={p.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col justify-between p-7">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/30" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      </div>
+                      <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur-sm">
+                        Template Preview
+                      </span>
                     </div>
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur-sm">
-                      Template Preview
-                    </span>
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        <div className="h-16 flex-1 rounded-md bg-white/15" />
+                        <div className="h-16 flex-1 rounded-md bg-white/15" />
+                        <div className="h-16 flex-1 rounded-md bg-white/15" />
+                      </div>
+                      <div className="flex h-20 items-end gap-2 rounded-md bg-white/10 p-3">
+                        {[45, 70, 55, 85, 60, 95, 75, 88].map((h, j) => (
+                          <span key={j} className="flex-1 rounded-sm bg-white/35" style={{ height: `${h}%` }} />
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <div className="h-16 flex-1 rounded-md bg-white/15" />
-                      <div className="h-16 flex-1 rounded-md bg-white/15" />
-                      <div className="h-16 flex-1 rounded-md bg-white/15" />
-                    </div>
-                    <div className="flex h-20 items-end gap-2 rounded-md bg-white/10 p-3">
-                      {[45, 70, 55, 85, 60, 95, 75, 88].map((h, j) => (
-                        <span key={j} className="flex-1 rounded-sm bg-white/35" style={{ height: `${h}%` }} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {product.salePrice && (
+                )}
+                {p.salePrice && (
                   <span className="absolute left-5 top-5 rounded-full gradient-gold px-3 py-1 text-xs font-bold text-primary-dark shadow-md">
-                    Save {formatPrice(product.price - product.salePrice)}
+                    Save {formatPrice(p.price - p.salePrice)}
                   </span>
                 )}
               </div>
-              <div className="mt-4 grid grid-cols-4 gap-3">
-                {galleryFrames.map((frame, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedImage(i)}
-                    aria-label={`Preview ${i + 1}`}
-                    className={cn(
-                      "aspect-[4/3] rounded-lg transition-all duration-200",
-                      frame,
-                      selectedImage === i
-                        ? "ring-2 ring-accent ring-offset-2 ring-offset-surface"
-                        : "opacity-50 hover:opacity-100"
-                    )}
-                  />
-                ))}
-              </div>
+              {gallery.length > 1 && (
+                <div className="mt-4 grid grid-cols-4 gap-3">
+                  {gallery.slice(0, 4).map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedImage(i)}
+                      aria-label={`Preview ${i + 1}`}
+                      className={cn(
+                        "aspect-[4/3] overflow-hidden rounded-lg transition-all duration-200",
+                        selectedImage === i
+                          ? "ring-2 ring-accent ring-offset-2 ring-offset-surface"
+                          : "opacity-50 hover:opacity-100"
+                      )}
+                    >
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Details */}
             <div>
               <span className="inline-flex items-center rounded-full bg-primary/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                {product.category}
+                {p.category}
               </span>
               <h1 className="mt-4 font-heading text-3xl font-semibold text-primary md:text-4xl">
-                {product.name}
+                {p.name}
               </h1>
 
               <div className="mt-4 flex items-center gap-2.5">
-                <Stars rating={product.rating} starClassName="h-4 w-4" />
+                <Stars rating={p.rating} starClassName="h-4 w-4" />
                 <span className="text-sm text-muted">
-                  {product.rating} · {product.reviews} reviews
+                  {p.rating} · {p.reviewCount} reviews
                 </span>
               </div>
 
@@ -162,47 +213,43 @@ export default function ProductDetail({ product }: { product: Product }) {
                 <span className="font-heading text-3xl font-bold text-primary">
                   {formatPrice(price)}
                 </span>
-                {product.salePrice && (
+                {p.salePrice && (
                   <>
                     <span className="text-lg text-muted line-through">
-                      {formatPrice(product.price)}
+                      {formatPrice(p.price)}
                     </span>
                     <Badge className="gradient-gold border-0 text-primary-dark">
-                      -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                      -{Math.round(((p.price - p.salePrice) / p.price) * 100)}%
                     </Badge>
                   </>
                 )}
               </div>
 
-              <p className="mt-6 leading-relaxed text-muted">{product.tagline}</p>
+              <p className="mt-6 leading-relaxed text-muted">{p.shortDescription}</p>
 
               <div className="mt-8">
                 <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                  What&apos;s Included
-                </h2>
-                <ul className="mt-4 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-                  {product.whatIncluded.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-muted">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                  Compatibility
+                  Details
                 </h2>
                 <div className="mt-3.5 flex flex-wrap gap-2">
-                  {product.compatibility.map((comp) => (
-                    <span
-                      key={comp}
-                      className="rounded-full border border-primary/10 bg-primary/[0.04] px-3.5 py-1.5 text-xs font-medium text-primary"
-                    >
-                      {comp}
+                  <span className="rounded-full border border-primary/10 bg-primary/[0.04] px-3.5 py-1.5 text-xs font-medium text-primary">
+                    {p.fileType}
+                  </span>
+                  {p.fileSize && (
+                    <span className="rounded-full border border-primary/10 bg-primary/[0.04] px-3.5 py-1.5 text-xs font-medium text-primary">
+                      {p.fileSize}
                     </span>
-                  ))}
+                  )}
+                  {p.version && (
+                    <span className="rounded-full border border-primary/10 bg-primary/[0.04] px-3.5 py-1.5 text-xs font-medium text-primary">
+                      v{p.version}
+                    </span>
+                  )}
+                  {p.downloadLimit && (
+                    <span className="rounded-full border border-primary/10 bg-primary/[0.04] px-3.5 py-1.5 text-xs font-medium text-primary">
+                      {p.downloadLimit} downloads
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -247,54 +294,58 @@ export default function ProductDetail({ product }: { product: Product }) {
             <Tabs defaultValue="description">
               <TabsList className="mb-8 flex-wrap">
                 <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="whats-included">What&apos;s Included</TabsTrigger>
                 <TabsTrigger value="faq">FAQ</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews ({product.reviews})</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews ({p.reviewCount})</TabsTrigger>
               </TabsList>
               <TabsContent value="description" className="max-w-3xl">
-                <p className="leading-relaxed text-muted">{product.description}</p>
-              </TabsContent>
-              <TabsContent value="whats-included" className="max-w-3xl">
-                <ul className="space-y-3">
-                  {product.whatIncluded.map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-muted">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="leading-relaxed text-muted">{p.description}</p>
+                {p.changelog && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold text-primary">Changelog</h3>
+                    <p className="mt-2 text-sm text-muted">{p.changelog}</p>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="faq" className="max-w-3xl">
-                <Accordion>
-                  {product.faq.map((f, i) => (
-                    <AccordionItem key={i} value={`faq-${i}`}>
-                      <AccordionTrigger>{f.q}</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-muted">{f.a}</p>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                {p.faqs && p.faqs.length > 0 ? (
+                  <Accordion>
+                    {p.faqs.map((f, i) => (
+                      <AccordionItem key={i} value={`faq-${i}`}>
+                        <AccordionTrigger>{f.question}</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-muted">{f.answer}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <p className="text-muted">No FAQ available for this product.</p>
+                )}
               </TabsContent>
               <TabsContent value="reviews" className="max-w-3xl">
                 <div className="space-y-6">
-                  {reviewData.map((r, i) => (
-                    <div key={i} className="flex gap-4 border-b border-border pb-6 last:border-0">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary/[0.08] font-heading font-semibold text-primary">
-                          {r.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="text-sm font-semibold text-primary">{r.name}</span>
-                          <span className="text-xs text-muted">{r.time}</span>
+                  {reviews && reviews.length > 0 ? (
+                    reviews.map((r) => (
+                      <div key={r._id} className="flex gap-4 border-b border-border pb-6 last:border-0">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/[0.08] font-heading font-semibold text-primary">
+                            {r.customerName.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">{r.customerName}</span>
+                            <span className="text-xs text-muted">{formatDate(r.createdAt)}</span>
+                          </div>
+                          <Stars rating={r.rating} className="mb-2" />
+                          {r.title && <p className="mb-1 text-sm font-medium text-primary">{r.title}</p>}
+                          <p className="text-sm leading-relaxed text-muted">{r.content}</p>
                         </div>
-                        <Stars rating={r.rating} className="mb-2" />
-                        <p className="text-sm leading-relaxed text-muted">{r.text}</p>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-muted">No reviews yet. Be the first to review this product!</p>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -309,11 +360,11 @@ export default function ProductDetail({ product }: { product: Product }) {
                     Keep Exploring
                   </p>
                   <h2 className="mt-2 font-heading text-2xl font-semibold text-primary md:text-3xl">
-                    Related {product.category} Templates
+                    Related {p.category} Templates
                   </h2>
                 </div>
                 <Link
-                  href={`/store?category=${encodeURIComponent(product.category)}`}
+                  href={`/store?category=${encodeURIComponent(p.category)}`}
                   className="hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-accent-dark sm:inline-flex"
                 >
                   View all
@@ -321,8 +372,8 @@ export default function ProductDetail({ product }: { product: Product }) {
                 </Link>
               </div>
               <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-                {related.map((rp) => (
-                  <ProductCard key={rp.id} product={rp} />
+                {related.map((rp: StoreProduct) => (
+                  <ProductCard key={rp._id} product={rp} />
                 ))}
               </div>
             </div>
@@ -339,16 +390,16 @@ export default function ProductDetail({ product }: { product: Product }) {
       >
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div>
-            {product.salePrice ? (
+            {p.salePrice ? (
               <div className="flex items-baseline gap-2">
                 <span className="font-heading text-lg font-bold text-primary">
-                  {formatPrice(product.salePrice)}
+                  {formatPrice(p.salePrice)}
                 </span>
-                <span className="text-sm text-muted line-through">{formatPrice(product.price)}</span>
+                <span className="text-sm text-muted line-through">{formatPrice(p.price)}</span>
               </div>
             ) : (
               <span className="font-heading text-lg font-bold text-primary">
-                {formatPrice(product.price)}
+                {formatPrice(p.price)}
               </span>
             )}
           </div>

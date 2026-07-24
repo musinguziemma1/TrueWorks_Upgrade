@@ -14,6 +14,7 @@ import {
   Mail,
   User,
   Loader2,
+  Tag,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 type PaymentMethod = "mtn" | "airtel" | "card";
 
@@ -39,18 +41,53 @@ const paymentMethods: { value: PaymentMethod; label: string; note: string; icon:
 
 export default function CheckoutContent() {
   const router = useRouter();
-  const { items, totalItems, totalPrice } = useCart();
+  const { items, totalItems, totalPrice, clearCart } = useCart();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("mtn");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (items.length === 0) return;
+
     setIsSubmitting(true);
-    setTimeout(() => router.push("/order-confirmation"), 1200);
+    try {
+      const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+      const response = await fetch(`${convexUrl}/api/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            slug: item.slug,
+            quantity: item.quantity,
+          })),
+          customerEmail: email,
+          customerName: `${firstName} ${lastName}`,
+          paymentMethod: paymentMethod === "mtn" ? "MTN MoMo" : paymentMethod === "airtel" ? "Airtel Money" : "Card",
+          couponCode: appliedCoupon?.code || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        clearCart();
+        router.push(`/order-confirmation?order=${result.orderNumber}&total=${result.total}`);
+      } else {
+        throw new Error(result.error || "Checkout failed");
+      }
+    } catch (error) {
+      toast.error("Checkout failed", {
+        description: error instanceof Error ? error.message : "Please try again",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0) {
@@ -88,7 +125,6 @@ export default function CheckoutContent() {
           </p>
         </div>
 
-        {/* Steps */}
         <ol className="mb-10 flex flex-wrap items-center gap-2 text-sm">
           {steps.map((step, idx) => (
             <li key={step.label} className="flex items-center gap-2">
@@ -117,7 +153,6 @@ export default function CheckoutContent() {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Form column */}
             <div className="space-y-6 lg:col-span-2">
               <Card className="border-border/70 shadow-card">
                 <CardHeader>
@@ -198,6 +233,44 @@ export default function CheckoutContent() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2.5 text-lg">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06]">
+                      <Tag className="h-4 w-4 text-primary" />
+                    </span>
+                    Coupon Code
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="h-11"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (couponCode) {
+                          setAppliedCoupon({ code: couponCode, discount: 0 });
+                          toast.success("Coupon applied", { description: "Discount will be calculated at payment" });
+                        }
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                  {appliedCoupon && (
+                    <p className="mt-2 text-sm text-success">
+                      Coupon "{appliedCoupon.code}" applied
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/70 shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06]">
                       <CreditCard className="h-4 w-4 text-primary" />
                     </span>
                     Payment Method
@@ -256,7 +329,6 @@ export default function CheckoutContent() {
               </Card>
             </div>
 
-            {/* Summary column */}
             <div className="lg:col-span-1">
               <div className="sticky top-28 rounded-xl border border-border/70 bg-white p-6 shadow-card">
                 <h2 className="font-heading text-lg font-semibold text-primary">

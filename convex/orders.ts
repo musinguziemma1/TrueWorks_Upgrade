@@ -14,6 +14,10 @@ export const list = query({
       ? ctx.db.query("orders").withIndex("by_paymentStatus", (q) =>
           q.eq("paymentStatus", args.paymentStatus as "pending" | "completed" | "failed" | "refunded")
         )
+      : args.orderStatus
+      ? ctx.db.query("orders").withIndex("by_orderStatus", (q) =>
+          q.eq("orderStatus", args.orderStatus as "pending" | "processing" | "completed" | "cancelled")
+        )
       : ctx.db.query("orders").withIndex("by_createdAt", (q) => q);
 
     if (args.search) {
@@ -33,7 +37,13 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("orders") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const me = await getCurrentUser(ctx);
+    const order = await ctx.db.get(args.id);
+    if (!order) return null;
+    if (!me) return null;
+    if (me.role === "admin") return order;
+    if (order.customerEmail === me.email) return order;
+    return null;
   },
 });
 
@@ -51,6 +61,7 @@ export const create = mutation({
     })),
     subtotal: v.number(),
     tax: v.number(),
+    discountAmount: v.optional(v.number()),
     total: v.number(),
     paymentMethod: v.string(),
     paymentStatus: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
@@ -61,15 +72,30 @@ export const create = mutation({
       expiresAt: v.number(),
       downloadCount: v.number(),
     })),
+    couponCode: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("orders", {
+    const orderId = await ctx.db.insert("orders", {
       ...args,
       createdAt: now,
       updatedAt: now,
     });
+
+    for (const item of args.items) {
+      const product = await ctx.db.get(item.productId);
+      if (product) {
+        await ctx.db.patch(item.productId, {
+          totalSales: product.totalSales + item.quantity,
+          updatedAt: now,
+        });
+      }
+    }
+
+    return orderId;
   },
 });
 

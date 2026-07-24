@@ -9,6 +9,9 @@ export default defineSchema({
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("customer")),
+    lastLoginAt: v.optional(v.number()),
+    loginCount: v.optional(v.number()),
+    marketingOptIn: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -23,7 +26,8 @@ export default defineSchema({
     storageId: v.id("_storage"),
     url: v.optional(v.string()),
     createdAt: v.number(),
-  }),
+  })
+    .index("by_folder", ["folder"]),
 
   products: defineTable({
     name: v.string(),
@@ -57,6 +61,13 @@ export default defineSchema({
     totalSales: v.number(),
     rating: v.number(),
     reviewCount: v.number(),
+    relatedProductIds: v.optional(v.array(v.string())),
+    upsellIds: v.optional(v.array(v.string())),
+    versionHistory: v.optional(v.array(v.object({
+      version: v.string(),
+      changelog: v.string(),
+      updatedAt: v.number(),
+    }))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -79,10 +90,15 @@ export default defineSchema({
     })),
     subtotal: v.number(),
     tax: v.number(),
+    discountAmount: v.optional(v.number()),
     total: v.number(),
     paymentMethod: v.string(),
     paymentStatus: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
     orderStatus: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled")),
+    paymentId: v.optional(v.string()),
+    couponCode: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
       url: v.string(),
@@ -97,6 +113,8 @@ export default defineSchema({
     .index("by_customerId", ["customerId"])
     .index("by_customerEmail", ["customerEmail"])
     .index("by_paymentStatus", ["paymentStatus"])
+    .index("by_orderStatus", ["orderStatus"])
+    .index("by_paymentId", ["paymentId"])
     .index("by_createdAt", ["createdAt"]),
 
   customers: defineTable({
@@ -104,31 +122,43 @@ export default defineSchema({
     name: v.string(),
     phone: v.optional(v.string()),
     avatar: v.optional(v.string()),
+    clerkId: v.optional(v.string()),
     newsletterSubscribed: v.boolean(),
+    marketingOptIn: v.optional(v.boolean()),
     lifetimeValue: v.number(),
     totalOrders: v.number(),
     favoriteCategories: v.array(v.string()),
+    lastLoginAt: v.optional(v.number()),
+    loginCount: v.optional(v.number()),
     notes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_clerkId", ["clerkId"]),
 
   downloads: defineTable({
     productId: v.id("products"),
     customerId: v.optional(v.id("customers")),
+    orderId: v.optional(v.id("orders")),
     email: v.string(),
     downloadCount: v.number(),
     remainingDownloads: v.number(),
     expiresAt: v.number(),
+    downloadUrl: v.optional(v.string()),
+    browser: v.optional(v.string()),
     device: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
+    location: v.optional(v.string()),
+    revoked: v.optional(v.boolean()),
     status: v.union(v.literal("active"), v.literal("expired"), v.literal("disabled")),
     createdAt: v.number(),
   })
     .index("by_productId", ["productId"])
     .index("by_customerId", ["customerId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_orderId", ["orderId"])
+    .index("by_status", ["status"]),
 
   reviews: defineTable({
     productId: v.id("products"),
@@ -139,10 +169,13 @@ export default defineSchema({
     content: v.string(),
     status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
     featured: v.boolean(),
+    helpfulCount: v.optional(v.number()),
+    reported: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_productId", ["productId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_customerId", ["customerId"]),
 
   categories: defineTable({
     name: v.string(),
@@ -248,5 +281,38 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_read", ["read"])
+    .index("by_createdAt", ["createdAt"]),
+
+  payments: defineTable({
+    orderId: v.id("orders"),
+    paymentId: v.string(),
+    provider: v.string(),
+    method: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+    status: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
+    customerEmail: v.string(),
+    customerName: v.string(),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_orderId", ["orderId"])
+    .index("by_paymentId", ["paymentId"])
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"]),
+
+  auditLogs: defineTable({
+    actorId: v.optional(v.id("users")),
+    actorEmail: v.string(),
+    action: v.string(),
+    entityType: v.string(),
+    entityId: v.string(),
+    changes: v.optional(v.any()),
+    ipAddress: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_actorId", ["actorId"])
+    .index("by_entityType", ["entityType"])
     .index("by_createdAt", ["createdAt"]),
 });

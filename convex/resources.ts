@@ -10,6 +10,7 @@ export const list = query({
     featured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const q = args.category
       ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", args.category!))
       : args.status

@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { requireAdmin } from "./users";
 
 export const list = query({
-  args: {     activeOnly: v.optional(v.boolean()) },
+  args: { activeOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const all = await ctx.db.query("coupons").collect();
@@ -90,6 +90,7 @@ export const validate = query({
 export const incrementUsage = mutation({
   args: { id: v.id("coupons") },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const coupon = await ctx.db.get(args.id);
     if (coupon) {
       await ctx.db.patch(args.id, { usageCount: coupon.usageCount + 1 });

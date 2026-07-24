@@ -34,6 +34,7 @@ export const uploadFile = action({
 export const backfillFileUrls = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("mediaFiles").collect();
     let patched = 0;
     for (const f of all) {
@@ -57,14 +58,16 @@ export const getFileUrl = action({
 });
 
 export const listFiles = query({
-  args: {     folder: v.optional(v.string()) },
+  args: { folder: v.optional(v.string()) },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const all = await ctx.db.query("mediaFiles").collect();
     if (args.folder && args.folder !== "") {
-      return all.filter((f) => f.folder === args.folder);
+      return await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_folder", (q) => q.eq("folder", args.folder!))
+        .collect();
     }
-    return all;
+    return await ctx.db.query("mediaFiles").collect();
   },
 });
 

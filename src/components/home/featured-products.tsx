@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { getFeaturedProducts } from "@/lib/products";
-import { ProductCard } from "@/components/product/product-card";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 32 },
@@ -16,7 +17,20 @@ const cardVariants = {
 };
 
 export default function FeaturedProducts() {
-  const featured = getFeaturedProducts(6);
+  const products = useQuery(api.products.list, { status: "published", featured: true });
+  const featured = (products ?? []).slice(0, 6) as StoreProduct[];
+
+  if (products === undefined) {
+    return (
+      <section className="bg-surface py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-surface py-20 lg:py-24">
@@ -52,7 +66,7 @@ export default function FeaturedProducts() {
         <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
           {featured.map((product, i) => (
             <motion.div
-              key={product.id}
+              key={product._id}
               custom={i}
               variants={cardVariants}
               initial="hidden"

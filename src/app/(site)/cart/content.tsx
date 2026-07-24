@@ -14,12 +14,8 @@ import {
   Download,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
-import { products } from "@/lib/products";
 import { useCart } from "@/components/layout/cart-context";
-import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
-
-const suggestions = products.slice(0, 3);
 
 export default function CartContent() {
   const { items, totalItems, totalPrice, removeItem, updateQuantity } = useCart();
@@ -62,17 +58,6 @@ export default function CartContent() {
                 </Button>
               </Link>
             </div>
-
-            <section className="mt-16">
-              <h2 className="mb-8 font-heading text-2xl font-semibold text-primary">
-                Popular Right Now
-              </h2>
-              <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
-                {suggestions.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </div>
-            </section>
           </>
         ) : (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">

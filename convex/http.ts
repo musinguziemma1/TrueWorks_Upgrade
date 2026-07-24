@@ -2,6 +2,8 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { Webhook } from "svix";
 import { internal } from "./_generated/api";
+import { initiatePayment, handleCallback } from "./pesapal";
+import { createCheckoutOrder } from "./checkout";
 
 const http = httpRouter();
 
@@ -101,6 +103,24 @@ http.route({
 
     return new Response("ok", { status: 200 });
   }),
+});
+
+http.route({
+  path: "/pesapal/initiate",
+  method: "POST",
+  handler: initiatePayment,
+});
+
+http.route({
+  path: "/pesapal-callback",
+  method: "GET",
+  handler: handleCallback,
+});
+
+http.route({
+  path: "/checkout",
+  method: "POST",
+  handler: createCheckoutOrder,
 });
 
 export default http;

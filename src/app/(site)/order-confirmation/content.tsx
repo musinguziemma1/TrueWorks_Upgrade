@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -14,7 +15,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
-import { useCart, type CartItem } from "@/components/layout/cart-context";
 import { Button } from "@/components/ui/button";
 
 const steps = ["Cart", "Checkout", "Confirmation"];
@@ -38,37 +38,15 @@ const nextSteps = [
 ];
 
 export default function OrderConfirmationContent() {
-  const { items, totalPrice, clearCart } = useCart();
-  const [snapshot, setSnapshot] = useState<CartItem[] | null>(null);
-  const [total, setTotal] = useState(0);
-  const [orderNumber, setOrderNumber] = useState("");
-  const captured = useRef(false);
+  const searchParams = useSearchParams();
+  const orderNumber = searchParams.get("order") || "";
+  const total = Number(searchParams.get("total")) || 0;
 
-  // Snapshot the cart once, then clear it (purchase complete)
-  useEffect(() => {
-    if (captured.current) return;
-    captured.current = true;
-    setSnapshot(items);
-    setTotal(totalPrice);
-    setOrderNumber(`TW-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
-    if (items.length > 0) clearCart();
-  }, [items, totalPrice, clearCart]);
-
-  // Wait for the cart snapshot before deciding what to render
-  if (snapshot === null) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-surface">
-        <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-border border-t-accent" aria-label="Loading" />
-      </div>
-    );
-  }
-
-  const hasOrder = snapshot.length > 0;
+  const hasOrder = orderNumber && total > 0;
 
   return (
     <div className="min-h-screen bg-surface">
       <div className="mx-auto max-w-3xl px-6 py-12 lg:px-8">
-        {/* Steps */}
         <ol className="mb-10 flex flex-wrap items-center justify-center gap-2 text-sm">
           {steps.map((step, idx) => (
             <li key={step} className="flex items-center gap-2">
@@ -85,7 +63,6 @@ export default function OrderConfirmationContent() {
 
         {hasOrder ? (
           <>
-            {/* Success card */}
             <div className="rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card sm:p-12">
               <motion.div
                 initial={{ scale: 0 }}
@@ -111,13 +88,20 @@ export default function OrderConfirmationContent() {
                   Thank You for Your Order
                 </h1>
                 <p className="mt-3 text-muted">
-                  Your payment was successful and your templates are ready.
+                  Your order has been received and is being processed.
                 </p>
 
                 <div className="mt-6 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5">
                   <span className="text-sm text-muted">Order number</span>
                   <span className="font-heading text-sm font-bold tracking-wider text-primary">
-                    {orderNumber || "TW-········"}
+                    {orderNumber}
+                  </span>
+                </div>
+
+                <div className="mt-4 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5 ml-2">
+                  <span className="text-sm text-muted">Total</span>
+                  <span className="font-heading text-sm font-bold tracking-wider text-primary">
+                    {formatPrice(total)}
                   </span>
                 </div>
 
@@ -127,13 +111,15 @@ export default function OrderConfirmationContent() {
                 </p>
 
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Button
-                    size="lg"
-                    className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Your Templates
-                  </Button>
+                  <Link href="/account/downloads">
+                    <Button
+                      size="lg"
+                      className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      View Your Downloads
+                    </Button>
+                  </Link>
                   <Link href="/store">
                     <Button variant="outline" size="lg" className="border-primary/20 px-7 font-semibold text-primary hover:bg-primary hover:text-white">
                       Back to Store
@@ -143,48 +129,6 @@ export default function OrderConfirmationContent() {
               </motion.div>
             </div>
 
-            {/* Order details */}
-            {snapshot.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="mt-8 rounded-2xl border border-border/70 bg-white p-6 shadow-card sm:p-8"
-              >
-                <h2 className="font-heading text-lg font-semibold text-primary">
-                  Order Details
-                </h2>
-                <div className="mt-4 divide-y divide-border">
-                  {snapshot.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-3 py-3.5 first:pt-0">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span
-                          className={cn(
-                            "h-10 w-10 shrink-0 rounded-lg bg-gradient-to-br",
-                            item.image || "from-primary to-primary-light"
-                          )}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted">Qty: {item.quantity}</p>
-                        </div>
-                      </div>
-                      <span className="whitespace-nowrap text-sm font-medium">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 flex items-baseline justify-between border-t border-border pt-4">
-                  <span className="font-heading text-base font-semibold text-primary">Total Paid</span>
-                  <span className="font-heading text-xl font-bold text-primary">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* What's next */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -213,7 +157,6 @@ export default function OrderConfirmationContent() {
             </motion.div>
           </>
         ) : (
-          /* No order snapshot (direct visit) */
           <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface">
               <ShoppingBag className="h-7 w-7 text-muted/60" />

@@ -3,7 +3,16 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { SocialIcon, socialLinks } from "@/components/layout/social-icons";
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
-import { productCategories } from "@/lib/products";
+const productCategories = [
+  "Healthcare",
+  "Business",
+  "Finance",
+  "NGO",
+  "HR",
+  "Schools",
+  "Churches",
+  "Agriculture",
+];
 
 const companyLinks = [
   { label: "About Us", href: "/about" },

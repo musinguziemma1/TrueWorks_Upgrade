@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as analytics from "../analytics.js";
+import type * as auditLogs from "../auditLogs.js";
 import type * as categories from "../categories.js";
+import type * as checkout from "../checkout.js";
 import type * as clerk from "../clerk.js";
 import type * as coupons from "../coupons.js";
 import type * as customers from "../customers.js";
@@ -18,6 +21,8 @@ import type * as mediaFiles from "../mediaFiles.js";
 import type * as notifications from "../notifications.js";
 import type * as orders from "../orders.js";
 import type * as pages from "../pages.js";
+import type * as payments from "../payments.js";
+import type * as pesapal from "../pesapal.js";
 import type * as products from "../products.js";
 import type * as resources from "../resources.js";
 import type * as reviews from "../reviews.js";
@@ -34,7 +39,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  analytics: typeof analytics;
+  auditLogs: typeof auditLogs;
   categories: typeof categories;
+  checkout: typeof checkout;
   clerk: typeof clerk;
   coupons: typeof coupons;
   customers: typeof customers;
@@ -44,6 +52,8 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   orders: typeof orders;
   pages: typeof pages;
+  payments: typeof payments;
+  pesapal: typeof pesapal;
   products: typeof products;
   resources: typeof resources;
   reviews: typeof reviews;

@@ -95,6 +95,40 @@ export const update = mutation({
   },
 });
 
+export const upsertPublic = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("customers")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .collect();
+    const now = Date.now();
+    if (existing.length > 0) {
+      await ctx.db.patch(existing[0]._id, {
+        name: args.name,
+        phone: args.phone ?? existing[0].phone,
+        updatedAt: now,
+      });
+      return existing[0]._id;
+    }
+    return await ctx.db.insert("customers", {
+      email: args.email,
+      name: args.name,
+      phone: args.phone,
+      newsletterSubscribed: false,
+      lifetimeValue: 0,
+      totalOrders: 0,
+      favoriteCategories: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("customers") },
   handler: async (ctx, args) => {
