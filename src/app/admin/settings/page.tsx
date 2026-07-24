@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,83 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@convex/_generated/api"
+import { toast } from "sonner"
+
+interface SettingsState {
+  siteName: string
+  siteTagline: string
+  siteDescription: string
+  siteUrl: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  surfaceColor: string
+  foregroundColor: string
+  headingFont: string
+  bodyFont: string
+  customCss: string
+  smtpHost: string
+  smtpPort: string
+  smtpUsername: string
+  smtpFrom: string
+  currency: string
+  taxRate: number
+  pesapalEnabled: boolean
+  maxDownloadsPerPurchase: number
+  downloadLinkExpiryDays: number
+  downloadMethod: string
+  requireLoginToDownload: boolean
+  downloadNotifications: boolean
+  storageProvider: string
+  storageUsed: number
+  storageMax: number
+  require2fa: boolean
+  passwordExpiryDays: number
+  sessionTimeoutMinutes: number
+  maxLoginAttempts: number
+  apiRateLimiting: boolean
+  ipWhitelist: boolean
+}
+
+const defaultSettings: SettingsState = {
+  siteName: "",
+  siteTagline: "",
+  siteDescription: "",
+  siteUrl: "",
+  primaryColor: "#0B2545",
+  secondaryColor: "#4A6FA5",
+  accentColor: "#C9A227",
+  backgroundColor: "#FFFFFF",
+  surfaceColor: "#F2F5F9",
+  foregroundColor: "#1E293B",
+  headingFont: "georgia",
+  bodyFont: "calibri",
+  customCss: "",
+  smtpHost: "",
+  smtpPort: "587",
+  smtpUsername: "",
+  smtpFrom: "",
+  currency: "UGX",
+  taxRate: 18,
+  pesapalEnabled: true,
+  maxDownloadsPerPurchase: 5,
+  downloadLinkExpiryDays: 30,
+  downloadMethod: "direct",
+  requireLoginToDownload: true,
+  downloadNotifications: true,
+  storageProvider: "local",
+  storageUsed: 0,
+  storageMax: 10,
+  require2fa: false,
+  passwordExpiryDays: 90,
+  sessionTimeoutMinutes: 60,
+  maxLoginAttempts: 5,
+  apiRateLimiting: true,
+  ipWhitelist: false,
+}
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -26,6 +103,90 @@ function SectionCard({ title, description, children }: { title: string; descript
 }
 
 export default function SettingsPage() {
+  const rawSettings = useQuery(api.settings.getAll)
+  const setMultiple = useMutation(api.settings.setMultiple)
+  const [saving, setSaving] = useState(false)
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings)
+
+  const initFromDb = useCallback((dbData: Record<string, unknown>) => {
+    const merged = { ...defaultSettings }
+    for (const [key, value] of Object.entries(dbData)) {
+      if (key in merged) {
+        ;(merged as Record<string, unknown>)[key] = value
+      }
+    }
+    setSettings(merged)
+  }, [])
+
+  useEffect(() => {
+    if (rawSettings) {
+      initFromDb(rawSettings)
+    }
+  }, [rawSettings, initFromDb])
+
+  const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const updateSelect = <K extends keyof SettingsState>(key: K, value: string | null) => {
+    if (value !== null) setSettings((prev) => ({ ...prev, [key]: value as SettingsState[K] }))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const entries: { key: string; value: unknown }[] = Object.entries(settings)
+        .filter(([key, value]) => {
+          const dbVal = rawSettings?.[key]
+          return dbVal === undefined || value !== dbVal
+        })
+        .map(([key, value]) => ({ key, value }))
+
+      if (entries.length === 0) {
+        toast.info("No changes to save")
+        return
+      }
+
+      await setMultiple({ settings: entries })
+      toast.success("Settings saved successfully")
+    } catch (error) {
+      toast.error("Failed to save settings")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    if (rawSettings) {
+      initFromDb(rawSettings)
+    }
+    toast.info("Changes discarded")
+  }
+
+  const colorKeys = [
+    { label: "Primary Color", key: "primaryColor" as const, default: "#0B2545" },
+    { label: "Secondary Color", key: "secondaryColor" as const, default: "#4A6FA5" },
+    { label: "Accent Color", key: "accentColor" as const, default: "#C9A227" },
+    { label: "Background", key: "backgroundColor" as const, default: "#FFFFFF" },
+    { label: "Surface Color", key: "surfaceColor" as const, default: "#F2F5F9" },
+    { label: "Foreground", key: "foregroundColor" as const, default: "#1E293B" },
+  ]
+
+  if (!rawSettings) {
+    return (
+      <div className="space-y-6">
+        <AdminPageHeader
+          title="Settings"
+          description="Manage your store preferences, integrations, and security."
+          breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Settings" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -50,15 +211,19 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Site Name</Label>
-                  <Input defaultValue="TrueWorks Limited" />
+                  <Input value={settings.siteName} onChange={(e) => update("siteName", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Tagline</Label>
-                  <Input defaultValue="Digital Products Marketplace" />
+                  <Input value={settings.siteTagline} onChange={(e) => update("siteTagline", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea defaultValue="Your premier destination for high-quality digital products, templates, and tools." />
+                  <Textarea value={settings.siteDescription} onChange={(e) => update("siteDescription", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Site URL</Label>
+                  <Input value={settings.siteUrl} onChange={(e) => update("siteUrl", e.target.value)} placeholder="https://trueworks.com" />
                 </div>
               </div>
             </SectionCard>
@@ -86,23 +251,12 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Default Currency</Label>
-                  <Select defaultValue="UGX">
+                  <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
                       <SelectItem value="USD">USD (US Dollar)</SelectItem>
                       <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Timezone</Label>
-                  <Select defaultValue="Kampala">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Kampala">Africa/Kampala (UTC+3)</SelectItem>
-                      <SelectItem value="Nairobi">Africa/Nairobi (UTC+3)</SelectItem>
-                      <SelectItem value="UTC">UTC+0</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -113,19 +267,12 @@ export default function SettingsPage() {
           <TabsContent value="branding" className="space-y-6">
             <SectionCard title="Theme Colors">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { label: "Primary Color", value: "#0B2545" },
-                  { label: "Secondary Color", value: "#4A6FA5" },
-                  { label: "Accent Color", value: "#C9A227" },
-                  { label: "Background", value: "#FFFFFF" },
-                  { label: "Surface Color", value: "#F2F5F9" },
-                  { label: "Foreground", value: "#1E293B" },
-                ].map((color) => (
+                {colorKeys.map((color) => (
                   <div key={color.label} className="space-y-2">
                     <Label>{color.label}</Label>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-md border border-border shrink-0" style={{ backgroundColor: color.value }} />
-                      <Input defaultValue={color.value} className="font-mono" />
+                      <div className="w-8 h-8 rounded-md border border-border shrink-0" style={{ backgroundColor: settings[color.key] }} />
+                      <Input value={settings[color.key]} onChange={(e) => update(color.key, e.target.value)} className="font-mono" />
                     </div>
                   </div>
                 ))}
@@ -136,7 +283,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Heading Font</Label>
-                  <Select defaultValue="georgia">
+                  <Select value={settings.headingFont} onValueChange={(v) => updateSelect("headingFont", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="georgia">Georgia, Times New Roman, serif</SelectItem>
@@ -147,7 +294,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Body Font</Label>
-                  <Select defaultValue="calibri">
+                  <Select value={settings.bodyFont} onValueChange={(v) => updateSelect("bodyFont", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="calibri">Calibri, Source Sans 3, system-ui, sans-serif</SelectItem>
@@ -160,29 +307,29 @@ export default function SettingsPage() {
             </SectionCard>
 
             <SectionCard title="Custom CSS">
-              <Textarea placeholder="Enter custom CSS rules..." className="min-h-[150px] font-mono text-xs" />
+              <Textarea placeholder="Enter custom CSS rules..." className="min-h-[150px] font-mono text-xs" value={settings.customCss} onChange={(e) => update("customCss", e.target.value)} />
             </SectionCard>
           </TabsContent>
 
           <TabsContent value="email" className="space-y-6">
             <SectionCard title="SMTP Configuration">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>SMTP Host</Label><Input defaultValue="smtp.trueworks.com" /></div>
-                <div className="space-y-2"><Label>SMTP Port</Label><Input type="number" defaultValue="587" /></div>
-                <div className="space-y-2"><Label>Username</Label><Input defaultValue="noreply@trueworks.com" /></div>
-                <div className="space-y-2"><Label>Password</Label><Input type="password" defaultValue="********" /></div>
                 <div className="space-y-2">
-                  <Label>Encryption</Label>
-                  <Select defaultValue="TLS">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TLS">TLS</SelectItem>
-                      <SelectItem value="SSL">SSL</SelectItem>
-                      <SelectItem value="None">None</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>SMTP Host</Label>
+                  <Input value={settings.smtpHost} onChange={(e) => update("smtpHost", e.target.value)} placeholder="smtp.trueworks.com" />
                 </div>
-                <div className="space-y-2"><Label>From Email</Label><Input defaultValue="noreply@trueworks.com" /></div>
+                <div className="space-y-2">
+                  <Label>SMTP Port</Label>
+                  <Input type="number" value={settings.smtpPort} onChange={(e) => update("smtpPort", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <Input value={settings.smtpUsername} onChange={(e) => update("smtpUsername", e.target.value)} placeholder="noreply@trueworks.com" />
+                </div>
+                <div className="space-y-2">
+                  <Label>From Email</Label>
+                  <Input value={settings.smtpFrom} onChange={(e) => update("smtpFrom", e.target.value)} placeholder="noreply@trueworks.com" />
+                </div>
               </div>
               <Button variant="outline" size="sm" className="mt-4">Test Connection</Button>
             </SectionCard>
@@ -226,7 +373,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Default Currency</Label>
-                  <Select defaultValue="UGX">
+                  <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
@@ -236,7 +383,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Tax Rate (%)</Label>
-                  <Input type="number" defaultValue="18" />
+                  <Input type="number" value={settings.taxRate} onChange={(e) => update("taxRate", Number(e.target.value))} />
                 </div>
               </div>
             </SectionCard>
@@ -246,12 +393,18 @@ export default function SettingsPage() {
             <SectionCard title="Download Settings">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Max Downloads Per Purchase</Label><Input type="number" defaultValue="5" /></div>
-                  <div className="space-y-2"><Label>Download Link Expiry (days)</Label><Input type="number" defaultValue="30" /></div>
+                  <div className="space-y-2">
+                    <Label>Max Downloads Per Purchase</Label>
+                    <Input type="number" value={settings.maxDownloadsPerPurchase} onChange={(e) => update("maxDownloadsPerPurchase", Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Download Link Expiry (days)</Label>
+                    <Input type="number" value={settings.downloadLinkExpiryDays} onChange={(e) => update("downloadLinkExpiryDays", Number(e.target.value))} />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Download Method</Label>
-                  <Select defaultValue="direct">
+                  <Select value={settings.downloadMethod} onValueChange={(v) => updateSelect("downloadMethod", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="direct">Direct Download</SelectItem>
@@ -261,12 +414,18 @@ export default function SettingsPage() {
                   </Select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div><Label>Require Login to Download</Label><p className="text-xs text-muted-foreground">Users must be logged in to download purchased files</p></div>
-                  <Switch defaultChecked />
+                  <div>
+                    <Label>Require Login to Download</Label>
+                    <p className="text-xs text-muted-foreground">Users must be logged in to download purchased files</p>
+                  </div>
+                  <Switch checked={settings.requireLoginToDownload} onCheckedChange={(v) => update("requireLoginToDownload", v)} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div><Label>Enable Download Notifications</Label><p className="text-xs text-muted-foreground">Send email when a download is available</p></div>
-                  <Switch defaultChecked />
+                  <div>
+                    <Label>Enable Download Notifications</Label>
+                    <p className="text-xs text-muted-foreground">Send email when a download is available</p>
+                  </div>
+                  <Switch checked={settings.downloadNotifications} onCheckedChange={(v) => update("downloadNotifications", v)} />
                 </div>
               </div>
             </SectionCard>
@@ -275,7 +434,7 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Storage Provider</Label>
-                  <Select defaultValue="local">
+                  <Select value={settings.storageProvider} onValueChange={(v) => updateSelect("storageProvider", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="local">Local</SelectItem>
@@ -288,10 +447,13 @@ export default function SettingsPage() {
                 <div className="p-4 rounded-lg bg-muted">
                   <div className="flex justify-between text-sm mb-1">
                     <span>Storage Used</span>
-                    <span className="text-muted-foreground">2.4 GB / 10 GB</span>
+                    <span className="text-muted-foreground">{settings.storageUsed} GB / {settings.storageMax} GB</span>
                   </div>
                   <div className="h-2.5 bg-border rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-primary" style={{ width: "24%" }} />
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${settings.storageMax > 0 ? (settings.storageUsed / settings.storageMax) * 100 : 0}%` }}
+                    />
                   </div>
                 </div>
               </div>
@@ -302,35 +464,35 @@ export default function SettingsPage() {
             <SectionCard title="Authentication">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div><Label>Two-Factor Authentication (2FA)</Label><p className="text-xs text-muted-foreground">Require 2FA for admin account access</p></div>
-                  <Switch />
+                  <div>
+                    <Label>Two-Factor Authentication (2FA)</Label>
+                    <p className="text-xs text-muted-foreground">Require 2FA for admin account access</p>
+                  </div>
+                  <Switch checked={settings.require2fa} onCheckedChange={(v) => update("require2fa", v)} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div><Label>Password Expiry</Label><p className="text-xs text-muted-foreground">Force password change every 90 days</p></div>
-                  <Switch defaultChecked />
+                  <div>
+                    <Label>Password Expiry</Label>
+                    <p className="text-xs text-muted-foreground">Force password change every {settings.passwordExpiryDays} days</p>
+                  </div>
+                  <Switch checked={settings.passwordExpiryDays > 0} onCheckedChange={(v) => update("passwordExpiryDays", v ? 90 : 0)} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Session Timeout (minutes)</Label><Input type="number" defaultValue="60" /></div>
-                  <div className="space-y-2"><Label>Max Login Attempts</Label><Input type="number" defaultValue="5" /></div>
+                  <div className="space-y-2">
+                    <Label>Session Timeout (minutes)</Label>
+                    <Input type="number" value={settings.sessionTimeoutMinutes} onChange={(e) => update("sessionTimeoutMinutes", Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Max Login Attempts</Label>
+                    <Input type="number" value={settings.maxLoginAttempts} onChange={(e) => update("maxLoginAttempts", Number(e.target.value))} />
+                  </div>
                 </div>
               </div>
             </SectionCard>
 
             <SectionCard title="Session Management">
               <div className="space-y-3">
-                {[
-                  { device: "Chrome on Windows", lastActive: "5 minutes ago", ip: "192.168.1.1" },
-                  { device: "Safari on macOS", lastActive: "2 hours ago", ip: "192.168.1.2" },
-                  { device: "Chrome on Android", lastActive: "1 day ago", ip: "192.168.1.3" },
-                ].map((session, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
-                      <span className="text-sm">{session.device}</span>
-                      <p className="text-xs text-muted-foreground">{session.lastActive} &middot; {session.ip}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-destructive">Revoke</Button>
-                  </div>
-                ))}
+                <p className="text-sm text-muted-foreground">No active sessions tracked</p>
               </div>
               <Button variant="outline" size="sm" className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white">Revoke All Sessions</Button>
             </SectionCard>
@@ -338,17 +500,23 @@ export default function SettingsPage() {
             <SectionCard title="API Security">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div><Label>API Rate Limiting</Label><p className="text-xs text-muted-foreground">Limit API requests to prevent abuse</p></div>
-                  <Switch defaultChecked />
+                  <div>
+                    <Label>API Rate Limiting</Label>
+                    <p className="text-xs text-muted-foreground">Limit API requests to prevent abuse</p>
+                  </div>
+                  <Switch checked={settings.apiRateLimiting} onCheckedChange={(v) => update("apiRateLimiting", v)} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div><Label>IP Whitelist</Label><p className="text-xs text-muted-foreground">Restrict admin access to specific IPs</p></div>
-                  <Switch />
+                  <div>
+                    <Label>IP Whitelist</Label>
+                    <p className="text-xs text-muted-foreground">Restrict admin access to specific IPs</p>
+                  </div>
+                  <Switch checked={settings.ipWhitelist} onCheckedChange={(v) => update("ipWhitelist", v)} />
                 </div>
                 <div className="space-y-2">
                   <Label>API Key</Label>
                   <div className="flex gap-2">
-                    <Input defaultValue="tw_sk_live_xxxxxxxxxxxx" readOnly className="font-mono" />
+                    <Input value="Not configured" readOnly className="font-mono" />
                     <Button variant="outline" size="sm"><Key className="h-4 w-4" /> Regenerate</Button>
                   </div>
                 </div>
@@ -359,8 +527,11 @@ export default function SettingsPage() {
       </Tabs>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button variant="outline">Cancel</Button>
-        <Button>Save Changes</Button>
+        <Button variant="outline" onClick={handleCancel} disabled={saving}>Cancel</Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          Save Changes
+        </Button>
       </div>
     </div>
   )

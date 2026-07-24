@@ -5,6 +5,8 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useAuth } from "@clerk/nextjs";
 import { getConvexClient } from "@/lib/convex";
 import { CartProvider } from "@/components/layout/cart-context";
+import { SettingsProvider } from "@/lib/settings-context";
+import { ThemeApply } from "@/components/layout/theme-apply";
 import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -18,8 +20,11 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const wrapped = (
     <CartProvider>
-      {children}
-      <Toaster />
+      <SettingsProvider>
+        <ThemeApply />
+        {children}
+        <Toaster />
+      </SettingsProvider>
     </CartProvider>
   );
 

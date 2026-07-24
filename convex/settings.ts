@@ -13,6 +13,38 @@ export const get = query({
   },
 });
 
+export const getPublic = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("settings").collect();
+    const result: Record<string, unknown> = {};
+    const publicKeys = [
+      "siteName", "siteTagline", "siteDescription", "siteUrl",
+      "primaryColor", "secondaryColor", "accentColor", "backgroundColor",
+      "surfaceColor", "foregroundColor", "headingFont", "bodyFont", "customCss",
+      "currency", "taxRate", "pesapalEnabled",
+    ];
+    for (const setting of all) {
+      if (publicKeys.includes(setting.key)) {
+        result[setting.key] = setting.value;
+      }
+    }
+    return result;
+  },
+});
+
+export const getAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("settings").collect();
+    const result: Record<string, unknown> = {};
+    for (const setting of all) {
+      result[setting.key] = setting.value;
+    }
+    return result;
+  },
+});
+
 export const set = mutation({
   args: {
     key: v.string(),
@@ -33,5 +65,39 @@ export const set = mutation({
       value: args.value,
       updatedAt: Date.now(),
     });
+  },
+});
+
+export const setMultiple = mutation({
+  args: {
+    settings: v.array(v.object({ key: v.string(), value: v.any() })),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    for (const { key, value } of args.settings) {
+      const existing = await ctx.db
+        .query("settings")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .collect();
+      if (existing.length > 0) {
+        await ctx.db.patch(existing[0]._id, { value, updatedAt: Date.now() });
+      } else {
+        await ctx.db.insert("settings", { key, value, updatedAt: Date.now() });
+      }
+    }
+  },
+});
+
+export const remove = mutation({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const existing = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .collect();
+    if (existing.length > 0) {
+      await ctx.db.delete(existing[0]._id);
+    }
   },
 });
