@@ -159,7 +159,7 @@ export default function AdminHeader() {
                   >
                     <div className="mt-0.5 flex h-2 w-2 shrink-0 pt-1">
                       {!n.read ? (
-                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <span className="h-2 w-2 rounded-full bg-[#C9A227]" />
                       ) : (
                         <Check className="h-3.5 w-3.5 text-muted-foreground/60" />
                       )}
@@ -187,7 +187,7 @@ export default function AdminHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-lg px-2 text-foreground outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar className="h-7 w-7" size="sm">
-                <AvatarFallback className="bg-primary text-[11px] font-bold text-white">
+                <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
                   TW
                 </AvatarFallback>
               </Avatar>
@@ -199,7 +199,7 @@ export default function AdminHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary text-xs font-bold text-white">
+                  <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
                     TW
                   </AvatarFallback>
                 </Avatar>

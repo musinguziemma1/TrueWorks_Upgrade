@@ -12,8 +12,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Responsive
 import { formatPrice } from "@/lib/utils"
 import { useState } from "react"
 
-const COLORS = ["var(--color-primary)", "var(--color-secondary)", "var(--color-accent)", "#60A5FA", "#34D399", "#94A3B8"]
-const chartConfig = { value: { label: "Value", color: "var(--color-primary)" } }
+const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#34D399", "#94A3B8"]
+const chartConfig = { value: { label: "Value", color: "#0B2545" } }
 
 const paymentSeg = [
   { name: "MTN MoMo", value: 60, color: "#F59E0B" },
@@ -30,9 +30,9 @@ const funnelSteps = [
 ]
 
 const trafficSeg = [
-  { name: "Direct", value: 45, color: "var(--color-primary)" },
-  { name: "Search", value: 30, color: "var(--color-secondary)" },
-  { name: "Social", value: 15, color: "var(--color-accent)" },
+  { name: "Direct", value: 45, color: "#0B2545" },
+  { name: "Search", value: 30, color: "#4A6FA5" },
+  { name: "Social", value: 15, color: "#C9A227" },
   { name: "Email", value: 10, color: "#60A5FA" },
 ]
 
@@ -55,7 +55,7 @@ function MetricCard({ icon, label, value, trend }: { icon: React.ReactNode; labe
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">{icon}</div>
+          <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
           {trend !== undefined && (
             <span className={`inline-flex items-center gap-1 text-xs font-semibold ${trend >= 0 ? "text-green-600" : "text-red-600"}`}>
               {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
@@ -63,7 +63,7 @@ function MetricCard({ icon, label, value, trend }: { icon: React.ReactNode; labe
           )}
         </div>
         <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-        <p className="text-xl font-bold text-primary">{value}</p>
+        <p className="text-xl font-bold text-[#0B2545]">{value}</p>
       </CardContent>
     </Card>
   )
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
           breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Analytics" }]}
         />
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
         </div>
       </div>
     )
@@ -161,7 +161,7 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><TrendingUp className="h-5 w-5" /> Revenue Trend</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><TrendingUp className="h-5 w-5" /> Revenue Trend</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
               <LineChart data={revenueData}>
@@ -169,14 +169,14 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}M`} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} dot={{ fill: "var(--color-primary)" }} />
+                <Line type="monotone" dataKey="revenue" stroke="#0B2545" strokeWidth={2} dot={{ fill: "#0B2545" }} />
               </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><BarChart3 className="h-5 w-5" /> Orders Trend</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><BarChart3 className="h-5 w-5" /> Orders Trend</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
               <BarChart data={revenueData}>
@@ -184,14 +184,14 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="orders" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="orders" fill="#0B2545" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><Package className="h-5 w-5" /> Product Performance</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Package className="h-5 w-5" /> Product Performance</CardTitle></CardHeader>
           <CardContent>
             {productPerformance.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No completed product sales yet.</p>
@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
                       <span className="text-muted-foreground text-xs">{formatPrice(item.totalRevenue)}</span>
                     </div>
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${(item.totalSales / maxProductSales) * 100}%` }} />
+                      <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${(item.totalSales / maxProductSales) * 100}%` }} />
                     </div>
                   </div>
                 ))}
@@ -214,7 +214,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><CreditCard className="h-5 w-5" /> Payment Methods</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><CreditCard className="h-5 w-5" /> Payment Methods</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="aspect-auto h-[280px]">
               <RePieChart>
@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><PieChart className="h-5 w-5" /> Traffic Sources</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><PieChart className="h-5 w-5" /> Traffic Sources</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="aspect-auto h-[280px]">
               <RePieChart>
@@ -244,14 +244,14 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><ArrowUpRight className="h-5 w-5" /> Visitor-to-Purchase Funnel</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Visitor-to-Purchase Funnel</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3 pt-2">
               {funnelSteps.map((step) => (
                 <div key={step.label} className="flex items-center gap-4">
                   <div className="w-32 shrink-0 text-sm text-muted-foreground">{step.label}</div>
-                  <div className="flex-1 h-10 rounded-lg bg-primary/10 flex items-center justify-between px-4 relative overflow-hidden">
-                    <div className="absolute left-0 top-0 h-full bg-primary/20 rounded-lg" style={{ width: `${step.pct}%` }} />
+                    <div className="flex-1 h-10 rounded-lg bg-[#0B2545]/10 flex items-center justify-between px-4 relative overflow-hidden">
+                      <div className="absolute left-0 top-0 h-full bg-[#0B2545]/20 rounded-lg" style={{ width: `${step.pct}%` }} />
                     <span className="relative z-10 text-sm font-medium">{step.value}</span>
                     <span className="relative z-10 text-xs text-muted-foreground">{step.pct}%</span>
                   </div>
@@ -264,10 +264,10 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><Globe className="h-5 w-5" /> Geographic Sales Distribution</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales Distribution</CardTitle></CardHeader>
           <CardContent>
             <div className="h-64 rounded-lg bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center relative overflow-hidden">
-              <Globe className="h-12 w-12 text-primary/30" />
+              <Globe className="h-12 w-12 text-[#0B2545]/30" />
               <div className="absolute bottom-4 left-4 right-4 flex justify-around text-xs text-muted-foreground">
                 <span>Kampala: 42%</span>
                 <span>Jinja: 18%</span>
@@ -280,7 +280,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4 pt-2">
               {ltvSegments.map((seg) => (
@@ -290,7 +290,7 @@ export default function AnalyticsPage() {
                     <span className="text-muted-foreground">{seg.count} customers ({seg.pct}%)</span>
                   </div>
                   <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${seg.pct}%` }} />
+                    <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${seg.pct}%` }} />
                   </div>
                 </div>
               ))}
