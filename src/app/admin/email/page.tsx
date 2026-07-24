@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Send, TrendingUp, Users, FileText, Plus, Edit3, Copy, Trash2, Search, Filter } from "lucide-react"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
+import { Mail, Send, TrendingUp, Users, FileText, Plus, Edit3, Copy, Trash2, Search, Filter, Loader2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -53,6 +55,9 @@ export default function EmailPage() {
   const [page, setPage] = useState(1)
   const perPage = 8
 
+  const subscribers = useQuery(api.subscribers.list, {})
+  const totalSubscribers = subscribers?.length ?? 0
+
   const filtered = campaigns.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.subject.toLowerCase().includes(search.toLowerCase())) return false
     if (statusFilter !== "All" && c.status !== statusFilter) return false
@@ -74,11 +79,11 @@ export default function EmailPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard icon={<Users className="h-5 w-5" />} label="Subscribers" value="2,341" trend="9.8%" />
-        <KpiCard icon={<TrendingUp className="h-5 w-5" />} label="Growth" value="+156" trend="7.1%" />
-        <KpiCard icon={<Send className="h-5 w-5" />} label="Campaigns" value="24" trend="3" />
-        <KpiCard icon={<Mail className="h-5 w-5" />} label="Open Rate" value="52.3%" trend="4.2%" />
-        <KpiCard icon={<FileText className="h-5 w-5" />} label="Click Rate" value="18.7%" trend="2.1%" />
+        <KpiCard icon={<Users className="h-5 w-5" />} label="Subscribers" value={totalSubscribers.toLocaleString()} trend={`${totalSubscribers} total`} />
+        <KpiCard icon={<TrendingUp className="h-5 w-5" />} label="Active Subscribers" value={subscribers?.filter((s) => s.active).length.toLocaleString() ?? "0"} trend="Active" />
+        <KpiCard icon={<Send className="h-5 w-5" />} label="Campaigns" value={campaigns.length.toString()} trend="Total" />
+        <KpiCard icon={<Mail className="h-5 w-5" />} label="Open Rate" value="—" trend="N/A" />
+        <KpiCard icon={<FileText className="h-5 w-5" />} label="Click Rate" value="—" trend="N/A" />
       </div>
 
       <Tabs defaultValue="campaigns">

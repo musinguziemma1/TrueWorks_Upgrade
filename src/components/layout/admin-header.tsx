@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@convex/_generated/api"
 import {
   Search,
   Bell,
@@ -41,6 +43,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { useAdminSidebar } from "./admin-sidebar-context"
+import { formatPrice } from "@/lib/utils"
 
 const searchLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -51,30 +54,6 @@ const searchLinks = [
   { label: "Content", href: "/admin/content", icon: FileText },
   { label: "Email Marketing", href: "/admin/email", icon: Mail },
   { label: "Coupons", href: "/admin/coupons", icon: Percent },
-]
-
-const notifications = [
-  {
-    id: 1,
-    title: "New order received",
-    description: "Order #4821 for $129.00",
-    time: "2 min ago",
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "Product stock low",
-    description: "Strategic Ops Toolkit is running low",
-    time: "1 hr ago",
-    unread: true,
-  },
-  {
-    id: 3,
-    title: "Weekly report ready",
-    description: "Your analytics report is available",
-    time: "3 hr ago",
-    unread: false,
-  },
 ]
 
 function getPageTitle(pathname: string) {
@@ -90,8 +69,23 @@ export default function AdminHeader() {
   const { toggleMobile } = useAdminSidebar()
   const [searchOpen, setSearchOpen] = useState(false)
 
+  const notifications = useQuery(api.notifications.list, {})
+  const markRead = useMutation(api.notifications.markRead)
+
   const pageTitle = getPageTitle(pathname)
-  const unreadCount = notifications.filter((n) => n.unread).length
+  const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
+
+  function timeAgo(timestamp: number) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000)
+    if (seconds < 60) return "Just now"
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+    return new Date(timestamp).toLocaleDateString()
+  }
 
   return (
     <>
@@ -152,22 +146,26 @@ export default function AdminHeader() {
               </div>
               <DropdownMenuSeparator className="my-0" />
               <DropdownMenuGroup>
-                {notifications.map((notification) => (
+                {notifications?.slice(0, 5).map((n) => (
                   <DropdownMenuItem
-                    key={notification.id}
+                    key={n._id}
                     className="flex cursor-pointer items-start gap-3 rounded-none px-4 py-3 focus:bg-muted"
+                    onClick={() => {
+                      if (!n.read) markRead({ id: n._id })
+                      if (n.link) router.push(n.link)
+                    }}
                   >
                     <div className="mt-0.5 flex h-2 w-2 shrink-0 pt-1">
-                      {notification.unread ? (
+                      {!n.read ? (
                         <span className="h-2 w-2 rounded-full bg-[#C9A227]" />
                       ) : (
                         <Check className="h-3.5 w-3.5 text-muted-foreground/60" />
                       )}
                     </div>
                     <div className="flex-1 space-y-0.5">
-                      <p className="text-sm font-medium text-foreground">{notification.title}</p>
-                      <p className="text-xs text-muted-foreground">{notification.description}</p>
-                      <p className="text-[10px] text-muted-foreground/60">{notification.time}</p>
+                      <p className="text-sm font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground/60">{timeAgo(n.createdAt)}</p>
                     </div>
                   </DropdownMenuItem>
                 ))}

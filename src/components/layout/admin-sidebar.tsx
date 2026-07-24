@@ -18,6 +18,7 @@ import {
   FileBarChart,
   Shield,
   Settings,
+  Bell,
   LifeBuoy,
   GraduationCap,
   Briefcase,
@@ -78,6 +79,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" /> },
       { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
+      { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" /> },
       { label: "Support", href: "/admin/support", icon: <LifeBuoy className="h-4 w-4" /> },
     ],
   },
