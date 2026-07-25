@@ -140,19 +140,48 @@ export default function StoreContent() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Hero */}
-      <div className="border-b border-border bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
-            The Store
-          </p>
-          <h1 className="mt-3 font-heading text-3xl font-semibold text-primary md:text-4xl lg:text-[2.75rem]">
-            Premium Templates &amp; Business Systems
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
-            Professional-grade Excel templates and dashboards built for African
-            organizations. Pay securely, download instantly, and put them to work
-            the same day.
-          </p>
+      <div className="relative overflow-hidden border-b border-border bg-gradient-to-br from-primary via-primary-dark to-secondary">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 texture-dots opacity-30" />
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+
+        <div className="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-sm border border-white/10 mb-6">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+              The Store
+            </div>
+            <h1 className="font-heading text-3xl font-bold text-white md:text-4xl lg:text-5xl leading-tight">
+              Premium Templates &amp;<br />
+              <span className="text-gradient-gold">Business Systems</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 lg:text-lg">
+              Professional-grade Excel templates and dashboards built for African
+              organizations. Pay securely, download instantly, and put them to work
+              the same day.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/60">
+              <span className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                  ✓
+                </span>
+                Instant Download
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                  ✓
+                </span>
+                Secure Payment
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                  ✓
+                </span>
+                30-Day Guarantee
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -190,7 +219,10 @@ export default function StoreContent() {
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-muted">
                 {isLoading ? (
-                  "Loading templates..."
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    Loading templates...
+                  </span>
                 ) : (
                   <>
                     Showing{" "}
@@ -205,33 +237,56 @@ export default function StoreContent() {
             {isLoading ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-96 animate-pulse rounded-xl border border-border bg-white" />
+                  <div key={i} className="overflow-hidden rounded-2xl border border-border bg-white">
+                    <div className="h-48 animate-pulse bg-gradient-to-br from-surface to-border/30" />
+                    <div className="p-5 space-y-3">
+                      <div className="h-5 w-3/4 animate-pulse rounded-lg bg-surface" />
+                      <div className="h-4 w-full animate-pulse rounded bg-surface" />
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-surface" />
+                      <div className="flex gap-2 pt-2">
+                        <div className="h-3 w-12 animate-pulse rounded bg-surface" />
+                        <div className="h-3 w-16 animate-pulse rounded bg-surface" />
+                      </div>
+                      <div className="pt-3 border-t border-border/50">
+                        <div className="h-6 w-24 animate-pulse rounded bg-surface" />
+                      </div>
+                      <div className="h-11 w-full animate-pulse rounded-xl bg-surface" />
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : paginated.length > 0 ? (
               <motion.div
                 key={activeCategory + search + sort + currentPage + JSON.stringify(priceRange) + minRating + fileTypes.join() + onSaleOnly + featuredOnly + industries.join()}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3"
               >
-                {paginated.map((product) => (
-                  <ProductCard key={product._id} product={product} />
+                {paginated.map((product, i) => (
+                  <motion.div
+                    key={product._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
                 ))}
               </motion.div>
             ) : (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-white py-24 text-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-surface">
-                  <PackageSearch className="h-7 w-7 text-muted" />
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-28 text-center">
+                <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface">
+                  <PackageSearch className="h-9 w-9 text-muted/60" />
                 </span>
-                <p className="mt-5 font-heading text-xl font-semibold text-primary">
+                <p className="mt-6 font-heading text-xl font-semibold text-primary">
                   No templates found
                 </p>
-                <p className="mt-2 max-w-sm text-sm text-muted">
-                  Try adjusting your filters or search terms.
+                <p className="mt-2 max-w-sm text-sm text-muted leading-relaxed">
+                  We couldn&apos;t find any templates matching your filters.
+                  Try adjusting your search or browse a different category.
                 </p>
-                <Button onClick={reset} className="mt-6">
+                <Button onClick={reset} className="mt-8 rounded-xl px-6">
                   Clear all filters
                 </Button>
               </div>
