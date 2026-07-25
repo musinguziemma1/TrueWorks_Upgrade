@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { ExcelPreview } from "@/components/ui/excel-preview";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Id } from "@convex/_generated/dataModel";
@@ -291,6 +292,11 @@ export default function ProductDetail() {
                     </span>
                   )}
                 </div>
+                {p.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(p.fileType) && (
+                  <div className="mt-4">
+                    <ExcelPreview url={p.downloadableFile} fileName={p.name} />
+                  </div>
+                )}
               </div>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">

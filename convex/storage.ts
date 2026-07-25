@@ -2,7 +2,7 @@ import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const uploadFile = action({
   args: {
@@ -13,7 +13,7 @@ export const uploadFile = action({
   },
   handler: async (ctx, args) => {
     const me = await ctx.runQuery(api.users.current, {});
-    if (!me || me.role !== "admin") throw new Error("Forbidden");
+    if (!me || (me.role !== "admin" && me.role !== "owner" && me.role !== "editor")) throw new Error("Forbidden");
     const storageId = await ctx.storage.store(new Blob([args.content]));
 
     const url = (await ctx.storage.getUrl(storageId)) ?? undefined;
@@ -60,7 +60,7 @@ export const getFileUrl = action({
 export const listFiles = query({
   args: { folder: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     if (args.folder && args.folder !== "") {
       return await ctx.db
         .query("mediaFiles")

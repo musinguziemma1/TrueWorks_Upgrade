@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Shield, Search } from "lucide-react";
+import { Shield, Search, UserPlus, Trash2, Ban, CheckCircle, LogOut, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -27,19 +29,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-function RoleBadge({ role }: { role: "admin" | "customer" }) {
-  return role === "admin" ? (
-    <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-      Admin
-    </Badge>
-  ) : (
-    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-      Customer
-    </Badge>
-  );
-}
+const ROLE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Administrator",
+  editor: "Editor",
+  viewer: "Viewer",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  owner: "bg-amber-100 text-amber-800 border-amber-200",
+  admin: "bg-purple-100 text-purple-800 border-purple-200",
+  editor: "bg-blue-100 text-blue-800 border-blue-200",
+  viewer: "bg-gray-100 text-gray-800 border-gray-200",
+};
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  owner: "Full access to everything. Cannot be demoted or deleted.",
+  admin: "Full access except user management and settings.",
+  editor: "Can manage products, content, resources, and orders.",
+  viewer: "Read-only access to the dashboard.",
+};
 
 function initials(name?: string, email?: string) {
   const src = (name || email || "?").trim();
@@ -58,9 +85,21 @@ function fmtDate(ts: number) {
 export default function UsersPage() {
   const users = useQuery(api.users.list);
   const me = useQuery(api.users.current);
+  const { signOut } = useAuth();
   const setRole = useMutation(api.users.setRole);
+  const suspendUser = useMutation(api.users.suspendUser);
+  const activateUser = useMutation(api.users.activateUser);
+  const deleteUser = useMutation(api.users.deleteUser);
+  const inviteUser = useMutation(api.users.inviteUser);
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "editor" | "viewer">("viewer");
+  const [deleteTarget, setDeleteTarget] = useState<Id<"users"> | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
   const perPage = 10;
 
   const isLoading = users === undefined;
@@ -73,12 +112,62 @@ export default function UsersPage() {
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage);
 
-  async function changeRole(userId: Id<"users">, role: "admin" | "customer") {
+  const isOwner = me?.role === "owner";
+  const isAdmin = me?.role === "admin" || me?.role === "owner";
+  const isEditor = me?.role === "editor";
+
+  async function changeRole(userId: Id<"users">, role: "owner" | "admin" | "editor" | "viewer") {
     try {
       await setRole({ userId, role });
-      toast.success(`Role updated to ${role}`);
+      toast.success(`Role updated to ${ROLE_LABELS[role]}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update role");
+    }
+  }
+
+  async function handleSuspend(userId: Id<"users">) {
+    try {
+      await suspendUser({ userId });
+      toast.success("User suspended");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to suspend user");
+    }
+  }
+
+  async function handleActivate(userId: Id<"users">) {
+    try {
+      await activateUser({ userId });
+      toast.success("User activated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to activate user");
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser({ userId: deleteTarget });
+      toast.success("User deleted");
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete user");
+    }
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+    try {
+      await inviteUser({ email: inviteEmail.trim(), role: inviteRole });
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteRole("viewer");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send invitation");
     }
   }
 
@@ -91,12 +180,33 @@ export default function UsersPage() {
           { label: "Dashboard", href: "/admin" },
           { label: "Users & Roles" },
         ]}
+        action={
+          (isOwner || isAdmin) ? (
+            <Button onClick={() => setInviteOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite User
+            </Button>
+          ) : undefined
+        }
       />
 
+      {/* Role Legend */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Object.entries(ROLE_LABELS).map(([role, label]) => (
+          <div key={role} className="rounded-lg border p-3">
+            <Badge variant="outline" className={`mb-1.5 ${ROLE_COLORS[role]}`}>
+              {label}
+            </Badge>
+            <p className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search users..."
+          placeholder="Search users by name or email..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -106,29 +216,35 @@ export default function UsersPage() {
         />
       </div>
 
+      {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
+          <CardTitle>Users ({filtered.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <p className="p-6 text-sm text-muted-foreground">Loading…</p>
+            <p className="p-6 text-sm text-muted-foreground">Loading...</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Change role</TableHead>
+                  <TableHead>Logins</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginated.map((u) => {
                   const isSelf = me?._id === u._id;
+                  const isTargetOwner = u.role === "owner";
+                  const canManage = !isSelf && !isTargetOwner && (isOwner || isAdmin);
+                  const isSuspended = u.status === "suspended";
+
                   return (
-                    <TableRow key={u._id}>
+                    <TableRow key={u._id} className={isSuspended ? "opacity-60" : ""}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -141,37 +257,97 @@ export default function UsersPage() {
                           </Avatar>
                           <div>
                             <p className="font-medium">{u.name ?? "—"}</p>
+                            <p className="text-xs text-muted-foreground">{u.email}</p>
                             {isSelf && (
-                              <p className="text-xs text-muted-foreground">(you)</p>
+                              <Badge variant="outline" className="mt-0.5 text-[10px]">You</Badge>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {u.email}
+                      <TableCell>
+                        <Badge variant="outline" className={ROLE_COLORS[u.role]}>
+                          {ROLE_LABELS[u.role] ?? u.role}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <RoleBadge role={u.role} />
+                        <Badge
+                          variant="outline"
+                          className={
+                            isSuspended
+                              ? "bg-red-100 text-red-800 border-red-200"
+                              : "bg-green-100 text-green-800 border-green-200"
+                          }
+                        >
+                          {isSuspended ? "Suspended" : "Active"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {fmtDate(u.createdAt)}
                       </TableCell>
+                      <TableCell className="text-sm">
+                        {u.loginCount ?? 0}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Select
-                          value={u.role}
-                          onValueChange={(v) =>
-                            changeRole(u._id, v as "admin" | "customer")
-                          }
-                          disabled={isSelf}
-                        >
-                          <SelectTrigger className="ml-auto h-8 w-36">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="customer">Customer</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {canManage ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted">
+                              <MoreVertical className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <div className="px-2 py-1.5">
+                                <p className="text-xs font-medium text-muted-foreground">Change Role</p>
+                              </div>
+                              {(["admin", "editor", "viewer"] as const).map((role) => (
+                                <DropdownMenuItem
+                                  key={role}
+                                  onClick={() => changeRole(u._id, role)}
+                                  disabled={u.role === role}
+                                >
+                                  <Badge variant="outline" className={`mr-2 text-[10px] ${ROLE_COLORS[role]}`}>
+                                    {ROLE_LABELS[role]}
+                                  </Badge>
+                                  {u.role === role && <CheckCircle className="ml-auto h-3.5 w-3.5" />}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              {isSuspended ? (
+                                <DropdownMenuItem onClick={() => handleActivate(u._id)}>
+                                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                  Activate
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => handleSuspend(u._id)}>
+                                  <Ban className="mr-2 h-4 w-4 text-orange-600" />
+                                  Suspend
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setDeleteTarget(u._id);
+                                  setDeleteOpen(true);
+                                }}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : isTargetOwner ? (
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
+                            Owner
+                          </Badge>
+                        ) : isSelf ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => signOut({ redirectUrl: "/" })}
+                          >
+                            <LogOut className="mr-1 h-3.5 w-3.5" />
+                            Sign out
+                          </Button>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   );
@@ -186,17 +362,18 @@ export default function UsersPage() {
               description={
                 search
                   ? "Try a different search."
-                  : "Users will appear here after they sign up."
+                  : "Invite your first team member to get started."
               }
             />
           )}
         </CardContent>
       </Card>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {filtered.length} users · Page {safePage} of {totalPages}
+            {filtered.length} users - Page {safePage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -218,6 +395,74 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* Invite Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite User</DialogTitle>
+            <DialogDescription>
+              Send an invitation to join the admin panel. They will receive an email with a link to sign up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                placeholder="user@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as "admin" | "editor" | "viewer")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrator - Full access</SelectItem>
+                  <SelectItem value="editor">Editor - Manage content</SelectItem>
+                  <SelectItem value="viewer">Viewer - Read only</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[inviteRole]}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInvite}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Send Invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The user will be permanently removed from the system and lose access immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

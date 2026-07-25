@@ -549,7 +549,7 @@ const settingsSeed = [
 const resourcesSeed = [
   {
     title: "How to Build a Hospital KPI Dashboard That Drives Better Patient Outcomes",
-    slug: "how-to-build-a-hospital-kpi-dashboard",
+    slug: "how-to-build-a-hospital-kpi-dashboard-that-drives-better-patient-outcomes",
     description: "Learn how healthcare administrators can design and implement effective KPI dashboards that improve operational efficiency, patient care, and regulatory compliance.",
     content: "A comprehensive guide covering bed occupancy tracking, patient wait times, revenue per bed, and departmental performance metrics. Includes step-by-step instructions for setting up your dashboard in Excel or Google Sheets.",
     category: "Guide",

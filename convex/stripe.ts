@@ -1,0 +1,265 @@
+import { httpAction } from "./_generated/server";
+import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const STRIPE_API_BASE = "https://api.stripe.com/v1";
+
+async function stripePost(path: string, params?: Record<string, string>) {
+  const body = params ? new URLSearchParams(params).toString() : undefined;
+  const res = await fetch(`${STRIPE_API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...(body ? {} : {}),
+    },
+    body,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Stripe API error ${res.status}`);
+  }
+  return res.json();
+}
+
+async function stripeGet(path: string) {
+  const res = await fetch(`${STRIPE_API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Stripe API error ${res.status}`);
+  }
+  return res.json();
+}
+
+async function verifyStripeSignature(
+  payload: string,
+  sigHeader: string,
+  secret: string
+): Promise<Record<string, unknown>> {
+  const parts = sigHeader.split(",").reduce(
+    (acc, part) => {
+      const [key, val] = part.split("=");
+      if (key && val) acc[key] = val;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  const timestamp = parts["t"];
+  const expectedSig = parts["v1"];
+
+  if (!timestamp || !expectedSig) {
+    throw new Error("Invalid stripe-signature format");
+  }
+
+  const signedPayload = `${timestamp}.${payload}`;
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const data = encoder.encode(signedPayload);
+
+  const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
+  const computedSig = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (computedSig !== expectedSig) {
+    throw new Error("Invalid Stripe webhook signature");
+  }
+
+  const tolerance = 300_000;
+  const eventTime = Number(timestamp) * 1000;
+  if (Math.abs(Date.now() - eventTime) > tolerance) {
+    throw new Error("Stripe webhook timestamp too old");
+  }
+
+  return JSON.parse(payload) as Record<string, unknown>;
+}
+
+export const createPaymentIntent = httpAction(async (ctx, req) => {
+  if (!STRIPE_SECRET_KEY) {
+    return new Response(JSON.stringify({ error: "Stripe not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const body = await req.json();
+  const { orderId, amount, currency, customerEmail, customerName } = body;
+
+  if (!orderId || !amount || !customerEmail) {
+    return new Response(JSON.stringify({ error: "Missing required fields" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const params: Record<string, string> = {
+      amount: String(Math.round(amount)),
+      currency: currency || "usd",
+      "metadata[orderId]": orderId,
+      "metadata[customerEmail]": customerEmail,
+      "metadata[customerName]": customerName || "",
+      description: `TrueWorks Order ${orderId}`,
+      "receipt_email": customerEmail,
+    };
+
+    const pi = await stripePost("/payment_intents", params);
+
+    await ctx.runMutation(api.payments.create, {
+      orderId,
+      paymentId: pi.id,
+      provider: "stripe",
+      method: "Card",
+      amount,
+      currency: currency || "usd",
+      status: "pending",
+      customerEmail,
+      customerName: customerName || "",
+      metadata: { clientSecret: pi.client_secret },
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        clientSecret: pi.client_secret,
+        paymentIntentId: pi.id,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Payment intent creation failed";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+});
+
+export const handleStripeWebhook = httpAction(async (ctx, req) => {
+  if (!STRIPE_WEBHOOK_SECRET) {
+    return new Response("Missing STRIPE_WEBHOOK_SECRET", { status: 500 });
+  }
+
+  const payload = await req.text();
+  const sig = req.headers.get("stripe-signature");
+
+  if (!sig) {
+    return new Response("Missing stripe-signature header", { status: 400 });
+  }
+
+  let event: Record<string, unknown>;
+  try {
+    event = await verifyStripeSignature(payload, sig, STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Webhook verification failed";
+    return new Response(`Webhook Error: ${message}`, { status: 400 });
+  }
+
+  const eventType = event.type as string;
+  const dataObject = event.data as { object?: Record<string, unknown> };
+  const pi = dataObject?.object as Record<string, unknown> | undefined;
+  if (!pi) {
+    return new Response("ok", { status: 200 });
+  }
+
+  const metadata = (pi.metadata ?? {}) as Record<string, string>;
+
+  if (eventType === "payment_intent.succeeded") {
+    const orderId = metadata.orderId as Id<"orders"> | undefined;
+    if (orderId) {
+      const payment = await ctx.runQuery(api.payments.getByPaymentId, {
+        paymentId: pi.id as string,
+      });
+
+      if (payment) {
+        await ctx.runMutation(api.payments.updateStatus, {
+          id: payment._id,
+          status: "completed",
+          metadata: { ...payment.metadata, latestCharge: pi.latest_charge },
+        });
+
+        await ctx.runMutation(api.orders.updateFromPayment, {
+          orderId,
+          paymentStatus: "completed",
+          orderStatus: "processing",
+          paymentId: pi.id as string,
+        });
+
+        const order = await ctx.runQuery(api.orders.getById, { id: orderId });
+        if (order) {
+          for (const item of order.items) {
+            const product = await ctx.runQuery(api.products.getById, {
+              id: item.productId,
+            });
+            if (product?.downloadableFile) {
+              const expiryDays = product.downloadExpiry ?? 30;
+              await ctx.runMutation(api.downloads.create, {
+                orderId,
+                productId: item.productId,
+                email: order.customerEmail,
+                downloadUrl: product.downloadableFile,
+                downloadCount: 0,
+                remainingDownloads: product.downloadLimit ?? 10,
+                expiresAt: Date.now() + expiryDays * 24 * 60 * 60 * 1000,
+                status: "active",
+              });
+            }
+          }
+
+          await ctx.runMutation(api.orders.updateFromPayment, {
+            orderId,
+            paymentStatus: "completed",
+            orderStatus: "completed",
+            paymentId: pi.id as string,
+          });
+        }
+
+        await ctx.runMutation(api.notifications.createPublic, {
+          type: "order",
+          title: "Payment Received",
+          message: `Stripe payment of ${(pi.amount as number) / 100} ${(pi.currency as string)?.toUpperCase()} completed for order ${orderId}`,
+          link: "/admin/orders",
+        });
+      }
+    }
+  } else if (eventType === "payment_intent.payment_failed") {
+    const orderId = metadata.orderId as Id<"orders"> | undefined;
+    if (orderId) {
+      const payment = await ctx.runQuery(api.payments.getByPaymentId, {
+        paymentId: pi.id as string,
+      });
+
+      if (payment) {
+        const lastError = (pi.last_payment_error ?? {}) as Record<string, unknown>;
+        await ctx.runMutation(api.payments.updateStatus, {
+          id: payment._id,
+          status: "failed",
+          metadata: { ...payment.metadata, failureReason: lastError.message },
+        });
+
+        await ctx.runMutation(api.orders.updateFromPayment, {
+          orderId,
+          paymentStatus: "failed",
+          orderStatus: "pending",
+        });
+
+        await ctx.runMutation(api.notifications.createPublic, {
+          type: "order",
+          title: "Payment Failed",
+          message: `Stripe payment failed for order ${orderId}: ${(lastError.message as string) ?? "Unknown error"}`,
+          link: "/admin/orders",
+        });
+      }
+    }
+  }
+
+  return new Response("ok", { status: 200 });
+});

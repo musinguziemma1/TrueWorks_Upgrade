@@ -1,11 +1,11 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: { activeOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const all = await ctx.db.query("coupons").collect();
     if (args.activeOnly) {
       const now = Date.now();

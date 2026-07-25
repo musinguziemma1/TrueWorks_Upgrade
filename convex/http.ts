@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { Webhook } from "svix";
 import { internal } from "./_generated/api";
 import { initiatePayment, handleCallback } from "./pesapal";
+import { createPaymentIntent, handleStripeWebhook } from "./stripe";
 import { createCheckoutOrder } from "./checkout";
 import {
   sendOrderConfirmation,
@@ -93,7 +94,7 @@ http.route({
         typeof data.public_metadata === "object" &&
         (data.public_metadata as { role?: unknown }).role;
       const publicRole =
-        pmRole === "admin" || pmRole === "customer" ? pmRole : undefined;
+        pmRole === "owner" || pmRole === "admin" || pmRole === "editor" || pmRole === "viewer" ? pmRole : undefined;
 
       await ctx.runMutation(internal.users.upsertFromClerk, {
         clerkId: data.id,
@@ -165,6 +166,18 @@ http.route({
   path: "/email/newsletter",
   method: "POST",
   handler: sendNewsletter,
+});
+
+http.route({
+  path: "/stripe/create-payment-intent",
+  method: "POST",
+  handler: createPaymentIntent,
+});
+
+http.route({
+  path: "/stripe/webhook",
+  method: "POST",
+  handler: handleStripeWebhook,
 });
 
 export default http;

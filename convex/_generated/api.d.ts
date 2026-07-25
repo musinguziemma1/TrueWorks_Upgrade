@@ -30,6 +30,7 @@ import type * as reviews from "../reviews.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as storage from "../storage.js";
+import type * as stripe from "../stripe.js";
 import type * as subscribers from "../subscribers.js";
 import type * as users from "../users.js";
 
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   settings: typeof settings;
   storage: typeof storage;
+  stripe: typeof stripe;
   subscribers: typeof subscribers;
   users: typeof users;
 }>;

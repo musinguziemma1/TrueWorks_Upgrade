@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ExcelPreview } from "@/components/ui/excel-preview";
 
 interface Resource {
   _id: string;
@@ -189,26 +190,36 @@ export default function ResourceDetail({ resource }: { resource: Resource }) {
                     Attachments
                   </h3>
                   <div className="mt-4 space-y-3">
-                    {attachments.map((att, i) => (
-                      <a
-                        key={i}
-                        href={att.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-sm"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/[0.06]">
-                          <Download className="h-5 w-5 text-primary" />
+                    {attachments.map((att, i) => {
+                      const isExcel = /xlsx|xls|xlsm|xlsb|csv/i.test(att.name);
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-sm"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/[0.06]">
+                            <Download className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">{att.name}</p>
+                            <p className="text-xs text-muted">{formatFileSize(att.size)}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isExcel && (
+                              <ExcelPreview url={att.url} fileName={att.name} />
+                            )}
+                            <a
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white hover:bg-primary/90"
+                            >
+                              Download
+                            </a>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{att.name}</p>
-                          <p className="text-xs text-muted">{formatFileSize(att.size)}</p>
-                        </div>
-                        <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                          Download
-                        </span>
-                      </a>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

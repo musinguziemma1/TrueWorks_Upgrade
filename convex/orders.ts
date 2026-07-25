@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getCurrentUser, requireAdmin } from "./users";
+import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -9,7 +9,7 @@ export const list = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const q = args.paymentStatus
       ? ctx.db.query("orders").withIndex("by_paymentStatus", (q) =>
           q.eq("paymentStatus", args.paymentStatus as "pending" | "completed" | "failed" | "refunded")
@@ -41,7 +41,7 @@ export const getById = query({
     const order = await ctx.db.get(args.id);
     if (!order) return null;
     if (!me) return null;
-    if (me.role === "admin") return order;
+    if (me.role === "admin" || me.role === "owner" || me.role === "editor") return order;
     if (order.customerEmail === me.email) return order;
     return null;
   },
@@ -122,10 +122,36 @@ export const remove = mutation({
   },
 });
 
+export const updateFromPayment = mutation({
+  args: {
+    orderId: v.string(),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded"))),
+    orderStatus: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled"))),
+    paymentId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_orderNumber", (q) => q.eq("orderNumber", args.orderId))
+      .collect();
+
+    const order = orders[0];
+    if (!order) return null;
+
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    if (args.paymentStatus) patch.paymentStatus = args.paymentStatus;
+    if (args.orderStatus) patch.orderStatus = args.orderStatus;
+    if (args.paymentId) patch.paymentId = args.paymentId;
+
+    await ctx.db.patch(order._id, patch);
+    return order._id;
+  },
+});
+
 export const stats = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return { total: 0, totalRevenue: 0, pending: 0, completed: 0, refunded: 0, averageOrderValue: 0 };
     const all = await ctx.db.query("orders").collect();
     const totalRevenue = all.reduce((sum, o) => sum + (o.paymentStatus === "completed" ? o.total : 0), 0);
     const pending = all.filter((o) => o.paymentStatus === "pending").length;

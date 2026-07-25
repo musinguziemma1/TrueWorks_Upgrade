@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -8,7 +8,7 @@ export const list = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     if (args.type) {
       return await ctx.db
         .query("pages")

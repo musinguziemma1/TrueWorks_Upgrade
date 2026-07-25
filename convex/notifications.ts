@@ -1,11 +1,14 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { getCurrentUser } from "./users";
 
 export const list = query({
   args: {     unreadOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      return [];
+    }
     if (args.unreadOnly) {
       return await ctx.db
         .query("notifications")
@@ -19,7 +22,10 @@ export const list = query({
 export const count = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      return 0;
+    }
     const all = await ctx.db
       .query("notifications")
       .withIndex("by_read", (q) => q.eq("read", false))
@@ -36,7 +42,10 @@ export const create = mutation({
     link: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      throw new Error("Unauthorized: Admin access required");
+    }
     return await ctx.db.insert("notifications", {
       ...args,
       read: false,
@@ -48,7 +57,10 @@ export const create = mutation({
 export const markRead = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      throw new Error("Unauthorized: Admin access required");
+    }
     await ctx.db.patch(args.id, { read: true });
   },
 });
@@ -56,7 +68,10 @@ export const markRead = mutation({
 export const markAllRead = mutation({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      throw new Error("Unauthorized: Admin access required");
+    }
     const unread = await ctx.db
       .query("notifications")
       .withIndex("by_read", (q) => q.eq("read", false))
@@ -70,7 +85,10 @@ export const markAllRead = mutation({
 export const remove = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+      throw new Error("Unauthorized: Admin access required");
+    }
     await ctx.db.delete(args.id);
   },
 });

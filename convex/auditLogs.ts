@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -8,7 +8,7 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const q = args.entityType
       ? ctx.db.query("auditLogs").withIndex("by_entityType", (q) => q.eq("entityType", args.entityType!))
       : ctx.db.query("auditLogs").withIndex("by_createdAt", (q) => q);
@@ -26,7 +26,7 @@ export const create = mutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const me = await requireAdmin(ctx).then(() => null).catch(() => null);
+    const isAdmin = await requireAdminSilent(ctx);
     const identity = await ctx.auth.getUserIdentity();
     let actorId = undefined;
     if (identity) {

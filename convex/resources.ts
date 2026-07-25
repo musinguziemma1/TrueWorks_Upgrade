@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -10,7 +10,7 @@ export const list = query({
     featured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const q = args.category
       ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", args.category!))
       : args.status
@@ -163,7 +163,7 @@ export const remove = mutation({
 export const stats = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return { total: 0, published: 0, draft: 0, totalDownloads: 0 };
     const all = await ctx.db.query("resources").collect();
     const published = all.filter((r) => r.status === "published").length;
     const draft = all.filter((r) => r.status === "draft").length;

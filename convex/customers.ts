@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -8,7 +8,7 @@ export const list = query({
     newsletterSubscribed: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     if (args.newsletterSubscribed !== undefined) {
       const all = await ctx.db.query("customers").collect();
       return all.filter((c) => c.newsletterSubscribed === args.newsletterSubscribed);
@@ -29,7 +29,7 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("customers") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return null;
     return await ctx.db.get(args.id);
   },
 });

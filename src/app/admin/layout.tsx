@@ -14,6 +14,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     (sessionClaims?.metadata as { role?: string } | undefined)?.role ??
     (sessionClaims as { publicMetadata?: { role?: string } } | undefined)?.publicMetadata?.role
 
+  const validRoles = ["owner", "admin", "editor", "viewer"]
   let convexRole: string | null = null
   let token: string | null = null
   try {
@@ -31,7 +32,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     }
   }
 
-  if (claimsRole !== "admin" && convexRole !== "admin" && token) {
+  if (claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor" && token) {
     try {
       const cu = await currentUser()
       if (cu) {
@@ -52,7 +53,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     }
   }
 
-  if (claimsRole !== "admin" && convexRole !== "admin") redirect("/")
+  if (claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor") redirect("/")
 
   return (
     <AdminSidebarProvider>

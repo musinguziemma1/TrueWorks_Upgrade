@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,7 +15,15 @@ import {
   User,
   Loader2,
   Tag,
+  Globe,
 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import { useFormatPrice } from "@/lib/use-format-price";
@@ -26,7 +34,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-type PaymentMethod = "mtn" | "airtel" | "card";
+type PaymentProvider = "pesapal" | "stripe";
+type PesapalMethod = "mtn" | "airtel" | "card";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
+);
 
 const steps = [
   { label: "Cart", href: "/cart", done: true },
@@ -34,11 +47,87 @@ const steps = [
   { label: "Confirmation", href: "/order-confirmation", done: false },
 ];
 
-const paymentMethods: { value: PaymentMethod; label: string; note: string; icon: typeof Smartphone }[] = [
+const paymentProviders: {
+  value: PaymentProvider;
+  label: string;
+  note: string;
+  icon: typeof Smartphone;
+}[] = [
+  { value: "pesapal", label: "Pesapal", note: "Mobile Money & Card", icon: Smartphone },
+  { value: "stripe", label: "Stripe", note: "International Cards", icon: CreditCard },
+];
+
+const pesapalMethods: {
+  value: PesapalMethod;
+  label: string;
+  note: string;
+  icon: typeof Smartphone;
+}[] = [
   { value: "mtn", label: "MTN Mobile Money", note: "Pay with your MTN line", icon: Smartphone },
   { value: "airtel", label: "Airtel Money", note: "Pay with your Airtel line", icon: Smartphone },
   { value: "card", label: "Visa / Mastercard", note: "Debit or credit card", icon: CreditCard },
 ];
+
+function StripePaymentForm({
+  clientSecret,
+  onSuccess,
+  onError,
+}: {
+  clientSecret: string;
+  onSuccess: () => void;
+  onError: (msg: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/order-confirmation`,
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        onError(error.message ?? "Payment failed");
+      } else {
+        onSuccess();
+      }
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Payment failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <PaymentElement />
+      <Button
+        size="lg"
+        disabled={!stripe || processing}
+        onClick={handleSubmit}
+        className="w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+      >
+        {processing ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          "Pay with Card"
+        )}
+      </Button>
+    </div>
+  );
+}
 
 export default function CheckoutContent() {
   const formatPrice = useFormatPrice();
@@ -48,19 +137,60 @@ export default function CheckoutContent() {
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("mtn");
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>("pesapal");
+  const [pesapalMethod, setPesapalMethod] = useState<PesapalMethod>("mtn");
   const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [convexOrderId, setConvexOrderId] = useState<string | null>(null);
+
+  const createStripePaymentIntent = async () => {
+    try {
+      const response = await fetch(`/api/stripe/create-payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: convexOrderId,
+          amount: Math.round(totalPrice * 100),
+          currency: "usd",
+          customerEmail: email,
+          customerName: `${firstName} ${lastName}`,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStripeClientSecret(data.clientSecret);
+      } else {
+        throw new Error(data.error || "Failed to initialize payment");
+      }
+    } catch (err) {
+      toast.error("Payment initialization failed", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (paymentProvider === "stripe" && convexOrderId && !stripeClientSecret) {
+      createStripePaymentIntent();
+    }
+  }, [paymentProvider, convexOrderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
 
+    if (paymentProvider === "stripe" && orderId) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-      const response = await fetch(`${convexUrl}/api/checkout`, {
+      const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -70,7 +200,14 @@ export default function CheckoutContent() {
           })),
           customerEmail: email,
           customerName: `${firstName} ${lastName}`,
-          paymentMethod: paymentMethod === "mtn" ? "MTN MoMo" : paymentMethod === "airtel" ? "Airtel Money" : "Card",
+          paymentMethod:
+            paymentProvider === "pesapal"
+              ? pesapalMethod === "mtn"
+                ? "MTN MoMo"
+                : pesapalMethod === "airtel"
+                ? "Airtel Money"
+                : "Card"
+              : "Stripe Card",
           couponCode: appliedCoupon?.code || undefined,
         }),
       });
@@ -78,8 +215,34 @@ export default function CheckoutContent() {
       const result = await response.json();
 
       if (result.success) {
-        clearCart();
-        router.push(`/order-confirmation?order=${result.orderNumber}&total=${result.total}`);
+        setOrderId(result.orderNumber);
+        setConvexOrderId(result.orderId);
+
+        if (paymentProvider === "pesapal") {
+          const initiateResponse = await fetch("/api/pesapal/initiate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: result.orderId,
+              amount: result.total,
+              customerEmail: email,
+              customerName: `${firstName} ${lastName}`,
+              method:
+                pesapalMethod === "mtn"
+                  ? "MTN MoMo"
+                  : pesapalMethod === "airtel"
+                  ? "Airtel Money"
+                  : "Card",
+            }),
+          });
+          const pesapalResult = await initiateResponse.json();
+          if (pesapalResult.success && pesapalResult.redirectUrl) {
+            clearCart();
+            window.location.href = pesapalResult.redirectUrl;
+          } else {
+            throw new Error(pesapalResult.error || "Failed to initialize Pesapal payment");
+          }
+        }
       } else {
         throw new Error(result.error || "Checkout failed");
       }
@@ -90,6 +253,15 @@ export default function CheckoutContent() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleStripeSuccess = () => {
+    clearCart();
+    router.push(`/order-confirmation?order=${orderId}&total=${totalPrice}`);
+  };
+
+  const handleStripeError = (msg: string) => {
+    toast.error("Payment failed", { description: msg });
   };
 
   if (items.length === 0) {
@@ -106,7 +278,10 @@ export default function CheckoutContent() {
             Add some templates before checking out.
           </p>
           <Link href="/store" className="mt-8 inline-block">
-            <Button size="lg" className="gradient-gold px-7 font-semibold text-primary-dark hover:brightness-105">
+            <Button
+              size="lg"
+              className="gradient-gold px-7 font-semibold text-primary-dark hover:brightness-105"
+            >
               Browse the Store
             </Button>
           </Link>
@@ -141,7 +316,9 @@ export default function CheckoutContent() {
                 <span
                   className={cn(
                     "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold",
-                    step.label === "Checkout" ? "bg-white/20 text-white" : "bg-white text-muted shadow-sm"
+                    step.label === "Checkout"
+                      ? "bg-white/20 text-white"
+                      : "bg-white text-muted shadow-sm"
                   )}
                 >
                   {step.done ? <Check className="h-3 w-3" /> : idx + 1}
@@ -254,7 +431,9 @@ export default function CheckoutContent() {
                       onClick={() => {
                         if (couponCode) {
                           setAppliedCoupon({ code: couponCode, discount: 0 });
-                          toast.success("Coupon applied", { description: "Discount will be calculated at payment" });
+                          toast.success("Coupon applied", {
+                            description: "Discount will be calculated at payment",
+                          });
                         }
                       }}
                     >
@@ -263,7 +442,7 @@ export default function CheckoutContent() {
                   </div>
                   {appliedCoupon && (
                     <p className="mt-2 text-sm text-success">
-                      Coupon "{appliedCoupon.code}" applied
+                      Coupon &quot;{appliedCoupon.code}&quot; applied
                     </p>
                   )}
                 </CardContent>
@@ -275,22 +454,26 @@ export default function CheckoutContent() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06]">
                       <CreditCard className="h-4 w-4 text-primary" />
                     </span>
-                    Payment Method
+                    Payment Provider
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <RadioGroup
-                    value={paymentMethod}
+                    value={paymentProvider}
                     onValueChange={(v) => {
-                      if (v) setPaymentMethod(v as PaymentMethod);
+                      if (v) {
+                        setPaymentProvider(v as PaymentProvider);
+                        setStripeClientSecret(null);
+                        setOrderId(null);
+                      }
                     }}
-                    className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2"
                   >
-                    {paymentMethods.map((method) => {
-                      const selected = paymentMethod === method.value;
+                    {paymentProviders.map((provider) => {
+                      const selected = paymentProvider === provider.value;
                       return (
                         <Label
-                          key={method.value}
+                          key={provider.value}
                           className={cn(
                             "relative flex cursor-pointer flex-col gap-2 rounded-xl border-2 p-4 transition-all",
                             selected
@@ -298,7 +481,7 @@ export default function CheckoutContent() {
                               : "border-border bg-white hover:border-primary/30"
                           )}
                         >
-                          <RadioGroupItem value={method.value} className="sr-only" />
+                          <RadioGroupItem value={provider.value} className="sr-only" />
                           <div className="flex items-center justify-between">
                             <span
                               className={cn(
@@ -306,7 +489,7 @@ export default function CheckoutContent() {
                                 selected ? "gradient-gold text-primary-dark" : "bg-surface text-muted"
                               )}
                             >
-                              <method.icon className="h-4 w-4" />
+                              <provider.icon className="h-4 w-4" />
                             </span>
                             {selected && (
                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent">
@@ -314,21 +497,116 @@ export default function CheckoutContent() {
                               </span>
                             )}
                           </div>
-                          <span className={cn("text-sm font-semibold", selected ? "text-primary" : "text-foreground/80")}>
-                            {method.label}
+                          <span
+                            className={cn(
+                              "text-sm font-semibold",
+                              selected ? "text-primary" : "text-foreground/80"
+                            )}
+                          >
+                            {provider.label}
                           </span>
-                          <span className="text-xs text-muted">{method.note}</span>
+                          <span className="text-xs text-muted">{provider.note}</span>
                         </Label>
                       );
                     })}
                   </RadioGroup>
-                  <p className="mt-4 flex items-center gap-2 text-xs text-muted">
-                    <ShieldCheck className="h-4 w-4 text-success" />
-                    You will receive a prompt to authorize the payment on your
-                    {paymentMethod === "card" ? " bank app or card" : " phone"}.
-                  </p>
+
+                  {paymentProvider === "pesapal" && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Select mobile money provider:
+                      </p>
+                      <RadioGroup
+                        value={pesapalMethod}
+                        onValueChange={(v) => {
+                          if (v) setPesapalMethod(v as PesapalMethod);
+                        }}
+                        className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                      >
+                        {pesapalMethods.map((method) => {
+                          const selected = pesapalMethod === method.value;
+                          return (
+                            <Label
+                              key={method.value}
+                              className={cn(
+                                "flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-all",
+                                selected
+                                  ? "border-accent bg-accent/[0.06]"
+                                  : "border-border hover:border-primary/30"
+                              )}
+                            >
+                              <RadioGroupItem value={method.value} className="sr-only" />
+                              <method.icon
+                                className={cn(
+                                  "h-4 w-4",
+                                  selected ? "text-accent" : "text-muted"
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  "text-sm",
+                                  selected ? "font-semibold text-primary" : "text-foreground/80"
+                                )}
+                              >
+                                {method.label}
+                              </span>
+                            </Label>
+                          );
+                        })}
+                      </RadioGroup>
+                      <p className="flex items-center gap-2 text-xs text-muted">
+                        <ShieldCheck className="h-4 w-4 text-success" />
+                        You will receive a prompt to authorize the payment on your phone.
+                      </p>
+                    </div>
+                  )}
+
+                  {paymentProvider === "stripe" && (
+                    <div className="space-y-3">
+                      <p className="flex items-center gap-2 text-xs text-muted">
+                        <ShieldCheck className="h-4 w-4 text-success" />
+                        Secure card payment powered by Stripe.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {paymentProvider === "stripe" && stripeClientSecret && (
+                <Card className="border-border/70 shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06]">
+                        <CreditCard className="h-4 w-4 text-primary" />
+                      </span>
+                      Card Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Elements
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret: stripeClientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            colorPrimary: "#0B2545",
+                            colorBackground: "#ffffff",
+                            colorText: "#0B2545",
+                            borderRadius: "8px",
+                          },
+                        },
+                      }}
+                    >
+                      <StripePaymentForm
+                        clientSecret={stripeClientSecret}
+                        onSuccess={handleStripeSuccess}
+                        onError={handleStripeError}
+                      />
+                    </Elements>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <div className="lg:col-span-1">
@@ -339,7 +617,10 @@ export default function CheckoutContent() {
 
                 <div className="mt-4 max-h-60 divide-y divide-border overflow-y-auto">
                   {items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-3 py-3 first:pt-0">
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0"
+                    >
                       <div className="flex min-w-0 items-center gap-3">
                         <span
                           className={cn(
@@ -348,7 +629,9 @@ export default function CheckoutContent() {
                           )}
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {item.name}
+                          </p>
                           <p className="text-xs text-muted">Qty: {item.quantity}</p>
                         </div>
                       </div>
@@ -372,21 +655,41 @@ export default function CheckoutContent() {
                   </div>
                 </dl>
 
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={isSubmitting}
-                  className="mt-5 w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    `Pay ${formatPrice(totalPrice)}`
-                  )}
-                </Button>
+                {paymentProvider === "pesapal" && (
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isSubmitting}
+                    className="mt-5 w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      `Pay ${formatPrice(totalPrice)}`
+                    )}
+                  </Button>
+                )}
+
+                {paymentProvider === "stripe" && !stripeClientSecret && (
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isSubmitting}
+                    className="mt-5 w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Order...
+                      </>
+                    ) : (
+                      "Continue to Card Payment"
+                    )}
+                  </Button>
+                )}
 
                 <div className="mt-5 space-y-2.5">
                   <p className="flex items-center gap-2.5 text-xs text-muted">
@@ -400,8 +703,7 @@ export default function CheckoutContent() {
                 </div>
 
                 <p className="mt-5 border-t border-border pt-4 text-center text-xs text-muted">
-                  By completing this purchase you agree to our terms of service
-                  and privacy policy.
+                  By completing this purchase you agree to our terms of service and privacy policy.
                 </p>
               </div>
             </div>

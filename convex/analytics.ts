@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const get = query({
   args: { date: v.string() },
@@ -103,7 +103,7 @@ export const incrementPageViews = mutation({
 export const summary = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] };
     const all = await ctx.db.query("analytics").collect();
     const sorted = all.sort((a, b) => a.date.localeCompare(b.date));
     const totalRevenue = all.reduce((sum, a) => sum + a.revenue, 0);

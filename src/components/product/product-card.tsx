@@ -21,6 +21,7 @@ import { useWishlist } from "@/components/layout/wishlist-context";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog";
 
 export interface StoreProduct {
   _id: string;
@@ -209,7 +210,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleView = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(href);
+    if (product.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(product.fileType)) {
+      setPreviewOpen(true);
+    } else {
+      router.push(href);
+    }
   };
 
   const handleShare = (e: React.MouseEvent) => {
@@ -217,6 +222,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
     e.stopPropagation();
     setShareOpen(true);
   };
+
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   return (
     <>
@@ -227,8 +234,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
         )}
       >
         {/* Image area */}
-        <Link href={href} className="relative block focus-visible:outline-none" tabIndex={-1} aria-hidden>
-          <div className="relative h-48 overflow-hidden bg-gradient-to-br from-primary via-primary-light to-secondary">
+        <div
+          className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-br from-primary via-primary-light to-secondary"
+          onClick={handleView}
+        >
             {product.thumbnail && !imgError ? (
               <img
                 src={product.thumbnail}
@@ -270,8 +279,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </span>
 
             {/* Quick action overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div
+              className="absolute bottom-4 left-4 right-4 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={handleView}
                 className="flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-primary shadow-lg hover:bg-white transition-colors"
@@ -286,14 +298,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 <Share2 className="h-3.5 w-3.5" />
               </button>
             </div>
-          </div>
-        </Link>
+        </div>
 
         {/* Wishlist button */}
         <button
           onClick={handleWishlist}
           className={cn(
-            "absolute right-3 top-[188px] z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
+            "absolute right-3 top-[188px] z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
             inWishlist
               ? "bg-red-500 border-red-500 text-white"
               : "bg-white/95 border-white/80 text-muted hover:text-red-500 hover:border-red-200"
@@ -380,6 +391,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
       </article>
 
       <ShareModal product={product} open={shareOpen} onClose={() => setShareOpen(false)} />
+
+      {product.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(product.fileType) && (
+        <ExcelPreviewDialog
+          url={product.downloadableFile}
+          fileName={product.name}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+        />
+      )}
     </>
   );
 }

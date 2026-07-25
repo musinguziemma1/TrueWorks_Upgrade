@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -8,7 +8,7 @@ export const list = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const q = args.status
       ? ctx.db.query("payments").withIndex("by_status", (q) =>
           q.eq("status", args.status as "pending" | "completed" | "failed" | "refunded")
@@ -88,7 +88,7 @@ export const updateStatus = mutation({
 export const stats = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return { totalAmount: 0, count: 0, completed: 0, pending: 0, failed: 0 };
     const all = await ctx.db.query("payments").collect();
     const totalAmount = all
       .filter((p) => p.status === "completed")

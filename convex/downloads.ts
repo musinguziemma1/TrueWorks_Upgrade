@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getCurrentUser, requireAdmin } from "./users";
+import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 
 export const listMine = query({
   args: {},
@@ -105,7 +105,7 @@ export const listAll = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return [];
     const q = args.status
       ? ctx.db.query("downloads").withIndex("by_status", (q) =>
           q.eq("status", args.status as "active" | "expired" | "disabled")

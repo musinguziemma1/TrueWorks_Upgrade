@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useUser, useAuth } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
@@ -69,6 +70,8 @@ export default function AdminHeader() {
   const router = useRouter()
   const { toggleMobile } = useAdminSidebar()
   const [searchOpen, setSearchOpen] = useState(false)
+  const { user } = useUser()
+  const { signOut } = useAuth()
 
   const notifications = useQuery(api.notifications.list, {})
   const markRead = useMutation(api.notifications.markRead)
@@ -187,25 +190,39 @@ export default function AdminHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-lg px-2 text-foreground outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar className="h-7 w-7" size="sm">
-                <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
-                  TW
-                </AvatarFallback>
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
+                    {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                  </AvatarFallback>
+                )}
               </Avatar>
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-semibold leading-tight">Admin User</p>
+                <p className="text-xs font-semibold leading-tight">
+                  {user?.fullName ?? user?.username ?? "Admin"}
+                </p>
                 <p className="text-[10px] leading-tight text-muted-foreground">Administrator</p>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
-                    TW
-                  </AvatarFallback>
+                  {user?.imageUrl ? (
+                    <img src={user.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
+                      {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-foreground">Admin User</span>
-                  <span className="text-xs text-muted-foreground">Administrator</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {user?.fullName ?? user?.username ?? "Admin"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {user?.primaryEmailAddress?.emailAddress ?? "Administrator"}
+                  </span>
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -230,6 +247,7 @@ export default function AdminHeader() {
                 <DropdownMenuItem
                   variant="destructive"
                   className="flex items-center gap-2"
+                  onClick={() => signOut({ redirectUrl: "/" })}
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out

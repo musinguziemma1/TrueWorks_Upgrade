@@ -2,6 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useUser, useAuth } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 import {
   LayoutDashboard,
   Package,
@@ -26,11 +29,19 @@ import {
   X,
   ChevronRight,
   BookOpen,
+  UserCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Logo } from "@/components/logo"
 import { useAdminSidebar } from "./admin-sidebar-context"
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Administrator",
+  editor: "Editor",
+  viewer: "Viewer",
+};
 
 interface NavItem {
   label: string
@@ -77,6 +88,7 @@ const navSections: NavSection[] = [
   {
     title: "System",
     items: [
+      { label: "Profile", href: "/admin/profile", icon: <UserCircle className="h-4 w-4" /> },
       { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" /> },
       { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
       { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" /> },
@@ -96,6 +108,9 @@ const navSections: NavSection[] = [
 export default function AdminSidebar() {
   const pathname = usePathname()
   const { mobileOpen, setMobileOpen } = useAdminSidebar()
+  const { user } = useUser()
+  const { signOut } = useAuth()
+  const me = useQuery(api.users.current)
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin"
@@ -210,15 +225,29 @@ export default function AdminSidebar() {
 
         {/* User mini profile */}
         <div className="shrink-0 border-t border-white/10 bg-white/[0.02] p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
-              <span className="text-xs font-bold text-white">TW</span>
+          <Link
+            href="/admin/profile"
+            className="flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.04]"
+            onClick={() => setMobileOpen(false)}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-white">
+                  {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">Admin User</p>
-              <p className="truncate text-xs text-white/40">Administrator</p>
+              <p className="truncate text-sm font-semibold text-white">
+                {user?.fullName ?? user?.username ?? "Admin"}
+              </p>
+              <p className="truncate text-xs text-white/40">
+                {me ? (ROLE_LABELS[me.role] ?? me.role) : "Loading..."}
+              </p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

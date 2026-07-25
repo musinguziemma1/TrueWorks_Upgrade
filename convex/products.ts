@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
   args: {
@@ -152,7 +152,7 @@ export const remove = mutation({
 export const stats = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) return { total: 0, published: 0, draft: 0, archived: 0, totalRevenue: 0 };
     const all = await ctx.db.query("products").collect();
     const published = all.filter((p) => p.status === "published").length;
     const draft = all.filter((p) => p.status === "draft").length;
