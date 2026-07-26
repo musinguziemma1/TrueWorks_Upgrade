@@ -22,11 +22,19 @@ export function Providers({ children }: { children: ReactNode }) {
   const wrapped = (
     <CartProvider>
       <WishlistProvider>
-        <SettingsProvider>
-          <ThemeApply />
-          {children}
-          <Toaster />
-        </SettingsProvider>
+        {client ? (
+          <SettingsProvider>
+            <ThemeApply />
+            {children}
+            <Toaster />
+          </SettingsProvider>
+        ) : (
+          <>
+            <ThemeApply />
+            {children}
+            <Toaster />
+          </>
+        )}
       </WishlistProvider>
     </CartProvider>
   );

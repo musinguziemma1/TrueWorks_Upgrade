@@ -93,8 +93,8 @@ export function ExcelPreviewDialog({ url, fileName, open, onOpenChange }: ExcelP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-[92vw] w-full max-h-[92vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle>{fileName ?? "Excel Preview"}</DialogTitle>
@@ -153,14 +153,14 @@ export function ExcelPreviewDialog({ url, fileName, open, onOpenChange }: ExcelP
 
           {!loading && !error && currentSheet && (
             <div className="overflow-auto rounded-lg border">
-              <table className="w-full border-collapse text-sm">
+              <table className="min-w-full border-collapse text-sm">
                 <thead>
                   {currentSheet.data.length > 0 && (
                     <tr className="bg-[#0B2545]">
                       {Array.from({ length: maxCols }, (_, colIdx) => (
                         <th
                           key={colIdx}
-                          className="border border-[#0B2545]/80 px-3 py-2 text-left text-xs font-semibold text-white whitespace-nowrap"
+                          className="border border-[#0B2545]/80 px-4 py-2.5 text-left text-xs font-semibold text-white whitespace-nowrap"
                         >
                           {currentSheet.data[0]?.[colIdx] ?? ""}
                         </th>
@@ -177,7 +177,7 @@ export function ExcelPreviewDialog({ url, fileName, open, onOpenChange }: ExcelP
                       {Array.from({ length: maxCols }, (_, colIdx) => (
                         <td
                           key={colIdx}
-                          className="border border-gray-200 px-3 py-1.5 text-sm text-foreground whitespace-nowrap"
+                          className="border border-gray-200 px-4 py-2 text-sm text-foreground whitespace-nowrap"
                         >
                           {row[colIdx] ?? ""}
                         </td>
