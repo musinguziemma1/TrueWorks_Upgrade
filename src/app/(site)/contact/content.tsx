@@ -280,17 +280,6 @@ export default function ContactContent() {
       {/* Map */}
       <section className="bg-surface py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <FadeIn className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
-              Find Us
-            </p>
-            <h2 className="mt-3 font-heading text-3xl font-semibold text-primary sm:text-4xl">
-              Visit Our Office
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-muted">
-              Plot 42, Acacia Avenue, Kampala, Uganda
-            </p>
-          </FadeIn>
           <FadeIn>
             <div className="overflow-hidden rounded-2xl border border-border/70 shadow-card">
               <iframe

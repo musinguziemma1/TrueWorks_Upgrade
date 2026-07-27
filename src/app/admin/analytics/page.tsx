@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  PieChart as RePieChart, Pie, Cell, Legend, ResponsiveContainer,
+  PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts"
 import { formatPrice } from "@/lib/utils"
 
@@ -427,7 +427,7 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
                     <BarChart data={geoChartData} layout="vertical" margin={{ left: 80 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
@@ -435,7 +435,7 @@ export default function AnalyticsPage() {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar dataKey="orders" fill="#0B2545" radius={[0, 4, 4, 0]} name="Orders" />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                   <div className="space-y-2 pt-2 border-t">
                     {geoChartData.map((g) => (
                       <div key={g.country} className="flex items-center justify-between text-sm">
