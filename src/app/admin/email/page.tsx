@@ -73,9 +73,6 @@ export default function EmailPage() {
         title="Email Marketing"
         description="Manage campaigns, templates, and subscribers"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Email Marketing" }]}
-        action={
-          <Button><Plus className="h-4 w-4" /> New Campaign</Button>
-        }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -140,9 +137,7 @@ export default function EmailPage() {
                         <TableCell className="text-muted-foreground">{c.date}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon-sm"><Edit3 className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon-sm"><Copy className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon-sm" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            <span className="text-xs text-muted-foreground">{c.status === "Active" ? "Active" : ""}</span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -183,12 +178,6 @@ export default function EmailPage() {
                   </CardContent>
                 </Card>
               ))}
-              <Card className="border-dashed hover:shadow-card transition-shadow cursor-pointer">
-                <CardContent className="p-5 flex flex-col items-center justify-center h-full min-h-[180px]">
-                  <Plus className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">New Template</p>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
         </div>

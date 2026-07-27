@@ -65,11 +65,18 @@ async function verifyStripeSignature(
 
   const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
-  const computedSig = Array.from(new Uint8Array(signatureBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const computedBytes = new Uint8Array(signatureBuffer);
+  const expectedBytes = new Uint8Array(expectedSig.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)));
 
-  if (computedSig !== expectedSig) {
+  if (computedBytes.length !== expectedBytes.length) {
+    throw new Error("Invalid Stripe webhook signature");
+  }
+
+  let diff = 0;
+  for (let i = 0; i < computedBytes.length; i++) {
+    diff |= computedBytes[i]! ^ expectedBytes[i]!;
+  }
+  if (diff !== 0) {
     throw new Error("Invalid Stripe webhook signature");
   }
 

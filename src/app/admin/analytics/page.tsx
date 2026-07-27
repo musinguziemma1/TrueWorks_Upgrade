@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { BarChart3, Download, Globe, ShoppingCart, PieChart, CreditCard, ArrowUpRight, DollarSign, Package, Loader2, Eye, TrendingUp } from "lucide-react"
@@ -8,59 +8,18 @@ import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from "recharts"
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart as RePieChart, Pie, Cell, Legend } from "recharts"
 import { formatPrice } from "@/lib/utils"
-import { useState } from "react"
 
 const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#34D399", "#94A3B8"]
 const chartConfig = { value: { label: "Value", color: "#0B2545" } }
 
-const paymentSeg = [
-  { name: "MTN MoMo", value: 60, color: "#F59E0B" },
-  { name: "Airtel Money", value: 25, color: "#EF4444" },
-  { name: "Card", value: 15, color: "#3B82F6" },
-]
-
-const funnelSteps = [
-  { label: "Total Visitors", value: "10,000", pct: 100 },
-  { label: "Product Views", value: "5,200", pct: 52 },
-  { label: "Add to Cart", value: "2,100", pct: 21 },
-  { label: "Checkout Initiated", value: "1,050", pct: 10.5 },
-  { label: "Purchase Completed", value: "520", pct: 5.2 },
-]
-
-const trafficSeg = [
-  { name: "Direct", value: 45, color: "#0B2545" },
-  { name: "Search", value: 30, color: "#4A6FA5" },
-  { name: "Social", value: 15, color: "#C9A227" },
-  { name: "Email", value: 10, color: "#60A5FA" },
-]
-
-const deviceSeg = [
-  { name: "Desktop", value: 55, icon: "Monitor" },
-  { name: "Mobile", value: 35, icon: "Smartphone" },
-  { name: "Tablet", value: 10, icon: "CreditCard" },
-]
-
-const ltvSegments = [
-  { range: "0 - UGX 50,000", count: 320, pct: 36 },
-  { range: "UGX 50,000 - UGX 200,000", count: 280, pct: 31 },
-  { range: "UGX 200,000 - UGX 500,000", count: 160, pct: 18 },
-  { range: "UGX 500,000 - UGX 1M", count: 80, pct: 9 },
-  { range: "UGX 1M+", count: 52, pct: 6 },
-]
-
-function MetricCard({ icon, label, value, trend }: { icon: React.ReactNode; label: string; value: string; trend?: number }) {
+function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
-          {trend !== undefined && (
-            <span className={`inline-flex items-center gap-1 text-xs font-semibold ${trend >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
-            </span>
-          )}
         </div>
         <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
         <p className="text-xl font-bold text-[#0B2545]">{value}</p>
@@ -75,8 +34,15 @@ export default function AnalyticsPage() {
   const summary = useQuery(api.analytics.summary)
   const products = useQuery(api.products.list, { status: "published" })
   const orders = useQuery(api.orders.list, {})
+  const paymentMethods = useQuery(api.orders.paymentMethodBreakdown, {})
+  const ltvSegments = useQuery(api.orders.customerLtvSegments, {})
 
-  const loading = summary === undefined || products === undefined || orders === undefined
+  const loading =
+    summary === undefined ||
+    products === undefined ||
+    orders === undefined ||
+    paymentMethods === undefined ||
+    ltvSegments === undefined
 
   const productPerformance = useMemo(() => {
     if (!products || !orders) return []
@@ -110,6 +76,9 @@ export default function AnalyticsPage() {
     return Math.max(...productPerformance.map((p) => p.totalSales))
   }, [productPerformance])
 
+  const totalOrders = paymentMethods?.reduce((sum, p) => sum + p.value, 0) ?? 0
+  const ltvTotal = ltvSegments?.reduce((sum, s) => sum + s.count, 0) ?? 0
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -134,6 +103,12 @@ export default function AnalyticsPage() {
     pageViews: d.pageViews,
   }))
 
+  const paymentChartData = (paymentMethods ?? []).map((p, i) => ({
+    name: p.name,
+    value: p.value,
+    color: COLORS[i % COLORS.length],
+  }))
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -144,7 +119,7 @@ export default function AnalyticsPage() {
           <Select value={dateRange} onValueChange={(v) => v && setDateRange(v)}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {["Today", "This Week", "This Month", "This Quarter", "This Year"].map((r) => (
+              {["Today", "This Week", "This Month", "This Quarter", "This Year", "All Time"].map((r) => (
                 <SelectItem key={r} value={r}>{r}</SelectItem>
               ))}
             </SelectContent>
@@ -163,30 +138,38 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><TrendingUp className="h-5 w-5" /> Revenue Trend</CardTitle></CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}M`} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="revenue" stroke="#0B2545" strokeWidth={2} dot={{ fill: "#0B2545" }} />
-              </LineChart>
-            </ChartContainer>
+            {revenueData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No revenue data yet.</p>
+            ) : (
+              <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}M`} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="revenue" stroke="#0B2545" strokeWidth={2} dot={{ fill: "#0B2545" }} />
+                </LineChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><BarChart3 className="h-5 w-5" /> Orders Trend</CardTitle></CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="orders" fill="#0B2545" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            {revenueData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No order data yet.</p>
+            ) : (
+              <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="orders" fill="#0B2545" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -216,65 +199,44 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><CreditCard className="h-5 w-5" /> Payment Methods</CardTitle></CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[280px]">
-              <RePieChart>
-                <Pie data={paymentSeg} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                  {paymentSeg.map((_, i) => <Cell key={i} fill={paymentSeg[i].color} />)}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
-              </RePieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><PieChart className="h-5 w-5" /> Traffic Sources</CardTitle></CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[280px]">
-              <RePieChart>
-                <Pie data={trafficSeg} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                  {trafficSeg.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
-              </RePieChart>
-            </ChartContainer>
+            {paymentChartData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No payment data yet.</p>
+            ) : (
+              <ChartContainer config={chartConfig} className="aspect-auto h-[280px]">
+                <RePieChart>
+                  <Pie data={paymentChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                    {paymentChartData.map((_, i) => <Cell key={i} fill={paymentChartData[i].color} />)}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                </RePieChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Visitor-to-Purchase Funnel</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-3 pt-2">
-              {funnelSteps.map((step) => (
-                <div key={step.label} className="flex items-center gap-4">
-                  <div className="w-32 shrink-0 text-sm text-muted-foreground">{step.label}</div>
-                    <div className="flex-1 h-10 rounded-lg bg-[#0B2545]/10 flex items-center justify-between px-4 relative overflow-hidden">
-                      <div className="absolute left-0 top-0 h-full bg-[#0B2545]/20 rounded-lg" style={{ width: `${step.pct}%` }} />
-                    <span className="relative z-10 text-sm font-medium">{step.value}</span>
-                    <span className="relative z-10 text-xs text-muted-foreground">{step.pct}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <FunnelChart
+              steps={[
+                { label: "Total Visitors", value: summary.totalVisitors, pct: 100 },
+                { label: "Orders Completed", value: summary.totalOrders, pct: summary.totalVisitors > 0 ? Math.round((summary.totalOrders / summary.totalVisitors) * 100) : 0 },
+                { label: "Downloads", value: summary.totalDownloads, pct: summary.totalVisitors > 0 ? Math.round((summary.totalDownloads / summary.totalVisitors) * 100) : 0 },
+              ]}
+            />
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales Distribution</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales</CardTitle></CardHeader>
           <CardContent>
-            <div className="h-64 rounded-lg bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center relative overflow-hidden">
-              <Globe className="h-12 w-12 text-[#0B2545]/30" />
-              <div className="absolute bottom-4 left-4 right-4 flex justify-around text-xs text-muted-foreground">
-                <span>Kampala: 42%</span>
-                <span>Jinja: 18%</span>
-                <span>Gulu: 12%</span>
-                <span>Mbarara: 10%</span>
-                <span>Others: 18%</span>
-              </div>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Globe className="h-10 w-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Geographic data not available.</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Add a city field to orders to see regional breakdowns.</p>
             </div>
           </CardContent>
         </Card>
@@ -282,22 +244,46 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-4 pt-2">
-              {ltvSegments.map((seg) => (
-                <div key={seg.range}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{seg.range}</span>
-                    <span className="text-muted-foreground">{seg.count} customers ({seg.pct}%)</span>
-                  </div>
-                  <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${seg.pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {(ltvSegments ?? []).length === 0 || ltvTotal === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No customer LTV data yet.</p>
+            ) : (
+              <div className="space-y-4 pt-2">
+                {(ltvSegments ?? []).map((seg) => {
+                  const pct = ltvTotal > 0 ? Math.round((seg.count / ltvTotal) * 100) : 0;
+                  return (
+                    <div key={seg.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{seg.label}</span>
+                        <span className="text-muted-foreground">{seg.count} customers ({pct}%)</span>
+                      </div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
   )
+}
+
+function FunnelChart({ steps }: { steps: { label: string; value: number; pct: number }[] }) {
+  return (
+    <div className="space-y-3 pt-2">
+      {steps.map((step) => (
+        <div key={step.label} className="flex items-center gap-4">
+          <div className="w-32 shrink-0 text-sm text-muted-foreground">{step.label}</div>
+          <div className="flex-1 h-10 rounded-lg bg-[#0B2545]/10 flex items-center justify-between px-4 relative overflow-hidden">
+            <div className="absolute left-0 top-0 h-full bg-[#0B2545]/20 rounded-lg" style={{ width: `${step.pct}%` }} />
+            <span className="relative z-10 text-sm font-medium">{step.value.toLocaleString()}</span>
+            <span className="relative z-10 text-xs text-muted-foreground">{step.pct}%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

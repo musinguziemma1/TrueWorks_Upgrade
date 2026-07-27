@@ -76,6 +76,7 @@ export default function AdminHeader() {
 
   const notifications = useQuery(api.notifications.list, {})
   const markRead = useMutation(api.notifications.markRead)
+  const markAllRead = useMutation(api.notifications.markAllRead)
   const settings = useSettings()
 
   const pageTitle = getPageTitle(pathname)
@@ -146,7 +147,13 @@ export default function AdminHeader() {
             <DropdownMenuContent align="end" className="w-80 p-0">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm font-semibold text-foreground">Notifications</span>
-                <Button variant="ghost" size="xs" className="h-auto text-xs font-normal text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="h-auto text-xs font-normal text-muted-foreground"
+                  onClick={() => markAllRead({})}
+                  disabled={unreadCount === 0}
+                >
                   Mark all read
                 </Button>
               </div>

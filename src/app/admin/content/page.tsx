@@ -61,8 +61,16 @@ function ContentTable({ items, label, onDelete }: { items: ContentItem[]; label:
                   <TableCell className="text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon-sm"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon-sm"><Edit3 className="h-4 w-4" /></Button>
+                      {item.type === "resource" && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          title="View public page"
+                          onClick={() => window.open(`/resources/${item.slug}`, "_blank")}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => onDelete(item._id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </TableCell>
@@ -96,9 +104,6 @@ export default function ContentPage() {
         title="Content"
         description="Manage pages, posts, and resources"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Content" }]}
-        action={
-          <Button><Plus className="h-4 w-4" /> Add New</Button>
-        }
       />
 
       <div className="relative max-w-md">

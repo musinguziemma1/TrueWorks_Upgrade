@@ -169,9 +169,6 @@ export default function CustomersPage() {
                   <div className="flex items-center gap-2 text-sm"><DollarSign className="h-4 w-4 text-muted-foreground shrink-0" /><span className="font-semibold">{fmtLTV(selectedCustomer.lifetimeValue)} LTV</span></div>
                   <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 text-muted-foreground shrink-0" /><span>Joined {new Date(selectedCustomer.createdAt).toLocaleDateString("en-UG")}</span></div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Button variant="outline" size="sm" className="w-full">View Full Profile</Button>
-                </div>
               </CardContent>
             </Card>
           ) : (

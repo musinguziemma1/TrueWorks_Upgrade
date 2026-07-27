@@ -229,6 +229,52 @@ export const stats = query({
   },
 });
 
+/**
+ * Aggregate order count by payment method (e.g. "MTN MoMo", "Card").
+ * Used by the analytics page to show a real payment-method pie chart.
+ */
+export const paymentMethodBreakdown = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) return [];
+    const all = await ctx.db.query("orders").collect();
+    const counts = new Map<string, number>();
+    for (const o of all) {
+      const key = o.paymentMethod || "Unknown";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
+  },
+});
+
+/**
+ * Group customers into lifetime value brackets for cohort analysis.
+ */
+export const customerLtvSegments = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) return [];
+    const all = await ctx.db.query("customers").collect();
+    const brackets = [
+      { label: "0", min: 0, max: 0, count: 0 },
+      { label: "< 50K", min: 1, max: 50_000, count: 0 },
+      { label: "50K–250K", min: 50_000, max: 250_000, count: 0 },
+      { label: "250K–1M", min: 250_000, max: 1_000_000, count: 0 },
+      { label: "> 1M", min: 1_000_000, max: Number.MAX_SAFE_INTEGER, count: 0 },
+    ];
+    for (const c of all) {
+      const ltv = c.lifetimeValue;
+      for (const b of brackets) {
+        if (ltv >= b.min && ltv <= b.max) {
+          b.count++;
+          break;
+        }
+      }
+    }
+    return brackets.map(({ label, count }) => ({ label, count }));
+  },
+});
+
 export const listMine = query({
   args: {},
   handler: async (ctx) => {

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
@@ -67,7 +68,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AdminDashboard() {
-  const [dateRange, setDateRange] = useState("This Month")
+  const { user } = useUser();
 
   const orderStats = useQuery(api.orders.stats)
   const productStats = useQuery(api.products.stats)
@@ -108,17 +109,13 @@ export default function AdminDashboard() {
     revenue: d.revenue,
   }))
 
-  const paymentMethodData = [
-    { name: "MTN MoMo", value: 60 },
-    { name: "Airtel Money", value: 25 },
-    { name: "Card", value: 15 },
-  ]
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0B2545] font-heading">Welcome back, Admin</h1>
+          <h1 className="text-3xl font-bold text-[#0B2545] font-heading">
+            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
+          </h1>
           <p className="text-sm text-muted-foreground font-body flex items-center gap-2 mt-1">
             <CalendarDays className="h-4 w-4" />
             {today}
