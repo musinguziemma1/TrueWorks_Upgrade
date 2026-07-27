@@ -9,6 +9,7 @@ import { api } from "@convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Menu, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { convexClient } from "@/lib/convex";
 import { Logo } from "@/components/logo";
 import { SocialIcon, socialLinks } from "@/components/layout/social-icons";
 
@@ -19,6 +20,20 @@ const navLinks = [
   { label: "Resources", href: "/resources" },
   { label: "Contact", href: "/contact" },
 ];
+
+function AdminDashboardLink({ onClose }: { onClose: () => void }) {
+  const isAdmin = useQuery(api.users.isAdmin);
+  if (!isAdmin) return null;
+  return (
+    <Link
+      href="/admin"
+      onClick={onClose}
+      className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+    >
+      Admin Dashboard
+    </Link>
+  );
+}
 
 interface MobileNavProps {
   open?: boolean;
@@ -61,7 +76,6 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
   const { isLoaded, isSignedIn } = useUser();
   const { signOut } = useAuth();
-  const isAdmin = useQuery(api.users.isAdmin);
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -165,15 +179,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                   >
                     My Account
                   </Link>
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      onClick={onClose}
-                      className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
-                    >
-                      Admin Dashboard
-                    </Link>
-                  )}
+                  {convexClient && <AdminDashboardLink onClose={onClose} />}
                   <button
                     onClick={() => signOut({ redirectUrl: "/" })}
                     className="w-full rounded-lg bg-surface px-5 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface/80"

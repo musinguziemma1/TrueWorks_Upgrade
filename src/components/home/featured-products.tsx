@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { convexClient } from "@/lib/convex";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 
 const cardVariants = {
@@ -17,6 +18,11 @@ const cardVariants = {
 };
 
 export default function FeaturedProducts() {
+  if (!convexClient) return null;
+  return <FeaturedProductsInner />;
+}
+
+function FeaturedProductsInner() {
   const products = useQuery(api.products.list, { status: "published", featured: true });
   const featured = (products ?? []).slice(0, 6) as StoreProduct[];
 

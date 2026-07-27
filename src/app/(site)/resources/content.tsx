@@ -7,6 +7,7 @@ import { Search, Clock, Calendar, ArrowRight, ChevronRight, FileText, CheckCircl
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { convexClient } from "@/lib/convex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,11 @@ const typeIcons: Record<string, typeof FileText> = {
 };
 
 export default function ResourcesContent() {
+  if (!convexClient) return null;
+  return <ResourcesContentInner />;
+}
+
+function ResourcesContentInner() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");

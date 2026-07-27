@@ -9,6 +9,7 @@ import { useQuery } from "convex/react";
 import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { convexClient } from "@/lib/convex";
 import { useCart } from "@/components/layout/cart-context";
 import { useSettings } from "@/lib/settings-context";
 import MobileNav from "@/components/layout/mobile-nav";
@@ -22,13 +23,20 @@ export const navLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
+function AdminMenuLink() {
+  const isAdmin = useQuery(api.users.isAdmin);
+  if (!isAdmin) return null;
+  return (
+    <UserButton.Link label="Admin Dashboard" labelIcon={<LayoutDashboard className="h-4 w-4" />} href="/admin" />
+  );
+}
+
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { totalItems } = useCart();
   const pathname = usePathname();
   const { isLoaded, isSignedIn } = useUser();
-  const isAdmin = useQuery(api.users.isAdmin);
   const settings = useSettings();
 
   useEffect(() => {
@@ -135,9 +143,7 @@ export default function Header() {
                 <UserButton>
                   <UserButton.MenuItems>
                     <UserButton.Link label="My Account" labelIcon={<User className="h-4 w-4" />} href="/account" />
-                    {isAdmin && (
-                      <UserButton.Link label="Admin Dashboard" labelIcon={<LayoutDashboard className="h-4 w-4" />} href="/admin" />
-                    )}
+                    {convexClient && <AdminMenuLink />}
                   </UserButton.MenuItems>
                 </UserButton>
               )}

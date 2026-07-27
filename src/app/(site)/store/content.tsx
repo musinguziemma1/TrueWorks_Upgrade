@@ -7,6 +7,7 @@ import { PackageSearch } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { convexClient } from "@/lib/convex";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { StoreSidebar } from "@/components/store/store-sidebar";
@@ -22,6 +23,11 @@ import {
 const ITEMS_PER_PAGE = 9;
 
 export default function StoreContent() {
+  if (!convexClient) return null;
+  return <StoreContentInner />;
+}
+
+function StoreContentInner() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
 

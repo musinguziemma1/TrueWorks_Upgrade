@@ -2,15 +2,6 @@
 
 import { ConvexReactClient } from "convex/react";
 
-let convexClientInstance: ConvexReactClient | null = null;
+const url = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-export function getConvexClient(): ConvexReactClient {
-  if (!convexClientInstance) {
-    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-    if (!url) {
-      throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is not set");
-    }
-    convexClientInstance = new ConvexReactClient(url);
-  }
-  return convexClientInstance;
-}
+export const convexClient = url ? new ConvexReactClient(url) : null;
