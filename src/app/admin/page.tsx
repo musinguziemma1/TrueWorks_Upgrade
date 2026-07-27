@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const productStats = useQuery(api.products.stats)
   const recentOrders = useQuery(api.orders.list, {})
   const subscribers = useQuery(api.subscribers.list, {})
-  const analyticsSummary = useQuery(api.analytics.summary)
+  const analyticsSummary = useQuery(api.analytics.summary, {})
 
   const today = useMemo(() => {
     return new Date().toLocaleDateString("en-GB", {

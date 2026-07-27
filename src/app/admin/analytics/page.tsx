@@ -115,15 +115,15 @@ export default function AnalyticsPage() {
     geoData === undefined
 
   const productPerformance = useMemo(() => {
-    if (!products || !orders) return []
-    const productMap = new Map<string, { name: string; totalSales: number; totalRevenue: number }>()
+    if (!products || !orders) return [] as { name: string; totalSales: number; totalRevenue: number }[]
+    const productMap: Record<string, { name: string; totalSales: number; totalRevenue: number }> = {}
     for (const product of products as { _id: string; name: string }[]) {
-      productMap.set(product._id, { name: product.name, totalSales: 0, totalRevenue: 0 })
+      productMap[product._id] = { name: product.name, totalSales: 0, totalRevenue: 0 }
     }
     for (const order of orders as { paymentStatus: string; items: { productId: string; quantity: number; price: number }[] }[]) {
       if (order.paymentStatus === "completed") {
         for (const item of order.items ?? []) {
-          const existing = productMap.get(item.productId)
+          const existing = productMap[item.productId]
           if (existing) {
             existing.totalSales += item.quantity ?? 1
             existing.totalRevenue += item.price * (item.quantity ?? 1)
@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
         }
       }
     }
-    return Array.from(productMap.values())
+    return Object.values(productMap)
       .filter((p) => p.totalSales > 0)
       .sort((a, b) => b.totalSales - a.totalSales)
       .slice(0, 10)
@@ -406,9 +406,9 @@ export default function AnalyticsPage() {
             <CardContent>
               <FunnelChart
                 steps={[
-                  { label: "Total Visitors", value: summary.totalVisitors, pct: 100 },
-                  { label: "Orders Completed", value: totalOrdersCount, pct: summary.totalVisitors > 0 ? Math.round((totalOrdersCount / summary.totalVisitors) * 100) : 0 },
-                  { label: "Downloads", value: summary.totalDownloads, pct: summary.totalVisitors > 0 ? Math.round((summary.totalDownloads / summary.totalVisitors) * 100) : 0 },
+                  { label: "Total Visitors", value: safeSummary.totalVisitors, pct: 100 },
+                  { label: "Orders Completed", value: totalOrdersCount, pct: safeSummary.totalVisitors > 0 ? Math.round((totalOrdersCount / safeSummary.totalVisitors) * 100) : 0 },
+                  { label: "Downloads", value: safeSummary.totalDownloads, pct: safeSummary.totalVisitors > 0 ? Math.round((safeSummary.totalDownloads / safeSummary.totalVisitors) * 100) : 0 },
                 ]}
               />
             </CardContent>
