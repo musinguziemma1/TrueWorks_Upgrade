@@ -122,10 +122,15 @@ export const incrementPageViews = mutation({
 });
 
 export const summary = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] };
-    const all = await ctx.db.query("analytics").collect();
+    let all = await ctx.db.query("analytics").collect();
+    if (args.startDate) all = all.filter((a) => a.date >= args.startDate!);
+    if (args.endDate) all = all.filter((a) => a.date <= args.endDate!);
     const sorted = all.sort((a, b) => a.date.localeCompare(b.date));
     const totalRevenue = all.reduce((sum, a) => sum + a.revenue, 0);
     const totalOrders = all.reduce((sum, a) => sum + a.orders, 0);

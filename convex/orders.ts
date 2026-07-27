@@ -10,6 +10,8 @@ export const list = query({
     paymentStatus: v.optional(v.string()),
     orderStatus: v.optional(v.string()),
     search: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
@@ -23,17 +25,20 @@ export const list = query({
         )
       : ctx.db.query("orders").withIndex("by_createdAt", (q) => q);
 
+    let results = await q.collect();
+    if (args.startDate) results = results.filter((o) => o.createdAt >= args.startDate!);
+    if (args.endDate) results = results.filter((o) => o.createdAt <= args.endDate!);
+
     if (args.search) {
       const lower = args.search.toLowerCase();
-      const all = await q.collect();
-      return all.filter((o) =>
+      results = results.filter((o) =>
         o.orderNumber.toLowerCase().includes(lower) ||
         o.customerName.toLowerCase().includes(lower) ||
         o.customerEmail.toLowerCase().includes(lower)
       );
     }
 
-    return await q.order("desc").take(100);
+    return results.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
   },
 });
 
@@ -86,6 +91,8 @@ const orderCreateArgs = {
   couponCode: v.optional(v.string()),
   ipAddress: v.optional(v.string()),
   userAgent: v.optional(v.string()),
+  country: v.optional(v.string()),
+  region: v.optional(v.string()),
   notes: v.optional(v.string()),
 };
 
@@ -106,6 +113,8 @@ async function insertOrder(ctx: MutationCtx, args: {
   couponCode?: string;
   ipAddress?: string;
   userAgent?: string;
+  country?: string;
+  region?: string;
   notes?: string;
 }) {
   const now = Date.now();
@@ -234,10 +243,15 @@ export const stats = query({
  * Used by the analytics page to show a real payment-method pie chart.
  */
 export const paymentMethodBreakdown = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    const all = await ctx.db.query("orders").collect();
+    let all = await ctx.db.query("orders").collect();
+    if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
+    if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
     const counts = new Map<string, number>();
     for (const o of all) {
       const key = o.paymentMethod || "Unknown";
@@ -272,6 +286,30 @@ export const customerLtvSegments = query({
       }
     }
     return brackets.map(({ label, count }) => ({ label, count }));
+  },
+});
+
+export const geoBreakdown = query({
+  args: {
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return [];
+    let all = await ctx.db.query("orders").collect();
+    if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
+    if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
+    const countryData = new Map<string, { orders: number; revenue: number }>();
+    for (const o of all) {
+      const country = o.country || "Unknown";
+      const existing = countryData.get(country) ?? { orders: 0, revenue: 0 };
+      existing.orders++;
+      if (o.paymentStatus === "completed") existing.revenue += o.total;
+      countryData.set(country, existing);
+    }
+    return Array.from(countryData.entries())
+      .map(([country, data]) => ({ country, ...data }))
+      .sort((a, b) => b.orders - a.orders);
   },
 });
 

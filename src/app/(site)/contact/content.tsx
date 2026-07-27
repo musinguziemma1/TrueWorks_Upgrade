@@ -277,6 +277,38 @@ export default function ContactContent() {
         </div>
       </section>
 
+      {/* Map */}
+      <section className="bg-surface py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <FadeIn className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
+              Find Us
+            </p>
+            <h2 className="mt-3 font-heading text-3xl font-semibold text-primary sm:text-4xl">
+              Visit Our Office
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted">
+              Plot 42, Acacia Avenue, Kampala, Uganda
+            </p>
+          </FadeIn>
+          <FadeIn>
+            <div className="overflow-hidden rounded-2xl border border-border/70 shadow-card">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.654!2d32.574!3d0.313!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sKampala!5e0!3m2!1sen!2sug!4v1"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="TrueWorks Limited location - Plot 42, Acacia Avenue, Kampala"
+                className="w-full"
+              />
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* Support paths */}
       <section className="bg-white py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">

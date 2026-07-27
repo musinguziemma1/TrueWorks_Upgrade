@@ -100,6 +100,8 @@ export default defineSchema({
     couponCode: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
+    country: v.optional(v.string()),
+    region: v.optional(v.string()),
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
       url: v.string(),

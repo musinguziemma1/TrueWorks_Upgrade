@@ -22,6 +22,21 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     const body = await request.json();
     const { items, customerEmail, customerName, paymentMethod, couponCode } = body;
 
+    let country = "";
+    let region = "";
+    if (ip && ip !== "unknown") {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName`);
+        const geo = await geoRes.json();
+        if (geo.status === "success") {
+          country = geo.country || "";
+          region = geo.regionName || "";
+        }
+      } catch {
+        // Geolocation failure should not block checkout
+      }
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "No items provided" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
@@ -85,6 +100,9 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       orderStatus: "pending",
       downloadLinks: [],
       couponCode: couponCode || undefined,
+      ipAddress: ip !== "unknown" ? ip : undefined,
+      country: country || undefined,
+      region: region || undefined,
     });
 
     if (couponCode) {
