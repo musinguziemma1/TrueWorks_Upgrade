@@ -126,7 +126,7 @@ export default function CouponsPage() {
 
   const getCouponValue = (c: CouponDoc) => {
     if (c.type === "percentage") return `${c.value}%`
-    return `UGX ${c.value.toLocaleString("en-UG")}`
+    return `$${c.value.toFixed(2)}`
   }
 
   const getStatus = (c: CouponDoc) => {
@@ -181,7 +181,7 @@ export default function CouponsPage() {
                     <TableCell><Badge variant="outline">{c.type}</Badge></TableCell>
                     <TableCell className="font-medium">{getCouponValue(c)}</TableCell>
                     <TableCell className="text-center text-muted-foreground">{usageDisplay(c)}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.minPurchase ? `UGX ${c.minPurchase.toLocaleString("en-UG")}` : "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{c.minPurchase ? `$${c.minPurchase.toFixed(2)}` : "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("en-UG") : "—"}</TableCell>
                     <TableCell className="text-center"><StatusBadge status={getStatus(c)} /></TableCell>
                     <TableCell>

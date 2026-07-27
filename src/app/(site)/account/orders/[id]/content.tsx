@@ -22,7 +22,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-UG", {
     style: "currency",
-    currency: "UGX",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
 }

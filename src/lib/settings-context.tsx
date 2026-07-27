@@ -72,7 +72,7 @@ const defaultSettings: Settings = {
   smtpPort: "587",
   smtpUsername: "",
   smtpFrom: "",
-  currency: "UGX",
+  currency: "USD",
   taxRate: 18,
   pesapalEnabled: true,
   maxDownloadsPerPurchase: 5,

@@ -71,7 +71,7 @@ const defaultSettings: SettingsState = {
   smtpPort: "587",
   smtpUsername: "",
   smtpFrom: "",
-  currency: "UGX",
+  currency: "USD",
   taxRate: 18,
   pesapalEnabled: true,
   maxDownloadsPerPurchase: 5,
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                   <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
+                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
                       <SelectItem value="USD">USD (US Dollar)</SelectItem>
                       <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
                     </SelectContent>
@@ -376,7 +376,7 @@ export default function SettingsPage() {
                   <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
+                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
                       <SelectItem value="USD">USD (US Dollar)</SelectItem>
                     </SelectContent>
                   </Select>

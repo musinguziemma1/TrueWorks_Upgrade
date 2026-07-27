@@ -65,7 +65,7 @@ export default async function ProductDetailPage({ params }: Props) {
           "@type": "Offer",
           url: `${SITE_URL}/store/${product.slug}`,
           price: product.salePrice ?? product.price,
-          priceCurrency: "UGX",
+          priceCurrency: "USD",
           availability: "https://schema.org/InStock",
         },
         ...(product.reviewCount > 0

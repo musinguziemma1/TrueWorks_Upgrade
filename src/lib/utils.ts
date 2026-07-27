@@ -11,9 +11,10 @@ const currencySymbols: Record<string, string> = {
   KES: "KES",
 }
 
-export function formatPrice(price: number, currency: string = "UGX"): string {
+export function formatPrice(price: number, currency: string = "USD"): string {
   const symbol = currencySymbols[currency] || currency
-  return `${symbol} ${price.toLocaleString("en-UG")}`
+  const formatted = price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return currency === "USD" ? `$${formatted}` : `${symbol} ${formatted}`
 }
 
 export function slugify(text: string): string {

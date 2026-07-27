@@ -41,7 +41,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
 
     const pesapalRequest = {
       id: order.orderNumber,
-      currency: currency || "UGX",
+      currency: currency || "USD",
       amount: amount,
       description: description || `TrueWorks Order ${order.orderNumber}`,
       callback_url: callbackUrl,
@@ -78,7 +78,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
         provider: "pesapal",
         method: method || "card",
         amount: amount,
-        currency: currency || "UGX",
+        currency: currency || "USD",
         status: "pending",
         customerEmail: customerEmail,
         customerName: customerName || "",

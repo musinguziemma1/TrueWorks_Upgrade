@@ -301,11 +301,11 @@ export default function EditProductPage() {
                 <CardHeader><CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5" /> Pricing</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Price (UGX) *</Label>
+                    <Label>Price (USD) *</Label>
                     <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Sale Price (UGX)</Label>
+                    <Label>Sale Price (USD)</Label>
                     <Input type="number" placeholder="0 (optional)" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} />
                   </div>
                 </CardContent>

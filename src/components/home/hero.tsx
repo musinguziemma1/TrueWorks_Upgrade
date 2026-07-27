@@ -30,9 +30,9 @@ const slides = [
       "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across Africa.",
     kpis: [
       { label: "Bed Occupancy", value: "78%", delta: "+4.2%" },
-      { label: "Revenue / Bed", value: "UGX 2.4M", delta: "+11%" },
-      { label: "Patients / Day", value: "142", delta: "+9" },
-      { label: "Avg. Bill", value: "UGX 85K", delta: "+6%" },
+{ label: "Revenue / Bed", value: "$2,400", delta: "+11%" },
+  { label: "Patients / Day", value: "142", delta: "+9" },
+  { label: "Avg. Bill", value: "$85", delta: "+6%" },
     ],
     icon: BarChart3,
     accent: "accent",

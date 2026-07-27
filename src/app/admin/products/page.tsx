@@ -34,7 +34,7 @@ const STATUS_MAP: Record<string, ProductStatus> = {
 }
 
 const fmtPrice = (n: number) =>
-  new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", minimumFractionDigits: 0 }).format(n)
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n)
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("")

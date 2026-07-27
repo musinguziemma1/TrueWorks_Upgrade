@@ -124,7 +124,7 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
   const { orderNumber, customerEmail, customerName, items, total } = body;
 
   const itemsHtml = (items as { name: string; quantity: number; price: number }[]).map((item) =>
-    `<div class="item-row"><span>${escapeHtml(item.name)} × ${escapeHtml(item.quantity)}</span><span>UGX ${Number(item.price).toLocaleString()}</span></div>`
+    `<div class="item-row"><span>${escapeHtml(item.name)} × ${escapeHtml(item.quantity)}</span><span>$${Number(item.price).toFixed(2)}</span></div>`
   ).join("");
 
   const html = baseTemplate(`
@@ -134,7 +134,7 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
     <div class="order-box">
       <p><strong>Order Number:</strong> ${escapeHtml(orderNumber)}</p>
       ${itemsHtml}
-      <div class="item-row total"><span>Total</span><span>UGX ${Number(total).toLocaleString()}</span></div>
+      <div class="item-row total"><span>Total</span><span>$${Number(total).toFixed(2)}</span></div>
     </div>
     <p>Your download links will be available in your account once payment is confirmed.</p>
     <a href="${SITE_URL}/account/orders" class="button">View Your Orders</a>
@@ -187,7 +187,7 @@ export const sendPaymentFailed = httpAction(async (ctx, request) => {
   const html = baseTemplate(`
     <h2>Payment Failed</h2>
     <p>Hi ${escapeHtml(customerName)},</p>
-    <p>We were unable to process your payment of <strong>UGX ${Number(amount).toLocaleString()}</strong> for order <strong>${escapeHtml(orderNumber)}</strong>.</p>
+    <p>We were unable to process your payment of <strong>$${Number(amount).toFixed(2)}</strong> for order <strong>${escapeHtml(orderNumber)}</strong>.</p>
     <p>This can happen if:</p>
     <ul>
       <li>You cancelled the payment prompt</li>
@@ -218,7 +218,7 @@ export const sendRefundConfirmation = httpAction(async (ctx, request) => {
   const html = baseTemplate(`
     <h2>Refund Processed</h2>
     <p>Hi ${escapeHtml(customerName)},</p>
-    <p>Your refund of <strong>UGX ${Number(amount).toLocaleString()}</strong> for order <strong>${escapeHtml(orderNumber)}</strong> has been processed.</p>
+    <p>Your refund of <strong>$${Number(amount).toFixed(2)}</strong> for order <strong>${escapeHtml(orderNumber)}</strong> has been processed.</p>
     ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}
     <p>The refund will appear on your statement within 5-10 business days.</p>
     <p>If you have any questions, please contact us at hello@trueworksug.com</p>

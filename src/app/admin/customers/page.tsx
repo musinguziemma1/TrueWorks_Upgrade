@@ -17,7 +17,7 @@ import {
 } from "@/lib/admin-queries"
 
 const fmtLTV = (n: number) =>
-  new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", minimumFractionDigits: 0 }).format(n)
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n)
 
 interface CustomerDoc {
   _id: string;

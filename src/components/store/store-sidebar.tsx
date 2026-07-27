@@ -170,7 +170,7 @@ export function StoreSidebar({
     fileTypes.length > 0 && { label: `${fileTypes.length} file type${fileTypes.length > 1 ? "s" : ""}`, clear: () => onFileTypesChange([]) },
     industries.length > 0 && { label: `${industries.length} industry${industries.length > 1 ? "ies" : ""}`, clear: () => onIndustriesChange([]) },
     (priceRange[0] > stats.minPrice || priceRange[1] < stats.maxPrice) && {
-      label: `UGX ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}`,
+      label: `$${priceRange[0].toFixed(2)} - $${priceRange[1].toFixed(2)}`,
       clear: () => onPriceRangeChange([stats.minPrice, stats.maxPrice]),
     },
   ].filter(Boolean) as { label: string; clear: () => void }[]
@@ -271,7 +271,7 @@ export function StoreSidebar({
             </div>
           </div>
           <p className="text-[11px] text-muted">
-            Range: UGX {stats.minPrice.toLocaleString()} — UGX {stats.maxPrice.toLocaleString()}
+            Range: ${stats.minPrice.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })} - ${stats.maxPrice.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })}
           </p>
         </div>
       </FilterSection>

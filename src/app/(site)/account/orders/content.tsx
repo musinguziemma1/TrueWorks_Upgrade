@@ -19,7 +19,7 @@ import { ShoppingBag } from "lucide-react";
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-UG", {
     style: "currency",
-    currency: "UGX",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
 }

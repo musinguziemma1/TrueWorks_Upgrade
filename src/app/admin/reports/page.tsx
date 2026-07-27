@@ -221,8 +221,8 @@ export default function ReportsPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label="Orders (period)" value={String(stats.orders)} icon={ShoppingCart} />
-            <SummaryCard label="Revenue (UGX)" value={stats.revenue.toLocaleString()} icon={DollarSign} />
-            <SummaryCard label="Avg Order (UGX)" value={stats.avgOrderValue.toLocaleString()} icon={BarChart3} />
+            <SummaryCard label="Revenue (USD)" value={stats.revenue.toLocaleString()} icon={DollarSign} />
+            <SummaryCard label="Avg Order (USD)" value={stats.avgOrderValue.toLocaleString()} icon={BarChart3} />
             <SummaryCard label="Refunded" value={String(stats.refunded)} icon={Percent} />
           </div>
 

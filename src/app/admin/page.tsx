@@ -252,7 +252,7 @@ export default function AdminDashboard() {
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Avg Order Value</p>
               <p className="text-lg font-bold text-[#0B2545] font-heading">
-                {completedOrders > 0 ? formatPrice(Math.round(revenue / completedOrders)) : "UGX 0"}
+                {completedOrders > 0 ? formatPrice(Math.round(revenue / completedOrders)) : "$0"}
               </p>
             </CardContent>
           </Card>

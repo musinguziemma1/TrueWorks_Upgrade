@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 
 const kpiItems = [
   { icon: BarChart3, label: "Bed Occupancy", value: "78%" },
-  { icon: TrendingUp, label: "Revenue / Bed", value: "UGX 2.4M" },
+  { icon: TrendingUp, label: "Revenue / Bed", value: "$2,400" },
   { icon: Users, label: "Patients / Day", value: "142" },
-  { icon: Banknote, label: "Average Bill", value: "UGX 85K" },
+  { icon: Banknote, label: "Average Bill", value: "$85" },
 ];
 
 export default function FreeResource() {
