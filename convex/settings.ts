@@ -1,6 +1,20 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
+
+// Strips anything that could break out of a <style> tag or execute script
+export function sanitizeCss(css: string): string {
+  return css
+    .replace(/<\/style/gi, "")
+    .replace(/<style/gi, "")
+    .replace(/<script/gi, "")
+    .replace(/<\/script/gi, "")
+    .replace(/javascript:/gi, "")
+    .replace(/expression\s*\(/gi, "")
+    .replace(/@import/gi, "")
+    .replace(/behavior\s*:/gi, "")
+    .replace(/-moz-binding/gi, "");
+}
 
 export const get = query({
   args: { key: v.string() },
@@ -26,7 +40,10 @@ export const getPublic = query({
     ];
     for (const setting of all) {
       if (publicKeys.includes(setting.key)) {
-        result[setting.key] = setting.value;
+        result[setting.key] =
+          setting.key === "customCss" && typeof setting.value === "string"
+            ? sanitizeCss(setting.value)
+            : setting.value;
       }
     }
     return result;
@@ -36,6 +53,7 @@ export const getPublic = query({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) return {};
     const all = await ctx.db.query("settings").collect();
     const result: Record<string, unknown> = {};
     for (const setting of all) {

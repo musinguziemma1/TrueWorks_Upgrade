@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 export const list = query({
   args: {
@@ -8,19 +9,26 @@ export const list = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const isAdmin = await requireAdminSilent(ctx);
+    let reviews;
     if (args.productId) {
-      return await ctx.db
+      reviews = await ctx.db
         .query("reviews")
         .withIndex("by_productId", (q) => q.eq("productId", args.productId!))
         .collect();
-    }
-    if (args.status) {
-      return await ctx.db
+    } else if (args.status) {
+      reviews = await ctx.db
         .query("reviews")
         .withIndex("by_status", (q) => q.eq("status", args.status as "pending" | "approved" | "rejected"))
         .collect();
+    } else {
+      reviews = await ctx.db.query("reviews").order("desc").take(100);
     }
-    return await ctx.db.query("reviews").order("desc").take(100);
+    // Non-admins can only see approved reviews
+    if (!isAdmin) {
+      return reviews.filter((r) => r.status === "approved");
+    }
+    return reviews;
   },
 });
 
@@ -47,6 +55,15 @@ export const create = mutation({
     if (args.rating < 1 || args.rating > 5) {
       throw new Error("Rating must be between 1 and 5");
     }
+
+    // Rate limit: max 3 reviews per product per name per hour
+    await checkRateLimit(
+      ctx,
+      "review",
+      `${args.productId}:${args.customerName.toLowerCase().trim()}`,
+      3,
+      3_600_000
+    );
 
     return await ctx.db.insert("reviews", {
       productId: args.productId,

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 
@@ -32,6 +32,7 @@ export const list = query({
 export const getByOrderId = query({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return [];
     return await ctx.db
       .query("payments")
       .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
@@ -39,7 +40,7 @@ export const getByOrderId = query({
   },
 });
 
-export const getByPaymentId = query({
+export const getByPaymentId = internalQuery({
   args: { paymentId: v.string() },
   handler: async (ctx, args) => {
     const results = await ctx.db
@@ -50,7 +51,7 @@ export const getByPaymentId = query({
   },
 });
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     orderId: v.id("orders"),
     paymentId: v.string(),
@@ -73,7 +74,7 @@ export const create = mutation({
   },
 });
 
-export const updateStatus = mutation({
+export const updateStatus = internalMutation({
   args: {
     id: v.id("payments"),
     status: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),

@@ -1,9 +1,50 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksug.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
+
+/**
+ * All /email/* endpoints are server-to-server only. Callers must send the
+ * shared secret in the x-email-secret header. Without this, anyone on the
+ * internet could send branded email through our Resend account.
+ */
+function requireEmailAuth(request: Request): Response | null {
+  if (!EMAIL_API_SECRET) {
+    // Fail closed: if no secret is configured, nobody can send email
+    return new Response(JSON.stringify({ error: "Email service not configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const provided = request.headers.get("x-email-secret");
+  if (provided !== EMAIL_API_SECRET) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return null;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeUrl(url: unknown): string {
+  const raw = String(url ?? "");
+  // Only allow http(s) and relative URLs in links
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) {
+    return raw.replace(/"/g, "&quot;");
+  }
+  return "#";
+}
 
 interface EmailPayload {
   to: string;
@@ -76,21 +117,24 @@ function baseTemplate(content: string): string {
 }
 
 export const sendOrderConfirmation = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { orderNumber, customerEmail, customerName, items, total } = body;
 
-  const itemsHtml = items.map((item: { name: string; quantity: number; price: number }) =>
-    `<div class="item-row"><span>${item.name} × ${item.quantity}</span><span>UGX ${item.price.toLocaleString()}</span></div>`
+  const itemsHtml = (items as { name: string; quantity: number; price: number }[]).map((item) =>
+    `<div class="item-row"><span>${escapeHtml(item.name)} × ${escapeHtml(item.quantity)}</span><span>UGX ${Number(item.price).toLocaleString()}</span></div>`
   ).join("");
 
   const html = baseTemplate(`
-    <h2>Order Confirmed! 🎉</h2>
-    <p>Hi ${customerName},</p>
+    <h2>Order Confirmed!</h2>
+    <p>Hi ${escapeHtml(customerName)},</p>
     <p>Thank you for your purchase. Your order has been received and is being processed.</p>
     <div class="order-box">
-      <p><strong>Order Number:</strong> ${orderNumber}</p>
+      <p><strong>Order Number:</strong> ${escapeHtml(orderNumber)}</p>
       ${itemsHtml}
-      <div class="item-row total"><span>Total</span><span>UGX ${total.toLocaleString()}</span></div>
+      <div class="item-row total"><span>Total</span><span>UGX ${Number(total).toLocaleString()}</span></div>
     </div>
     <p>Your download links will be available in your account once payment is confirmed.</p>
     <a href="${SITE_URL}/account/orders" class="button">View Your Orders</a>
@@ -99,7 +143,7 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
 
   const sent = await sendEmail({
     to: customerEmail,
-    subject: `Order Confirmation - ${orderNumber}`,
+    subject: `Order Confirmation - ${String(orderNumber).slice(0, 64)}`,
     html,
   });
 
@@ -107,15 +151,18 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
 });
 
 export const sendDownloadReady = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { customerEmail, customerName, orderNumber, downloadUrl, productName } = body;
 
   const html = baseTemplate(`
     <h2>Your Download is Ready!</h2>
-    <p>Hi ${customerName},</p>
-    <p>Your purchase of <strong>${productName}</strong> is ready to download.</p>
-    <p>Order: ${orderNumber}</p>
-    <a href="${downloadUrl}" class="button">Download Now</a>
+    <p>Hi ${escapeHtml(customerName)},</p>
+    <p>Your purchase of <strong>${escapeHtml(productName)}</strong> is ready to download.</p>
+    <p>Order: ${escapeHtml(orderNumber)}</p>
+    <a href="${escapeUrl(downloadUrl)}" class="button">Download Now</a>
     <p><strong>Note:</strong> This download link will expire in 30 days. Please save the file to your computer after downloading.</p>
     <p>You can also access your downloads anytime from your account:</p>
     <a href="${SITE_URL}/account/downloads" class="button">View All Downloads</a>
@@ -123,7 +170,7 @@ export const sendDownloadReady = httpAction(async (ctx, request) => {
 
   const sent = await sendEmail({
     to: customerEmail,
-    subject: `Download Ready - ${productName}`,
+    subject: `Download Ready - ${String(productName).slice(0, 64)}`,
     html,
   });
 
@@ -131,13 +178,16 @@ export const sendDownloadReady = httpAction(async (ctx, request) => {
 });
 
 export const sendPaymentFailed = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { customerEmail, customerName, orderNumber, amount } = body;
 
   const html = baseTemplate(`
     <h2>Payment Failed</h2>
-    <p>Hi ${customerName},</p>
-    <p>We were unable to process your payment of <strong>UGX ${amount.toLocaleString()}</strong> for order <strong>${orderNumber}</strong>.</p>
+    <p>Hi ${escapeHtml(customerName)},</p>
+    <p>We were unable to process your payment of <strong>UGX ${Number(amount).toLocaleString()}</strong> for order <strong>${escapeHtml(orderNumber)}</strong>.</p>
     <p>This can happen if:</p>
     <ul>
       <li>You cancelled the payment prompt</li>
@@ -151,7 +201,7 @@ export const sendPaymentFailed = httpAction(async (ctx, request) => {
 
   const sent = await sendEmail({
     to: customerEmail,
-    subject: `Payment Failed - ${orderNumber}`,
+    subject: `Payment Failed - ${String(orderNumber).slice(0, 64)}`,
     html,
   });
 
@@ -159,21 +209,24 @@ export const sendPaymentFailed = httpAction(async (ctx, request) => {
 });
 
 export const sendRefundConfirmation = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { customerEmail, customerName, orderNumber, amount, reason } = body;
 
   const html = baseTemplate(`
     <h2>Refund Processed</h2>
-    <p>Hi ${customerName},</p>
-    <p>Your refund of <strong>UGX ${amount.toLocaleString()}</strong> for order <strong>${orderNumber}</strong> has been processed.</p>
-    ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
+    <p>Hi ${escapeHtml(customerName)},</p>
+    <p>Your refund of <strong>UGX ${Number(amount).toLocaleString()}</strong> for order <strong>${escapeHtml(orderNumber)}</strong> has been processed.</p>
+    ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}
     <p>The refund will appear on your statement within 5-10 business days.</p>
     <p>If you have any questions, please contact us at hello@trueworksug.com</p>
   `);
 
   const sent = await sendEmail({
     to: customerEmail,
-    subject: `Refund Processed - ${orderNumber}`,
+    subject: `Refund Processed - ${String(orderNumber).slice(0, 64)}`,
     html,
   });
 
@@ -181,12 +234,15 @@ export const sendRefundConfirmation = httpAction(async (ctx, request) => {
 });
 
 export const sendWelcomeEmail = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { customerEmail, customerName } = body;
 
   const html = baseTemplate(`
     <h2>Welcome to TrueWorks!</h2>
-    <p>Hi ${customerName},</p>
+    <p>Hi ${escapeHtml(customerName)},</p>
     <p>Welcome to TrueWorks — your trusted source for premium business templates and systems built for African organizations.</p>
     <p>Here's what you can do:</p>
     <ul>
@@ -208,14 +264,19 @@ export const sendWelcomeEmail = httpAction(async (ctx, request) => {
 });
 
 export const sendNewsletter = httpAction(async (ctx, request) => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
   const body = await request.json();
   const { subscriberEmail, subject, content } = body;
 
-  const html = baseTemplate(content);
+  // content is admin-authored HTML (sent only from the admin dashboard
+  // via an authenticated internal call) — do not escape it.
+  const html = baseTemplate(String(content ?? ""));
 
   const sent = await sendEmail({
     to: subscriberEmail,
-    subject,
+    subject: String(subject ?? "").slice(0, 128),
     html,
   });
 

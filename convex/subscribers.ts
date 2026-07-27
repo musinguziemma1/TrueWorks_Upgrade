@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 export const list = query({
   args: {     activeOnly: v.optional(v.boolean()) },
@@ -21,9 +22,13 @@ export const create = mutation({
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const email = args.email.toLowerCase().trim();
+    // Rate limit: max 5 subscribe attempts per email per hour
+    await checkRateLimit(ctx, "subscribe", email, 5, 3_600_000);
+
     const existing = await ctx.db
       .query("subscribers")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .collect();
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, { active: true });
@@ -31,6 +36,7 @@ export const create = mutation({
     }
     return await ctx.db.insert("subscribers", {
       ...args,
+      email,
       active: true,
       createdAt: Date.now(),
     });

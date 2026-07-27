@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 
@@ -93,7 +93,7 @@ export const remove = mutation({
   },
 });
 
-export const createPublic = mutation({
+export const createPublic = internalMutation({
   args: {
     type: v.string(),
     title: v.string(),

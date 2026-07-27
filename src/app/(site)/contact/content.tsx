@@ -15,7 +15,10 @@ import {
   ArrowRight,
   CheckCircle2,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
+import { api } from "@convex/_generated/api";
+import { convexClient } from "@/lib/convex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,16 +57,36 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 export default function ContactContent() {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-    setTimeout(() => setSubmitted(false), 5000);
+    if (!convexClient) {
+      setError("Service unavailable. Please email us directly at hello@trueworksug.com");
+      return;
+    }
+    setSending(true);
+    setError("");
+    try {
+      await convexClient.mutation(api.contact.create, {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject || undefined,
+        message: formData.message,
+      });
+      setSubmitted(true);
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const scrollToForm = (subject: string) => {
@@ -123,6 +146,16 @@ export default function ContactContent() {
                   </motion.div>
                 )}
 
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 flex items-center gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
                 <form onSubmit={handleSubmit} className="mt-7 space-y-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -175,10 +208,15 @@ export default function ContactContent() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    disabled={sending}
+                    className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105 disabled:opacity-60"
                   >
-                    <Send className="mr-2 h-4 w-4" />
-                    Send Message
+                    {sending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    {sending ? "Sending…" : "Send Message"}
                   </Button>
                 </form>
               </div>

@@ -94,7 +94,7 @@ const defaultSettings: Settings = {
 const SettingsContext = createContext<Settings>(defaultSettings)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const rawSettings = useQuery(api.settings.getAll)
+  const rawSettings = useQuery(api.settings.getPublic)
 
   const settings = useMemo<Settings>(() => {
     if (!rawSettings) return defaultSettings

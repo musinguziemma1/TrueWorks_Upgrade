@@ -1,10 +1,12 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 export const get = query({
   args: { date: v.string() },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return null;
     const results = await ctx.db
       .query("analytics")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -19,6 +21,7 @@ export const getRange = query({
     endDate: v.string(),
   },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return [];
     return await ctx.db
       .query("analytics")
       .withIndex("by_date", (q) =>
@@ -28,7 +31,7 @@ export const getRange = query({
   },
 });
 
-export const upsert = mutation({
+export const upsert = internalMutation({
   args: {
     date: v.string(),
     revenue: v.number(),
@@ -61,8 +64,12 @@ export const upsert = mutation({
 });
 
 export const incrementVisitors = mutation({
-  args: { date: v.string() },
+  args: { date: v.string(), sessionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // Rate limit: 5 visitor increments per session per day
+    if (args.sessionId) {
+      await checkRateLimit(ctx, `visitors:${args.date}`, args.sessionId, 5, 86_400_000);
+    }
     const existing = await ctx.db
       .query("analytics")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -86,8 +93,12 @@ export const incrementVisitors = mutation({
 });
 
 export const incrementPageViews = mutation({
-  args: { date: v.string() },
+  args: { date: v.string(), sessionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // Rate limit: 120 pageview increments per session per hour
+    if (args.sessionId) {
+      await checkRateLimit(ctx, "pageviews", args.sessionId, 120, 3_600_000);
+    }
     const existing = await ctx.db
       .query("analytics")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -95,6 +106,16 @@ export const incrementPageViews = mutation({
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, {
         pageViews: existing[0].pageViews + 1,
+      });
+    } else {
+      await ctx.db.insert("analytics", {
+        date: args.date,
+        revenue: 0,
+        orders: 0,
+        downloads: 0,
+        visitors: 0,
+        pageViews: 1,
+        createdAt: Date.now(),
       });
     }
   },

@@ -316,4 +316,41 @@ export default defineSchema({
     .index("by_actorId", ["actorId"])
     .index("by_entityType", ["entityType"])
     .index("by_createdAt", ["createdAt"]),
+
+  rateLimits: defineTable({
+    key: v.string(), // `${action}:${identifier}`
+    windowStart: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
+
+  contactMessages: defineTable({
+    name: v.string(),
+    email: v.string(),
+    subject: v.optional(v.string()),
+    message: v.string(),
+    read: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_read", ["read"]),
+
+  carts: defineTable({
+    clerkId: v.string(),
+    items: v.array(v.object({
+      id: v.string(),
+      name: v.string(),
+      price: v.number(),
+      quantity: v.number(),
+      image: v.string(),
+      slug: v.string(),
+    })),
+    wishlist: v.array(v.object({
+      id: v.string(),
+      name: v.string(),
+      slug: v.string(),
+      price: v.number(),
+      image: v.string(),
+    })),
+    updatedAt: v.number(),
+  }).index("by_clerkId", ["clerkId"]),
 });

@@ -1,5 +1,5 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
@@ -113,7 +113,7 @@ export const createPaymentIntent = httpAction(async (ctx, req) => {
 
     const pi = await stripePost("/payment_intents", params);
 
-    await ctx.runMutation(api.payments.create, {
+    await ctx.runMutation(internal.payments.create, {
       orderId,
       paymentId: pi.id,
       provider: "stripe",
@@ -175,18 +175,18 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
   if (eventType === "payment_intent.succeeded") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
-      const payment = await ctx.runQuery(api.payments.getByPaymentId, {
+      const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
         paymentId: pi.id as string,
       });
 
       if (payment) {
-        await ctx.runMutation(api.payments.updateStatus, {
+        await ctx.runMutation(internal.payments.updateStatus, {
           id: payment._id,
           status: "completed",
           metadata: { ...payment.metadata, latestCharge: pi.latest_charge },
         });
 
-        await ctx.runMutation(api.orders.updateFromPayment, {
+        await ctx.runMutation(internal.orders.updateFromPayment, {
           orderId,
           paymentStatus: "completed",
           orderStatus: "processing",
@@ -201,7 +201,7 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
             });
             if (product?.downloadableFile) {
               const expiryDays = product.downloadExpiry ?? 30;
-              await ctx.runMutation(api.downloads.create, {
+              await ctx.runMutation(internal.downloads.create, {
                 orderId,
                 productId: item.productId,
                 email: order.customerEmail,
@@ -214,7 +214,7 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
             }
           }
 
-          await ctx.runMutation(api.orders.updateFromPayment, {
+          await ctx.runMutation(internal.orders.updateFromPayment, {
             orderId,
             paymentStatus: "completed",
             orderStatus: "completed",
@@ -222,7 +222,7 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
           });
         }
 
-        await ctx.runMutation(api.notifications.createPublic, {
+        await ctx.runMutation(internal.notifications.createPublic, {
           type: "order",
           title: "Payment Received",
           message: `Stripe payment of ${(pi.amount as number) / 100} ${(pi.currency as string)?.toUpperCase()} completed for order ${orderId}`,
@@ -233,25 +233,25 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
   } else if (eventType === "payment_intent.payment_failed") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
-      const payment = await ctx.runQuery(api.payments.getByPaymentId, {
+      const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
         paymentId: pi.id as string,
       });
 
       if (payment) {
         const lastError = (pi.last_payment_error ?? {}) as Record<string, unknown>;
-        await ctx.runMutation(api.payments.updateStatus, {
+        await ctx.runMutation(internal.payments.updateStatus, {
           id: payment._id,
           status: "failed",
           metadata: { ...payment.metadata, failureReason: lastError.message },
         });
 
-        await ctx.runMutation(api.orders.updateFromPayment, {
+        await ctx.runMutation(internal.orders.updateFromPayment, {
           orderId,
           paymentStatus: "failed",
           orderStatus: "pending",
         });
 
-        await ctx.runMutation(api.notifications.createPublic, {
+        await ctx.runMutation(internal.notifications.createPublic, {
           type: "order",
           title: "Payment Failed",
           message: `Stripe payment failed for order ${orderId}: ${(lastError.message as string) ?? "Unknown error"}`,

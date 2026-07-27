@@ -34,7 +34,8 @@ export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
     .query("users")
     .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .collect();
-  if (!user[0] || ROLE_HIERARCHY[user[0].role] < ROLE_HIERARCHY.viewer) {
+  const level = (user[0] && ROLE_HIERARCHY[user[0].role]) ?? 0;
+  if (!user[0] || level < ROLE_HIERARCHY.editor) {
     throw new Error("Unauthorized: Admin access required");
   }
 }
@@ -47,7 +48,8 @@ export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<b
       .query("users")
       .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .collect();
-    if (!user[0] || ROLE_HIERARCHY[user[0].role] < ROLE_HIERARCHY.viewer) return false;
+    const level = (user[0] && ROLE_HIERARCHY[user[0].role]) ?? 0;
+    if (!user[0] || level < ROLE_HIERARCHY.editor) return false;
     return true;
   } catch {
     return false;

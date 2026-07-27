@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, CheckCircle2, AlertCircle, BarChart3, TrendingUp, Users, Banknote } from "lucide-react";
+import { Download, CheckCircle2, AlertCircle, BarChart3, TrendingUp, Users, Banknote, Loader2 } from "lucide-react";
+import { api } from "@convex/_generated/api";
+import { convexClient } from "@/lib/convex";
 import { Button } from "@/components/ui/button";
 
 const kpiItems = [
@@ -15,14 +17,31 @@ const kpiItems = [
 export default function FreeResource() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "valid" | "error">("idle");
+  const [sending, setSending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setStatus("error");
+      setErrorMsg("Please enter a valid email address.");
       return;
     }
-    setStatus("valid");
+    if (!convexClient) {
+      setStatus("error");
+      setErrorMsg("Service unavailable. Please try again later.");
+      return;
+    }
+    setSending(true);
+    try {
+      await convexClient.mutation(api.subscribers.create, { email, source: "free-resource" });
+      setStatus("valid");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -75,16 +94,21 @@ export default function FreeResource() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-12 shrink-0 gradient-gold px-6 text-sm font-semibold text-primary-dark shadow-lg shadow-accent/20 hover:brightness-105"
+                    disabled={sending}
+                    className="h-12 shrink-0 gradient-gold px-6 text-sm font-semibold text-primary-dark shadow-lg shadow-accent/20 hover:brightness-105 disabled:opacity-60"
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    Send It to Me
+                    {sending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
+                    {sending ? "Sending…" : "Send It to Me"}
                   </Button>
                 </div>
                 {status === "error" && (
                   <p className="mt-2.5 flex items-center gap-1.5 text-xs text-red-300">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    Please enter a valid email address.
+                    {errorMsg || "Please enter a valid email address."}
                   </p>
                 )}
                 {status === "valid" && (

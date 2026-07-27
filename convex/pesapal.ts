@@ -1,5 +1,5 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY ?? "";
@@ -72,7 +72,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
     const data = await response.json();
 
     if (data.order_tracking_id) {
-      await ctx.runMutation(api.payments.create, {
+      await ctx.runMutation(internal.payments.create, {
         orderId: orderId as Id<"orders">,
         paymentId: data.order_tracking_id,
         provider: "pesapal",
@@ -114,7 +114,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
     );
     const data = await response.json();
 
-    const payment = await ctx.runQuery(api.payments.getByPaymentId, { paymentId: orderTrackingId });
+    const payment = await ctx.runQuery(internal.payments.getByPaymentId, { paymentId: orderTrackingId });
     if (payment) {
       let status: "pending" | "completed" | "failed" | "refunded" = "pending";
       if (data.payment_status_description === "Completed" || data.status === "200") {
@@ -123,7 +123,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
         status = "failed";
       }
 
-      await ctx.runMutation(api.payments.updateStatus, {
+      await ctx.runMutation(internal.payments.updateStatus, {
         id: payment._id,
         status,
         metadata: data,
@@ -150,7 +150,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
                 downloadCount: 0,
               });
 
-              await ctx.runMutation(api.downloads.create, {
+              await ctx.runMutation(internal.downloads.create, {
                 productId: item.productId,
                 orderId: order._id,
                 email: order.customerEmail,

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 
@@ -87,10 +87,9 @@ export const validate = query({
   },
 });
 
-export const incrementUsage = mutation({
+export const incrementUsage = internalMutation({
   args: { id: v.id("coupons") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
     const coupon = await ctx.db.get(args.id);
     if (coupon) {
       await ctx.db.patch(args.id, { usageCount: coupon.usageCount + 1 });

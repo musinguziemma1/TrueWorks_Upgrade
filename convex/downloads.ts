@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 
@@ -28,7 +28,7 @@ export const listMine = query({
   },
 });
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     productId: v.id("products"),
     orderId: v.optional(v.id("orders")),

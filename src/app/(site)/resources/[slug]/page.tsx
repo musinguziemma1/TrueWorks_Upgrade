@@ -1,34 +1,35 @@
-"use client";
-
-import { useQuery } from "convex/react";
+import type { Metadata } from "next";
 import { api } from "@convex/_generated/api";
-import { useParams } from "next/navigation";
-import ResourceDetail from "./content";
-import { Loader2 } from "lucide-react";
+import { convexServer } from "@/lib/convex-server";
+import ResourceLoader from "./loader";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  if (!convexServer) return { title: "Resource" };
+  try {
+    const resource = await convexServer.query(api.resources.getBySlug, { slug });
+    if (!resource) return { title: "Resource Not Found" };
+    return {
+      title: resource.title,
+      description: resource.description,
+      alternates: { canonical: `${SITE_URL}/resources/${resource.slug}` },
+      openGraph: {
+        title: resource.title,
+        description: resource.description,
+        type: "article",
+        url: `${SITE_URL}/resources/${resource.slug}`,
+        images: resource.featuredImage ? [{ url: resource.featuredImage }] : undefined,
+      },
+    };
+  } catch {
+    return { title: "Resource" };
+  }
+}
 
 export default function ResourceDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const resource = useQuery(api.resources.getBySlug, { slug });
-
-  if (resource === undefined) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (resource === null) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-        <h1 className="font-heading text-3xl font-semibold text-primary">Resource Not Found</h1>
-        <p className="mt-2 text-muted">The resource you are looking for does not exist.</p>
-        <a href="/resources" className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90">
-          Back to Resources
-        </a>
-      </div>
-    );
-  }
-
-  return <ResourceDetail resource={resource} />;
+  return <ResourceLoader />;
 }

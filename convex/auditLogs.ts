@@ -27,6 +27,9 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const isAdmin = await requireAdminSilent(ctx);
+    if (!isAdmin) {
+      throw new Error("Unauthorized: Admin access required");
+    }
     const identity = await ctx.auth.getUserIdentity();
     let actorId = undefined;
     if (identity) {

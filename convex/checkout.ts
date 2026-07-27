@@ -1,8 +1,24 @@
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const createCheckoutOrder = httpAction(async (ctx, request) => {
   try {
+    // Rate limit: max 10 checkout attempts per IP per 10 minutes
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    try {
+      await ctx.runMutation(internal.rateLimit.check, {
+        action: "checkout",
+        identifier: ip,
+        limit: 10,
+        windowMs: 600_000,
+      });
+    } catch {
+      return new Response(JSON.stringify({ error: "Too many attempts. Please try again later." }), { status: 429, headers: { "Content-Type": "application/json" } });
+    }
+
     const body = await request.json();
     const { items, customerEmail, customerName, paymentMethod, couponCode } = body;
 
@@ -55,7 +71,7 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     const total = Math.max(0, subtotal - discountAmount);
     const orderNumber = `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-    const orderId = await ctx.runMutation(api.orders.create, {
+    const orderId = await ctx.runMutation(internal.orders.createInternal, {
       orderNumber,
       customerEmail,
       customerName,
@@ -74,16 +90,16 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     if (couponCode) {
       const couponResult = await ctx.runQuery(api.coupons.validate, { code: couponCode });
       if (couponResult.valid && couponResult.coupon) {
-        await ctx.runMutation(api.coupons.incrementUsage, { id: couponResult.coupon._id });
+        await ctx.runMutation(internal.coupons.incrementUsage, { id: couponResult.coupon._id });
       }
     }
 
-    await ctx.runMutation(api.customers.upsertPublic, {
+    await ctx.runMutation(internal.customers.upsertPublic, {
       email: customerEmail,
       name: customerName,
     });
 
-    await ctx.runMutation(api.notifications.createPublic, {
+    await ctx.runMutation(internal.notifications.createPublic, {
       type: "order",
       title: "New Order Received",
       message: `Order ${orderNumber} from ${customerName} for ${total.toLocaleString()}`,
@@ -91,22 +107,30 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     });
 
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      await fetch(`${siteUrl}/api/email/order-confirmation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderNumber,
-          customerEmail,
-          customerName,
-          items: orderItems.map((item) => ({
-            name: item.productName,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          total,
-        }),
-      });
+      // Server-to-server call to the Convex site URL with the shared secret.
+      // CONVEX_SITE_URL is set automatically by Convex in the action env.
+      const siteUrl = process.env.CONVEX_SITE_URL ?? process.env.NEXT_PUBLIC_CONVEX_SITE_URL ?? "";
+      const emailSecret = process.env.EMAIL_API_SECRET ?? "";
+      if (siteUrl && emailSecret) {
+        await fetch(`${siteUrl}/email/order-confirmation`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-email-secret": emailSecret,
+          },
+          body: JSON.stringify({
+            orderNumber,
+            customerEmail,
+            customerName,
+            items: orderItems.map((item) => ({
+              name: item.productName,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            total,
+          }),
+        });
+      }
     } catch {
       // Email failure should not block checkout
     }

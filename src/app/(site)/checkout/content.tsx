@@ -24,6 +24,8 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { api } from "@convex/_generated/api";
+import { convexClient } from "@/lib/convex";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import { useFormatPrice } from "@/lib/use-format-price";
@@ -143,10 +145,61 @@ export default function CheckoutContent() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(
     null
   );
+  const [couponLoading, setCouponLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [convexOrderId, setConvexOrderId] = useState<string | null>(null);
+
+  const discountAmount = appliedCoupon?.discount ?? 0;
+  const displayTotal = Math.max(0, totalPrice - discountAmount);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    if (!convexClient) {
+      toast.error("Service unavailable", { description: "Please try again later" });
+      return;
+    }
+    setCouponLoading(true);
+    try {
+      const result = await convexClient.query(api.coupons.validate, {
+        code: couponCode.trim().toUpperCase(),
+      });
+      if (!result.valid || !result.coupon) {
+        setAppliedCoupon(null);
+        toast.error("Invalid coupon", { description: result.error ?? "This coupon cannot be used" });
+        return;
+      }
+      const coupon = result.coupon;
+      if (coupon.minPurchase && totalPrice < coupon.minPurchase) {
+        setAppliedCoupon(null);
+        toast.error("Minimum purchase not met", {
+          description: `This coupon requires a minimum purchase of ${coupon.minPurchase.toLocaleString()}`,
+        });
+        return;
+      }
+      const discount =
+        coupon.type === "percentage"
+          ? Math.round(totalPrice * (coupon.value / 100))
+          : Math.min(coupon.value, totalPrice);
+      setAppliedCoupon({ code: coupon.code, discount });
+      // Force a new payment intent with the discounted amount
+      setStripeClientSecret(null);
+      toast.success("Coupon applied", {
+        description: `You save ${discount.toLocaleString()} on this order`,
+      });
+    } catch {
+      toast.error("Could not validate coupon", { description: "Please try again" });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setStripeClientSecret(null);
+  };
 
   const createStripePaymentIntent = async () => {
     try {
@@ -155,7 +208,7 @@ export default function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: convexOrderId,
-          amount: Math.round(totalPrice * 100),
+          amount: Math.round(displayTotal * 100),
           currency: "usd",
           customerEmail: email,
           customerName: `${firstName} ${lastName}`,
@@ -257,7 +310,7 @@ export default function CheckoutContent() {
 
   const handleStripeSuccess = () => {
     clearCart();
-    router.push(`/order-confirmation?order=${orderId}&total=${totalPrice}`);
+    router.push(`/order-confirmation?order=${orderId}&total=${displayTotal}`);
   };
 
   const handleStripeError = (msg: string) => {
@@ -428,22 +481,30 @@ export default function CheckoutContent() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => {
-                        if (couponCode) {
-                          setAppliedCoupon({ code: couponCode, discount: 0 });
-                          toast.success("Coupon applied", {
-                            description: "Discount will be calculated at payment",
-                          });
-                        }
-                      }}
+                      disabled={couponLoading || !couponCode.trim()}
+                      onClick={applyCoupon}
                     >
-                      Apply
+                      {couponLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
                     </Button>
                   </div>
                   {appliedCoupon && (
-                    <p className="mt-2 text-sm text-success">
-                      Coupon &quot;{appliedCoupon.code}&quot; applied
-                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-sm text-success">
+                        Coupon &quot;{appliedCoupon.code}&quot; applied — you save{" "}
+                        {formatPrice(appliedCoupon.discount)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        className="text-xs text-muted underline hover:text-foreground"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -647,10 +708,16 @@ export default function CheckoutContent() {
                     <dt>Subtotal ({totalItems} items)</dt>
                     <dd className="font-medium text-foreground">{formatPrice(totalPrice)}</dd>
                   </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-success">
+                      <dt>Discount ({appliedCoupon?.code})</dt>
+                      <dd className="font-medium">-{formatPrice(discountAmount)}</dd>
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-between pt-1">
                     <dt className="font-heading text-base font-semibold text-primary">Total</dt>
                     <dd className="font-heading text-xl font-bold text-primary">
-                      {formatPrice(totalPrice)}
+                      {formatPrice(displayTotal)}
                     </dd>
                   </div>
                 </dl>
@@ -668,7 +735,7 @@ export default function CheckoutContent() {
                         Processing...
                       </>
                     ) : (
-                      `Pay ${formatPrice(totalPrice)}`
+                      `Pay ${formatPrice(displayTotal)}`
                     )}
                   </Button>
                 )}

@@ -1,4 +1,6 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 
@@ -47,55 +49,89 @@ export const getById = query({
   },
 });
 
-export const create = mutation({
-  args: {
-    orderNumber: v.string(),
-    customerId: v.optional(v.id("customers")),
-    customerEmail: v.string(),
-    customerName: v.string(),
-    items: v.array(v.object({
-      productId: v.id("products"),
-      productName: v.string(),
-      quantity: v.number(),
-      price: v.number(),
-    })),
-    subtotal: v.number(),
-    tax: v.number(),
-    discountAmount: v.optional(v.number()),
-    total: v.number(),
-    paymentMethod: v.string(),
-    paymentStatus: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
-    orderStatus: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled")),
-    downloadLinks: v.array(v.object({
-      productId: v.id("products"),
-      url: v.string(),
-      expiresAt: v.number(),
-      downloadCount: v.number(),
-    })),
-    couponCode: v.optional(v.string()),
-    ipAddress: v.optional(v.string()),
-    userAgent: v.optional(v.string()),
-    notes: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const orderId = await ctx.db.insert("orders", {
-      ...args,
-      createdAt: now,
-      updatedAt: now,
-    });
+const orderCreateArgs = {
+  orderNumber: v.string(),
+  customerId: v.optional(v.id("customers")),
+  customerEmail: v.string(),
+  customerName: v.string(),
+  items: v.array(v.object({
+    productId: v.id("products"),
+    productName: v.string(),
+    quantity: v.number(),
+    price: v.number(),
+  })),
+  subtotal: v.number(),
+  tax: v.number(),
+  discountAmount: v.optional(v.number()),
+  total: v.number(),
+  paymentMethod: v.string(),
+  paymentStatus: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
+  orderStatus: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled")),
+  downloadLinks: v.array(v.object({
+    productId: v.id("products"),
+    url: v.string(),
+    expiresAt: v.number(),
+    downloadCount: v.number(),
+  })),
+  couponCode: v.optional(v.string()),
+  ipAddress: v.optional(v.string()),
+  userAgent: v.optional(v.string()),
+  notes: v.optional(v.string()),
+};
 
-    for (const item of args.items) {
-      const product = await ctx.db.get(item.productId);
-      if (product) {
-        await ctx.db.patch(item.productId, {
-          totalSales: product.totalSales + item.quantity,
-          updatedAt: now,
-        });
-      }
+async function insertOrder(ctx: MutationCtx, args: {
+  orderNumber: string;
+  customerId?: Id<"customers">;
+  customerEmail: string;
+  customerName: string;
+  items: { productId: Id<"products">; productName: string; quantity: number; price: number }[];
+  subtotal: number;
+  tax: number;
+  discountAmount?: number;
+  total: number;
+  paymentMethod: string;
+  paymentStatus: "pending" | "completed" | "failed" | "refunded";
+  orderStatus: "pending" | "processing" | "completed" | "cancelled";
+  downloadLinks: { productId: Id<"products">; url: string; expiresAt: number; downloadCount: number }[];
+  couponCode?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  notes?: string;
+}) {
+  const now = Date.now();
+  const orderId = await ctx.db.insert("orders", {
+    ...args,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  for (const item of args.items) {
+    const product = await ctx.db.get(item.productId);
+    if (product) {
+      await ctx.db.patch(item.productId, {
+        totalSales: product.totalSales + item.quantity,
+        updatedAt: now,
+      });
     }
+  }
 
-    return orderId;
+  return orderId;
+}
+
+// Admin-only: manual order creation from the admin dashboard
+export const create = mutation({
+  args: orderCreateArgs,
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    return await insertOrder(ctx, args);
+  },
+});
+
+// Internal: called by checkout/payment HTTP actions (server-side computed totals)
+export const createInternal = internalMutation({
+  args: orderCreateArgs,
+  handler: async (ctx, args) => {
+    return await insertOrder(ctx, args);
   },
 });
 
@@ -122,7 +158,7 @@ export const remove = mutation({
   },
 });
 
-export const updateFromPayment = mutation({
+export const updateFromPayment = internalMutation({
   args: {
     orderId: v.string(),
     paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded"))),

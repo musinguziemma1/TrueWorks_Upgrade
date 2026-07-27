@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 
@@ -37,6 +37,7 @@ export const getById = query({
 export const getByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return null;
     const results = await ctx.db
       .query("customers")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -95,7 +96,7 @@ export const update = mutation({
   },
 });
 
-export const upsertPublic = mutation({
+export const upsertPublic = internalMutation({
   args: {
     email: v.string(),
     name: v.string(),
