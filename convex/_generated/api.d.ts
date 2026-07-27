@@ -10,6 +10,7 @@
 
 import type * as analytics from "../analytics.js";
 import type * as auditLogs from "../auditLogs.js";
+import type * as carts from "../carts.js";
 import type * as categories from "../categories.js";
 import type * as checkout from "../checkout.js";
 import type * as clerk from "../clerk.js";
@@ -21,6 +22,7 @@ import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as mediaFiles from "../mediaFiles.js";
 import type * as notifications from "../notifications.js";
+import type * as orderEmails from "../orderEmails.js";
 import type * as orders from "../orders.js";
 import type * as pages from "../pages.js";
 import type * as payments from "../payments.js";
@@ -45,6 +47,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auditLogs: typeof auditLogs;
+  carts: typeof carts;
   categories: typeof categories;
   checkout: typeof checkout;
   clerk: typeof clerk;
@@ -56,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   mediaFiles: typeof mediaFiles;
   notifications: typeof notifications;
+  orderEmails: typeof orderEmails;
   orders: typeof orders;
   pages: typeof pages;
   payments: typeof payments;

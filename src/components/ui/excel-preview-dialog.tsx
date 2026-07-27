@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import * as XLSX from "xlsx";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +44,9 @@ export function ExcelPreviewDialog({ url, fileName, open, onOpenChange }: ExcelP
     setSheets([]);
 
     try {
+      // Lazy-load xlsx (~500KB) only when this dialog opens
+      const XLSX = await import("xlsx");
+
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch file");
       const arrayBuffer = await response.arrayBuffer();

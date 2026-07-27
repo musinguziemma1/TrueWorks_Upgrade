@@ -4,6 +4,29 @@ import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
 import { requireAdmin, requireAdminSilent } from "./users";
 
+const ALLOWED_TYPES = new Set([
+  // Images
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "image/avif",
+  // Documents
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+  "application/vnd.ms-excel", // xls
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+  "application/msword",
+  "text/csv", "text/plain",
+  // Archives
+  "application/zip", "application/x-zip-compressed",
+  // Video
+  "video/mp4", "video/webm",
+]);
+
+const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
+const BLOCKED_EXTENSIONS = new Set([
+  "exe", "msi", "bat", "cmd", "com", "scr", "ps1", "vbs", "js", "mjs",
+  "html", "htm", "php", "asp", "aspx", "jsp", "sh", "dll",
+]);
+
 export const uploadFile = action({
   args: {
     name: v.string(),
@@ -14,7 +37,24 @@ export const uploadFile = action({
   handler: async (ctx, args) => {
     const me = await ctx.runQuery(api.users.current, {});
     if (!me || (me.role !== "admin" && me.role !== "owner" && me.role !== "editor")) throw new Error("Forbidden");
-    const storageId = await ctx.storage.store(new Blob([args.content]));
+
+    // Validate file extension
+    const ext = args.name.split(".").pop()?.toLowerCase() ?? "";
+    if (BLOCKED_EXTENSIONS.has(ext)) {
+      throw new Error(`File type .${ext} is not allowed`);
+    }
+
+    // Validate declared content type
+    if (!ALLOWED_TYPES.has(args.contentType)) {
+      throw new Error(`Content type ${args.contentType} is not allowed`);
+    }
+
+    // Validate size
+    if (args.content.byteLength > MAX_SIZE_BYTES) {
+      throw new Error("File is too large (max 50 MB)");
+    }
+
+    const storageId = await ctx.storage.store(new Blob([args.content], { type: args.contentType }));
 
     const url = (await ctx.storage.getUrl(storageId)) ?? undefined;
 

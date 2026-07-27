@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -123,11 +124,14 @@ export default function ResourceDetail({ resource }: { resource: Resource }) {
           {/* Hero image */}
           {resource.featuredImage && (
             <FadeIn delay={0.05}>
-              <div className="mb-8 overflow-hidden rounded-2xl">
-                <img
+              <div className="relative mb-8 aspect-[2/1] overflow-hidden rounded-2xl">
+                <Image
                   src={resource.featuredImage}
                   alt={resource.title}
-                  className="h-auto w-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  className="object-cover"
+                  priority
                 />
               </div>
             </FadeIn>

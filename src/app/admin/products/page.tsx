@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import {
   Package, Plus, Search, Grid3X3, List, Edit3, Trash2,
@@ -24,7 +25,7 @@ import {
   ProductStatus,
 } from "@/lib/admin-queries"
 import { toast } from "sonner"
-import * as XLSX from "xlsx"
+
 
 const STATUS_MAP: Record<string, ProductStatus> = {
   Active: "published",
@@ -114,6 +115,8 @@ export default function ProductsPage() {
 
     setImporting(true)
     try {
+      // Lazy-load xlsx (~500KB) only when bulk-importing
+      const XLSX = await import("xlsx");
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: "array" })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -246,9 +249,9 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                        <div className="relative w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                           {product.thumbnail ? (
-                            <img src={product.thumbnail} alt="" className="w-full h-full object-cover rounded-lg" />
+                            <Image src={product.thumbnail} alt={product.name} fill sizes="40px" className="object-cover rounded-lg" />
                           ) : (
                             <Package className="h-5 w-5" />
                           )}
@@ -305,9 +308,9 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {paginated.map((product) => (
             <Card key={product._id} className="p-4 hover:shadow-card transition-shadow">
-              <div className="w-full h-32 rounded-lg bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center mb-3 overflow-hidden">
+              <div className="relative w-full h-32 rounded-lg bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center mb-3 overflow-hidden">
                 {product.thumbnail ? (
-                  <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
+                  <Image src={product.thumbnail} alt={product.name} fill sizes="(max-width: 640px) 100vw, 25vw" className="object-cover" />
                 ) : (
                   <Package className="h-10 w-10 text-primary/40" />
                 )}

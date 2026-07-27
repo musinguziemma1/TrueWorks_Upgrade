@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import {
   Table,
@@ -61,8 +62,12 @@ export default function OrdersContent() {
           </TableHeader>
           <TableBody>
             {orders.map((o) => (
-              <TableRow key={o._id}>
-                <TableCell className="font-medium">{o.orderNumber}</TableCell>
+            <TableRow key={o._id}>
+              <TableCell className="font-medium">
+                <Link href={`/account/orders/${o._id}`} className="text-primary hover:underline">
+                  {o.orderNumber}
+                </Link>
+              </TableCell>
                 <TableCell className="text-muted-foreground">
                   {fmtDate(o._creationTime)}
                 </TableCell>

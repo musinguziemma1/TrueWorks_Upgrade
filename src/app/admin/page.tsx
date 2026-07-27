@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -32,33 +33,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction }
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
-} from "recharts"
 import { formatPrice } from "@/lib/utils"
+
+const AdminRevenueChart = dynamic(
+  () => import("@/components/admin/admin-revenue-chart").then((m) => m.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[300px] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+)
 
 const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#94A3B8"]
 const PIE_COLORS = ["#0B2545", "#4A6FA5", "#C9A227"]
-
-const chartConfig = {
-  sales: { label: "Sales", color: "#0B2545" },
-  revenue: { label: "Revenue (UGX)", color: "#0B2545" },
-  value: { label: "Score", color: "#4A6FA5" },
-  desktop: { label: "Desktop", color: "#0B2545" },
-  mobile: { label: "Mobile", color: "#4A6FA5" },
-  tablet: { label: "Tablet", color: "#C9A227" },
-}
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -283,22 +273,7 @@ export default function AdminDashboard() {
             <CardDescription>Revenue over time</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[300px]">
-              <LineChart data={revenueChartData.length > 0 ? revenueChartData : [{ month: "No data", revenue: 0 }]} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#0B2545"
-                  strokeWidth={3}
-                  dot={{ fill: "#0B2545", strokeWidth: 2, r: 4, stroke: "#fff" }}
-                  activeDot={{ r: 6, fill: "#C9A227", stroke: "#fff", strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ChartContainer>
+            <AdminRevenueChart data={revenueChartData} />
           </CardContent>
         </Card>
       </section>

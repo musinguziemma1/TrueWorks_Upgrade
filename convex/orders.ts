@@ -1,4 +1,5 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
@@ -46,6 +47,15 @@ export const getById = query({
     if (me.role === "admin" || me.role === "owner" || me.role === "editor") return order;
     if (order.customerEmail === me.email) return order;
     return null;
+  },
+});
+
+// Internal: called by orderEmails action — no auth check since this is only
+// invoked from within Convex's own actions/mutations.
+export const getByIdInternal = query({
+  args: { id: v.id("orders") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });
 
@@ -146,7 +156,23 @@ export const updateStatus = mutation({
     await requireAdmin(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const previous = await ctx.db.get(id);
+    if (!previous) throw new Error("Order not found");
+
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+
+    // Notify the customer via email if status actually changed
+    const statusChanged =
+      (args.orderStatus && args.orderStatus !== previous.orderStatus) ||
+      (args.paymentStatus && args.paymentStatus !== previous.paymentStatus);
+
+    if (statusChanged) {
+      await ctx.scheduler.runAfter(0, internal.orderEmails.sendOrderStatusEmail, {
+        orderId: id,
+        previousOrderStatus: previous.orderStatus,
+        previousPaymentStatus: previous.paymentStatus,
+      });
+    }
   },
 });
 

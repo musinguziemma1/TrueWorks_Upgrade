@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import * as XLSX from "xlsx";
 import { Eye, Download, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +54,9 @@ export function ExcelPreview({ url, fileName, trigger }: ExcelPreviewProps) {
     try {
       const detected = detectFileType(url);
       setFileType(detected);
+
+      // Lazy-load xlsx (~500KB) only when the user opens the preview
+      const XLSX = await import("xlsx");
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch file");

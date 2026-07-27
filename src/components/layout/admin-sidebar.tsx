@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import NextImage from "next/image"
 import { usePathname } from "next/navigation"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
@@ -232,7 +233,7 @@ export default function AdminSidebar() {
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
               {user?.imageUrl ? (
-                <img src={user.imageUrl} alt="" className="h-full w-full object-cover" />
+                <NextImage src={user.imageUrl} alt={user.fullName ?? "Admin"} width={36} height={36} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs font-bold text-white">
                   {(user?.firstName?.[0] ?? "A").toUpperCase()}

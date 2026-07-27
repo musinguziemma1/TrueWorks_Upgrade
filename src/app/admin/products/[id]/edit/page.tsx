@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import NextImage from "next/image"
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, Save, Upload, Plus, X, Image, FileText, Settings, Eye, Trash2, Loader2 } from "lucide-react"

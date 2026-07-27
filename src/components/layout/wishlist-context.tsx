@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react"
 
 interface WishlistItem {
   id: string
@@ -16,13 +16,36 @@ interface WishlistContextType {
   removeItem: (id: string) => void
   toggleItem: (item: WishlistItem) => boolean
   isInWishlist: (id: string) => boolean
+  replaceItems: (items: WishlistItem[]) => void
   totalItems: number
 }
 
 const WishlistContext = createContext<WishlistContextType | null>(null)
 
+const STORAGE_KEY = "trueworks-wishlist"
+
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<WishlistItem[]>([])
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setItems(JSON.parse(stored))
+      }
+    } catch {
+      // ignore
+    }
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+    }
+  }, [items, hydrated])
 
   const addItem = useCallback((item: WishlistItem) => {
     setItems((prev) => {
@@ -52,17 +75,25 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     [items]
   )
 
+  const replaceItems = useCallback((newItems: WishlistItem[]) => {
+    setItems(newItems)
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      items,
+      addItem,
+      removeItem,
+      toggleItem,
+      isInWishlist,
+      replaceItems,
+      totalItems: items.length,
+    }),
+    [items, addItem, removeItem, toggleItem, isInWishlist, replaceItems]
+  )
+
   return (
-    <WishlistContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        toggleItem,
-        isInWishlist,
-        totalItems: items.length,
-      }}
-    >
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   )

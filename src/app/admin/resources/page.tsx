@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { Plus, Edit3, Trash2, Search, BookOpen, Loader2, ExternalLink, Download, Eye, Star, Upload, X, FileIcon } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
@@ -388,9 +389,11 @@ export default function ResourcesPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {res.featuredImage ? (
-                          <img
+                          <Image
                             src={res.featuredImage}
-                            alt=""
+                            alt={res.title}
+                            width={40}
+                            height={40}
                             className="h-10 w-10 shrink-0 rounded-lg object-cover"
                           />
                         ) : (
@@ -617,11 +620,13 @@ export default function ResourcesPage() {
                 onChange={handleUploadFeaturedImage}
               />
               {featuredImage ? (
-                <div className="relative inline-block">
-                  <img
+                <div className="relative inline-block h-32 w-48">
+                  <Image
                     src={featuredImage}
                     alt="Featured"
-                    className="h-32 w-48 rounded-lg object-cover"
+                    fill
+                    sizes="192px"
+                    className="rounded-lg object-cover"
                   />
                   <button
                     type="button"

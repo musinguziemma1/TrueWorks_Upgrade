@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -239,11 +240,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
           onClick={handleView}
         >
             {product.thumbnail && !imgError ? (
-              <img
+              <Image
                 src={product.thumbnail}
                 alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 onError={() => setImgError(true)}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">

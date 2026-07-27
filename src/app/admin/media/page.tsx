@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { Upload, Search, Folder, File, FileImage, FileVideo, FileArchive, MoreHorizontal, Loader2, Trash2, Download, Eye } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -167,10 +168,12 @@ export default function MediaPage() {
                 <Card key={file._id} className="overflow-hidden group">
                   <div className="h-32 bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center relative">
                     {file.contentType.startsWith("image/") && file.url ? (
-                      <img
+                      <Image
                         src={file.url!}
                         alt={file.name}
-                        className="w-full h-full object-cover cursor-pointer"
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className="object-cover cursor-pointer"
                         onClick={() => { setPreviewUrl(file.url!); setPreviewName(file.name) }}
                       />
                     ) : (
@@ -217,7 +220,14 @@ export default function MediaPage() {
           </DialogHeader>
           <div className="flex justify-center">
             {previewUrl && (
-              <img src={previewUrl} alt={previewName} className="max-h-[60vh] object-contain rounded-lg" />
+              <Image
+                src={previewUrl}
+                alt={previewName}
+                width={900}
+                height={540}
+                unoptimized
+                className="max-h-[60vh] w-auto object-contain rounded-lg"
+              />
             )}
           </div>
         </DialogContent>

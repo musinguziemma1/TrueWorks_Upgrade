@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import NextImage from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Save, Send, Upload, Plus, X, Image, FileText, Settings, Eye, Download, Loader2, Trash2 } from "lucide-react"
@@ -295,7 +296,7 @@ export default function NewProductPage() {
                     <Label>Thumbnail *</Label>
                     {thumbnail ? (
                       <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
-                        <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                        <NextImage src={thumbnail} alt="Thumbnail" fill sizes="128px" className="object-cover" />
                         <button onClick={() => setThumbnail("")} className="absolute top-1 right-1 p-1 bg-white/80 rounded-md hover:bg-white">
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -321,7 +322,7 @@ export default function NewProductPage() {
                     <div className="grid grid-cols-4 gap-2">
                       {galleryImages.map((url, i) => (
                         <div key={i} className="relative w-full h-20 rounded-lg overflow-hidden border">
-                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <NextImage src={url} alt="" fill sizes="25vw" className="object-cover" />
                           <button onClick={() => setGalleryImages(galleryImages.filter((_, idx) => idx !== i))}
                             className="absolute top-1 right-1 p-1 bg-white/80 rounded-md hover:bg-white">
                             <Trash2 className="h-3 w-3" />

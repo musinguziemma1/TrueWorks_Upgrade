@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
@@ -191,7 +192,7 @@ export default function AdminHeader() {
             <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-lg px-2 text-foreground outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar className="h-7 w-7" size="sm">
                 {user?.imageUrl ? (
-                  <img src={user.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                  <Image src={user.imageUrl} alt={user.fullName ?? "Admin"} width={28} height={28} className="h-full w-full rounded-full object-cover" />
                 ) : (
                   <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
                     {(user?.firstName?.[0] ?? "A").toUpperCase()}
@@ -209,7 +210,7 @@ export default function AdminHeader() {
               <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="h-9 w-9">
                   {user?.imageUrl ? (
-                    <img src={user.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                    <Image src={user.imageUrl} alt={user.fullName ?? "Admin"} width={36} height={36} className="h-full w-full rounded-full object-cover" />
                   ) : (
                     <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
                       {(user?.firstName?.[0] ?? "A").toUpperCase()}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -182,10 +183,12 @@ function ResourcesContentInner() {
                         <article className="group cursor-pointer overflow-hidden rounded-2xl border border-border/70 bg-white shadow-card transition-shadow duration-300 hover:shadow-elevated">
                           {featuredResource.featuredImage ? (
                             <div className="relative aspect-[2/1] overflow-hidden">
-                              <img
+                              <Image
                                 src={featuredResource.featuredImage}
                                 alt={featuredResource.title}
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 66vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                               <span className="absolute left-5 top-5 rounded-full gradient-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-dark">
                                 Featured
@@ -263,10 +266,12 @@ function ResourcesContentInner() {
                               <article className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-border/70 bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated">
                                 {resource.featuredImage ? (
                                   <div className="relative aspect-video overflow-hidden">
-                                    <img
+                                    <Image
                                       src={resource.featuredImage}
                                       alt={resource.title}
-                                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                      fill
+                                      sizes="(max-width: 640px) 100vw, 33vw"
+                                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
                                   </div>
                                 ) : (

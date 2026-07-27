@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { PaginationOptions } from "convex/server";
 import { Id } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent } from "./users";
 
@@ -51,6 +52,48 @@ export const getBySlug = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .collect();
     return results[0] ?? null;
+  },
+});
+
+/**
+ * Server-side paginated product list for the store. Supports filtering
+ * by category, industry, and status. Use paginationOpts for cursor.
+ */
+export const listPaginated = query({
+  args: {
+    category: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    status: v.optional(v.string()),
+    paginationOpts: v.object({
+      numItems: v.number(),
+      cursor: v.union(v.string(), v.null()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const status = (args.status ?? "published") as "draft" | "published" | "archived";
+    const baseQ = ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", status));
+
+    const filtered = args.category
+      ? baseQ.filter((q) => q.eq(q.field("category"), args.category!))
+      : args.industry
+      ? baseQ.filter((q) => q.eq(q.field("industry"), args.industry!))
+      : baseQ;
+
+    return await filtered.order("desc").paginate(args.paginationOpts as PaginationOptions);
+  },
+});
+
+/**
+ * Fetch related products by their IDs (set in the admin via
+ * relatedProductIds on the source product).
+ */
+export const getRelatedByIds = query({
+  args: { ids: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const docs = await Promise.all(
+      args.ids.map((id) => ctx.db.get(id as Id<"products">).catch(() => null))
+    );
+    return docs.filter((d): d is NonNullable<typeof d> => d !== null && d.status === "published");
   },
 });
 

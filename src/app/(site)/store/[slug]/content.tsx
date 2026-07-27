@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -60,8 +61,10 @@ export default function ProductDetail() {
     product ? { productId: product._id } : "skip"
   );
   const relatedProducts = useQuery(
-    api.products.list,
-    product ? { status: "published", category: product.category } : "skip"
+    api.products.getRelatedByIds,
+    product?.relatedProductIds && product.relatedProductIds.length > 0
+      ? { ids: product.relatedProductIds }
+      : "skip"
   );
 
   useEffect(() => {
@@ -170,16 +173,22 @@ export default function ProductDetail() {
             <div>
               <div className={cn("relative aspect-[4/3] overflow-hidden rounded-2xl shadow-card bg-gradient-to-br from-primary/80 to-primary")}>
                 {gallery.length > 0 ? (
-                  <img
+                  <Image
                     src={gallery[selectedImage]}
                     alt={p.name}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                    priority
                   />
                 ) : p.thumbnail ? (
-                  <img
+                  <Image
                     src={p.thumbnail}
                     alt={p.name}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                    priority
                   />
                 ) : (
                   <div className="absolute inset-0 flex flex-col justify-between p-7">
@@ -221,13 +230,13 @@ export default function ProductDetail() {
                       onClick={() => setSelectedImage(i)}
                       aria-label={`Preview ${i + 1}`}
                       className={cn(
-                        "aspect-[4/3] overflow-hidden rounded-lg transition-all duration-200",
+                        "relative aspect-[4/3] overflow-hidden rounded-lg transition-all duration-200",
                         selectedImage === i
                           ? "ring-2 ring-accent ring-offset-2 ring-offset-surface"
                           : "opacity-50 hover:opacity-100"
                       )}
                     >
-                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <Image src={img} alt={`${p.name} preview ${i + 1}`} fill sizes="25vw" className="object-cover" />
                     </button>
                   ))}
                 </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Target, Eye, Heart, Building2, Users, Globe, Award, Quote } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -261,10 +262,12 @@ export default function AboutContent() {
             <div className="overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-elevated">
               <div className="grid md:grid-cols-[400px_1fr]">
                 <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary to-primary-dark md:aspect-auto md:min-h-[480px]">
-                  <img
+                  <Image
                     src={founder.image}
                     alt={founder.name}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover"
                   />
                 </div>
                 <div className="flex flex-col justify-center p-10 sm:p-12 lg:p-14">
