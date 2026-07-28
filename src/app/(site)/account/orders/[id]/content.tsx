@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -14,9 +16,11 @@ import {
   CreditCard,
   Truck,
   Mail,
+  RotateCcw,
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 function fmtMoney(n: number) {
@@ -84,6 +88,56 @@ function Timeline({ orderStatus, paymentStatus }: { orderStatus: string; payment
 export default function OrderDetailLoader() {
   const { id } = useParams<{ id: string }>();
   const order = useQuery(api.orders.getById, id ? { id: id as any } : "skip");
+  const existingReturn = useQuery(
+    api.returns.listMine,
+  );
+  const createReturn = useMutation(api.returns.create);
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnReasons, setReturnReasons] = useState<Record<number, string>>({});
+  const [returnNotes, setReturnNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const hasReturnRequest = existingReturn?.some((r) => r.orderId === id);
+
+  const canReturn =
+    order &&
+    order.paymentStatus === "completed" &&
+    (order.orderStatus === "completed" || order.orderStatus === "processing") &&
+    !hasReturnRequest;
+
+  async function handleReturnRequest() {
+    if (!order) return;
+    const items = order.items
+      .map((item, i) => ({
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        reason: returnReasons[i] || "No reason provided",
+      }))
+      .filter((_, i) => returnReasons[i] !== undefined && returnReasons[i] !== "");
+
+    if (items.length === 0) {
+      toast.error("Please provide a reason for at least one item.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await createReturn({
+        orderId: order._id as any,
+        items,
+        notes: returnNotes || undefined,
+      });
+      toast.success("Return request submitted successfully.");
+      setShowReturnForm(false);
+      setReturnReasons({});
+      setReturnNotes("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to submit return request.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (order === undefined) {
     return (
@@ -245,6 +299,100 @@ export default function OrderDetailLoader() {
                     Download {i + 1}
                   </a>
                 ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {canReturn && !showReturnForm && (
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowReturnForm(true)}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Request Return / Refund
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {showReturnForm && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5 text-primary" />
+                  Request Return / Refund
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Select the items you want to return and provide a reason for each.
+                </p>
+                {order.items.map((item, i) => (
+                  <div key={i} className="rounded-lg border border-border p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{item.productName}</span>
+                      <span className="text-muted-foreground">
+                        {fmtMoney(item.price)} × {item.quantity}
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Reason for return (required to submit)"
+                      value={returnReasons[i] || ""}
+                      onChange={(e) =>
+                        setReturnReasons((prev) => ({ ...prev, [i]: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                ))}
+                <textarea
+                  placeholder="Additional notes (optional)"
+                  value={returnNotes}
+                  onChange={(e) => setReturnNotes(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleReturnRequest}
+                    disabled={submitting}
+                    className="flex-1"
+                  >
+                    {submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                    )}
+                    Submit Request
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowReturnForm(false);
+                      setReturnReasons({});
+                      setReturnNotes("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {hasReturnRequest && (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  A return request has already been submitted for this order.{" "}
+                  <Link href="/account/returns" className="text-accent hover:underline">
+                    View status →
+                  </Link>
+                </p>
               </CardContent>
             </Card>
           )}

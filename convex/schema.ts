@@ -356,4 +356,32 @@ export default defineSchema({
     })),
     updatedAt: v.number(),
   }).index("by_clerkId", ["clerkId"]),
+
+  returns: defineTable({
+    clerkId: v.string(),
+    orderId: v.id("orders"),
+    orderNumber: v.string(),
+    customerEmail: v.string(),
+    customerName: v.string(),
+    items: v.array(v.object({
+      productName: v.string(),
+      quantity: v.number(),
+      price: v.number(),
+      reason: v.string(),
+    })),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("completed"),
+    ),
+    notes: v.optional(v.string()),
+    adminNotes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_orderId", ["orderId"])
+    .index("by_status", ["status"])
+    .index("by_customerEmail", ["customerEmail"]),
 });

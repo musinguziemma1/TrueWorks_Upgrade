@@ -9,6 +9,8 @@ const tabs = [
   { href: "/account", label: "Overview" },
   { href: "/account/orders", label: "Orders" },
   { href: "/account/downloads", label: "Downloads" },
+  { href: "/account/wishlist", label: "Wishlist" },
+  { href: "/account/returns", label: "Returns" },
 ];
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

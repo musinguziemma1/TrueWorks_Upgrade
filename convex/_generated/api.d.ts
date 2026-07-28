@@ -30,6 +30,7 @@ import type * as pesapal from "../pesapal.js";
 import type * as products from "../products.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as resources from "../resources.js";
+import type * as returns from "../returns.js";
 import type * as reviews from "../reviews.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   rateLimit: typeof rateLimit;
   resources: typeof resources;
+  returns: typeof returns;
   reviews: typeof reviews;
   seed: typeof seed;
   settings: typeof settings;
