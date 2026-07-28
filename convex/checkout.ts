@@ -24,13 +24,15 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
 
     let country = "";
     let region = "";
+    let city = "";
     if (ip && ip !== "unknown") {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName`);
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city`);
         const geo = await geoRes.json();
         if (geo.status === "success") {
           country = geo.country || "";
           region = geo.regionName || "";
+          city = geo.city || "";
         }
       } catch {
         // Geolocation failure should not block checkout
@@ -103,6 +105,7 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       ipAddress: ip !== "unknown" ? ip : undefined,
       country: country || undefined,
       region: region || undefined,
+      city: city || undefined,
     });
 
     if (couponCode) {

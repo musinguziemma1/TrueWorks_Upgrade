@@ -278,7 +278,7 @@ export default function ContactContent() {
       </section>
 
       {/* Map */}
-      <section className="bg-surface py-16 lg:py-20">
+      <section className="bg-surface pb-16 lg:pb-20 lg:-mt-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <FadeIn>
             <div className="overflow-hidden rounded-2xl border border-border/70 shadow-card">

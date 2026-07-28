@@ -93,6 +93,7 @@ const orderCreateArgs = {
   userAgent: v.optional(v.string()),
   country: v.optional(v.string()),
   region: v.optional(v.string()),
+  city: v.optional(v.string()),
   notes: v.optional(v.string()),
 };
 
@@ -115,6 +116,7 @@ async function insertOrder(ctx: MutationCtx, args: {
   userAgent?: string;
   country?: string;
   region?: string;
+  city?: string;
   notes?: string;
 }) {
   const now = Date.now();
@@ -299,16 +301,26 @@ export const geoBreakdown = query({
     let all = await ctx.db.query("orders").collect();
     if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
     if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
-    const countryData = new Map<string, { orders: number; revenue: number }>();
+    const countryData = new Map<string, { orders: number; revenue: number; regions: Map<string, number> }>();
     for (const o of all) {
       const country = o.country || "Unknown";
-      const existing = countryData.get(country) ?? { orders: 0, revenue: 0 };
+      const existing = countryData.get(country) ?? { orders: 0, revenue: 0, regions: new Map() };
       existing.orders++;
       if (o.paymentStatus === "completed") existing.revenue += o.total;
+      if (o.region) {
+        existing.regions.set(o.region, (existing.regions.get(o.region) ?? 0) + 1);
+      }
       countryData.set(country, existing);
     }
     return Array.from(countryData.entries())
-      .map(([country, data]) => ({ country, ...data }))
+      .map(([country, data]) => ({
+        country,
+        orders: data.orders,
+        revenue: data.revenue,
+        regions: Array.from(data.regions.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count),
+      }))
       .sort((a, b) => b.orders - a.orders);
   },
 });

@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useCallback } from "react"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
-  BarChart3, Download, Globe, ShoppingCart, PieChart, CreditCard,
+  BarChart3, Download, Globe, ShoppingCart, CreditCard,
   ArrowUpRight, DollarSign, Package, Loader2, Eye, TrendingUp,
   FileText, Users, MousePointerClick, Map,
 } from "lucide-react"
@@ -17,7 +17,9 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts"
+import { MapChart } from "@/components/admin/map-chart"
 import { formatPrice } from "@/lib/utils"
+import { toast } from "sonner"
 
 const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
 const chartConfig = { value: { label: "Value", color: "#0B2545" } }
@@ -174,11 +176,11 @@ export default function AnalyticsPage() {
   }, [paymentMethods])
 
   const geoChartData = useMemo(() => {
-    return (geoData ?? []).map((g: { country: string; orders: number; revenue: number }, i: number) => ({
+    return (geoData ?? []).map((g: { country: string; orders: number; revenue: number; regions?: { name: string; count: number }[] }) => ({
       country: g.country,
       orders: g.orders,
-      revenue: g.revenue / 1_000_000,
-      fill: COLORS[i % COLORS.length],
+      revenue: g.revenue,
+      regions: g.regions,
     }))
   }, [geoData])
 
@@ -200,9 +202,7 @@ export default function AnalyticsPage() {
       const imgWidth = 210
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       const pdf = new jsPDF("p", "mm", "a4")
-
-      const pageHeight = 297
-      let position = 0
+      const pageHeight = 270
 
       pdf.setFontSize(16)
       pdf.setFont("helvetica", "bold")
@@ -211,23 +211,49 @@ export default function AnalyticsPage() {
       pdf.setFont("helvetica", "normal")
       pdf.text(`Date Range: ${dateRange} | Generated: ${new Date().toLocaleDateString("en-UG")}`, 105, 22, { align: "center" })
 
-      position = 28
+      const marginTop = 28
+      const availableHeight = pageHeight - marginTop
+      const totalPages = Math.ceil(imgHeight / availableHeight)
 
-      if (imgHeight <= pageHeight - position) {
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, position, imgWidth, imgHeight)
-      } else {
-        let remainingHeight = imgHeight
-        while (remainingHeight > 0) {
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, position, imgWidth, imgHeight)
-          remainingHeight -= pageHeight
-          position = -(imgHeight - remainingHeight)
-          if (remainingHeight > 0) pdf.addPage()
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage()
+
+        const sourceY = (page * availableHeight * canvas.width) / imgWidth / 2
+        const sourceHeight = Math.min(
+          (availableHeight * canvas.width) / imgWidth / 2,
+          canvas.height - sourceY
+        )
+
+        const pageCanvas = document.createElement("canvas")
+        pageCanvas.width = canvas.width
+        pageCanvas.height = sourceHeight
+        const ctx = pageCanvas.getContext("2d")
+        if (ctx) {
+          ctx.fillStyle = "#f8fafc"
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          )
         }
+
+        const sliceHeight = (sourceHeight * imgWidth) / canvas.width
+        pdf.addImage(
+          pageCanvas.toDataURL("image/png"),
+          "PNG",
+          0,
+          page === 0 ? marginTop : 0,
+          imgWidth,
+          sliceHeight
+        )
       }
 
       pdf.save(`TrueWorks-Analytics-${dateRange.replace(/\s+/g, "-")}.pdf`)
+      toast.success("PDF exported successfully")
     } catch (err) {
       console.error("PDF export failed:", err)
+      toast.error("Failed to export PDF. Please try again.")
     } finally {
       setExporting(false)
     }
@@ -427,26 +453,29 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
-                    <BarChart data={geoChartData} layout="vertical" margin={{ left: 80 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis type="number" tick={{ fontSize: 12 }} />
-                      <YAxis type="category" dataKey="country" tick={{ fontSize: 12 }} width={80} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="orders" fill="#0B2545" radius={[0, 4, 4, 0]} name="Orders" />
-                    </BarChart>
-                  </ChartContainer>
+                  <MapChart data={geoChartData} />
                   <div className="space-y-2 pt-2 border-t">
                     {geoChartData.map((g) => (
-                      <div key={g.country} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Map className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{g.country}</span>
+                      <div key={g.country}>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Map className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>{g.country}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-muted-foreground">
+                            <span>{g.orders} order{g.orders !== 1 ? "s" : ""}</span>
+                            <span className="font-medium text-foreground">{formatPrice(g.revenue)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-muted-foreground">
-                          <span>{g.orders} orders</span>
-                          <span className="font-medium text-foreground">{formatPrice(g.revenue * 1_000_000)}</span>
-                        </div>
+                        {g.regions && g.regions.length > 0 && (
+                          <div className="ml-6 mt-1 space-y-0.5">
+                            {g.regions.slice(0, 3).map((r) => (
+                              <div key={r.name} className="text-xs text-muted-foreground/70">
+                                {r.name}: {r.count} order{r.count !== 1 ? "s" : ""}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

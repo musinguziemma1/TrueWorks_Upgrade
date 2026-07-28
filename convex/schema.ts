@@ -102,6 +102,7 @@ export default defineSchema({
     userAgent: v.optional(v.string()),
     country: v.optional(v.string()),
     region: v.optional(v.string()),
+    city: v.optional(v.string()),
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
       url: v.string(),
