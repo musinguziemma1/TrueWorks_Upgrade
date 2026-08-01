@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
+import { Logo } from "@/components/logo";
 import { Shield, Zap, BarChart3, ArrowRight } from "lucide-react";
 
 const features = [
@@ -45,16 +45,7 @@ export function AuthLayout({
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3">
-            <Image
-              src="/images/logo-icon.svg"
-              alt="TrueWorks"
-              width={44}
-              height={44}
-              className="brightness-0 invert"
-            />
-            <span className="font-display text-2xl font-bold tracking-tight">
-              TrueWorks
-            </span>
+            <Logo variant="horizontal-white" width={160} height={40} />
           </Link>
         </div>
 
@@ -97,16 +88,8 @@ export function AuthLayout({
         <div className="mx-auto w-full max-w-sm">
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <Image
-                src="/images/logo-icon.svg"
-                alt="TrueWorks"
-                width={36}
-                height={36}
-              />
-              <span className="font-display text-xl font-bold text-[#0B2545]">
-                TrueWorks
-              </span>
+            <Link href="/">
+              <Logo variant="horizontal" width={140} height={36} />
             </Link>
           </div>
 
