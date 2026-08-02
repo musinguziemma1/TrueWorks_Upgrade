@@ -49,7 +49,7 @@ export const getById = query({
     const order = await ctx.db.get(args.id);
     if (!order) return null;
     if (!me) return null;
-    if (me.role === "admin" || me.role === "owner" || me.role === "editor") return order;
+    if (me.role === "superadmin" || me.role === "admin" || me.role === "owner" || me.role === "editor") return order;
     if (order.customerEmail === me.email) return order;
     return null;
   },
