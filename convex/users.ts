@@ -390,6 +390,27 @@ export const seedAdmin = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized: No authenticated user");
 
+    // Check if user already exists — if so, just ensure they have a role
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .collect();
+    if (existing.length > 0) {
+      // User already exists — update tokenIdentifier and return
+      const now = Date.now();
+      const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
+      await ctx.db.patch(existing[0]._id, {
+        tokenIdentifier: identity.tokenIdentifier,
+        email: args.email,
+        name: args.name ?? existing[0].name,
+        avatar: args.avatar ?? existing[0].avatar,
+        role: isSuperAdminEmail ? "superadmin" : existing[0].role,
+        updatedAt: now,
+      });
+      return existing[0]._id;
+    }
+
+    // New user — check permissions
     const claims = identity as unknown as {
       role?: string;
       metadata?: { role?: string };
@@ -404,26 +425,10 @@ export const seedAdmin = mutation({
       );
     }
 
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .collect();
     const now = Date.now();
-    const tokenIdentifier = `${process.env.CLERK_JWT_ISSUER_DOMAIN ?? ""}|${args.clerkId}`;
-    const isDefaultAdmin = DEFAULT_ADMIN_EMAILS.includes(args.email.toLowerCase());
+    const tokenIdentifier = identity.tokenIdentifier;
     const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
     const assignedRole = isSuperAdminEmail ? "superadmin" : "admin";
-    if (existing.length > 0) {
-      await ctx.db.patch(existing[0]._id, {
-        role: assignedRole,
-        tokenIdentifier,
-        email: args.email,
-        name: args.name ?? existing[0].name,
-        avatar: args.avatar ?? existing[0].avatar,
-        updatedAt: now,
-      });
-      return existing[0]._id;
-    }
     return await ctx.db.insert("users", {
       clerkId: args.clerkId,
       tokenIdentifier,

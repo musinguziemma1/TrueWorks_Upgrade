@@ -141,7 +141,18 @@ export const inviteClerkUser = internalAction({
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Clerk invite failed (${res.status}): ${text}`);
+      let message = `Clerk invite failed (${res.status})`;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.errors?.[0]?.code === "form_identifier_exists") {
+          message = "This email address is already registered in Clerk. The user may already have an account.";
+        } else if (parsed.errors?.[0]?.message) {
+          message = parsed.errors[0].message;
+        }
+      } catch {
+        // use default message
+      }
+      throw new Error(message);
     }
     return await res.json();
   },
