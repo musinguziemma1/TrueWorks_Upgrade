@@ -38,6 +38,7 @@ import { Logo } from "@/components/logo"
 import { useAdminSidebar } from "./admin-sidebar-context"
 
 const ROLE_LABELS: Record<string, string> = {
+  superadmin: "Super Admin",
   owner: "Owner",
   admin: "Administrator",
   editor: "Editor",
