@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
-const DEFAULT_ADMIN_EMAILS = ["emusinguzi@gmail.com"];
+const DEFAULT_ADMIN_EMAILS = ["musinguzie612@gmail.com"];
+const SUPERADMIN_EMAILS = ["musinguzie612@gmail.com"];
 
 const ROLE_HIERARCHY: Record<string, number> = {
   superadmin: 5,
@@ -119,8 +120,8 @@ export const upsertFromClerk = internalMutation({
 
     const now = Date.now();
     const adminEmail = isAdminEmail(args.email);
-    const isDefaultAdmin = DEFAULT_ADMIN_EMAILS.includes(args.email.toLowerCase());
-    const adminRole = isDefaultAdmin ? "superadmin" : "admin";
+    const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
+    const adminRole = isSuperAdminEmail ? "superadmin" : "admin";
 
     // Check for pending invitation to determine role
     let invitationRole: string | undefined;
@@ -397,7 +398,8 @@ export const seedAdmin = mutation({
     const now = Date.now();
     const tokenIdentifier = `${process.env.CLERK_JWT_ISSUER_DOMAIN ?? ""}|${args.clerkId}`;
     const isDefaultAdmin = DEFAULT_ADMIN_EMAILS.includes(args.email.toLowerCase());
-    const assignedRole = isDefaultAdmin ? "superadmin" : "admin";
+    const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
+    const assignedRole = isSuperAdminEmail ? "superadmin" : "admin";
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, {
         role: assignedRole,
