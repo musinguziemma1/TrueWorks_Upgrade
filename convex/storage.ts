@@ -36,7 +36,7 @@ export const uploadFile = action({
   },
   handler: async (ctx, args) => {
     const me = await ctx.runQuery(api.users.current, {});
-    if (!me || (me.role !== "admin" && me.role !== "owner" && me.role !== "editor")) throw new Error("Forbidden");
+    if (!me || (me.role !== "superadmin" && me.role !== "admin" && me.role !== "owner" && me.role !== "editor")) throw new Error("Forbidden");
 
     // Validate file extension
     const ext = args.name.split(".").pop()?.toLowerCase() ?? "";

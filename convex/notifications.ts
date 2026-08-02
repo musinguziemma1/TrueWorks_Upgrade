@@ -2,11 +2,14 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 
+const canManageNotifications = (role: string) =>
+  role === "superadmin" || role === "admin" || role === "owner" || role === "editor";
+
 export const list = query({
   args: {     unreadOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       return [];
     }
     if (args.unreadOnly) {
@@ -23,7 +26,7 @@ export const count = query({
   args: {},
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       return 0;
     }
     const all = await ctx.db
@@ -43,7 +46,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       throw new Error("Unauthorized: Admin access required");
     }
     return await ctx.db.insert("notifications", {
@@ -58,7 +61,7 @@ export const markRead = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       throw new Error("Unauthorized: Admin access required");
     }
     await ctx.db.patch(args.id, { read: true });
@@ -69,7 +72,7 @@ export const markAllRead = mutation({
   args: {},
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       throw new Error("Unauthorized: Admin access required");
     }
     const unread = await ctx.db
@@ -86,7 +89,7 @@ export const remove = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "editor")) {
+    if (!user || !canManageNotifications(user.role)) {
       throw new Error("Unauthorized: Admin access required");
     }
     await ctx.db.delete(args.id);
