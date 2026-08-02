@@ -62,11 +62,24 @@ export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<b
 export async function getCurrentUser(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) return null;
-  const users = await ctx.db
+
+  // Try tokenIdentifier lookup first
+  let users = await ctx.db
     .query("users")
     .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .collect();
-  return users[0] ?? null;
+  if (users[0]) return users[0];
+
+  // Fallback: lookup by Clerk ID (sub claim)
+  if (identity.subject) {
+    users = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .collect();
+    if (users[0]) return users[0];
+  }
+
+  return null;
 }
 
 export const list = query({
