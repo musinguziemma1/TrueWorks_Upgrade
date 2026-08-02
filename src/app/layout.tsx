@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -85,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Providers>{children}</Providers>
           </TooltipProvider>
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
