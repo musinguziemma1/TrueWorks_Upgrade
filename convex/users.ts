@@ -2,7 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
 
-const DEFAULT_ADMIN_EMAILS = ["musinguzie612@gmail.com"];
+const DEFAULT_ADMIN_EMAILS = ["emusinguzi@gmail.com"];
 
 const ROLE_HIERARCHY: Record<string, number> = {
   superadmin: 5,
@@ -118,6 +118,8 @@ export const upsertFromClerk = internalMutation({
 
     const now = Date.now();
     const adminEmail = isAdminEmail(args.email);
+    const isDefaultAdmin = DEFAULT_ADMIN_EMAILS.includes(args.email.toLowerCase());
+    const adminRole = isDefaultAdmin ? "superadmin" : "admin";
 
     // Check for pending invitation to determine role
     let invitationRole: string | undefined;
@@ -142,7 +144,7 @@ export const upsertFromClerk = internalMutation({
         email: args.email,
         name: args.name,
         avatar: args.avatar,
-        role: adminEmail ? "admin" : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? existing[0].role,
+        role: adminEmail ? adminRole : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? existing[0].role,
         status: existing[0].status ?? "active",
         lastLoginAt: now,
         loginCount: (existing[0].loginCount ?? 0) + 1,
@@ -157,7 +159,7 @@ export const upsertFromClerk = internalMutation({
       email: args.email,
       name: args.name,
       avatar: args.avatar,
-      role: adminEmail ? "admin" : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? "viewer",
+      role: adminEmail ? adminRole : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? "viewer",
       status: "active",
       lastLoginAt: now,
       loginCount: 1,
@@ -398,9 +400,11 @@ export const seedAdmin = mutation({
       .collect();
     const now = Date.now();
     const tokenIdentifier = `${process.env.CLERK_JWT_ISSUER_DOMAIN ?? ""}|${args.clerkId}`;
+    const isDefaultAdmin = DEFAULT_ADMIN_EMAILS.includes(args.email.toLowerCase());
+    const assignedRole = isDefaultAdmin ? "superadmin" : "admin";
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, {
-        role: "admin",
+        role: assignedRole,
         tokenIdentifier,
         email: args.email,
         name: args.name ?? existing[0].name,
@@ -415,7 +419,7 @@ export const seedAdmin = mutation({
       email: args.email,
       name: args.name,
       avatar: args.avatar,
-      role: "admin",
+      role: assignedRole,
       status: "active",
       createdAt: now,
       updatedAt: now,
