@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 
 const DEFAULT_ADMIN_EMAILS = ["emusinguzi@gmail.com"];
 
@@ -197,8 +198,7 @@ export const setRole = mutation({
     await ctx.db.patch(args.userId, { role: args.role, updatedAt: Date.now() });
 
     if (target.clerkId) {
-      const generatedApi = await import("./_generated/api");
-      await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.syncRoleToClerk, {
+      await ctx.scheduler.runAfter(0, internal.clerk.syncRoleToClerk, {
         clerkId: target.clerkId,
         role: args.role,
       });
@@ -231,8 +231,7 @@ export const suspendUser = mutation({
     await ctx.db.patch(args.userId, { status: "suspended", updatedAt: Date.now() });
 
     if (target.clerkId) {
-      const generatedApi = await import("./_generated/api");
-      await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.suspendClerkUser, {
+      await ctx.scheduler.runAfter(0, internal.clerk.suspendClerkUser, {
         clerkId: target.clerkId,
       });
     }
@@ -261,8 +260,7 @@ export const activateUser = mutation({
     await ctx.db.patch(args.userId, { status: "active", updatedAt: Date.now() });
 
     if (target.clerkId) {
-      const generatedApi = await import("./_generated/api");
-      await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.activateClerkUser, {
+      await ctx.scheduler.runAfter(0, internal.clerk.activateClerkUser, {
         clerkId: target.clerkId,
       });
     }
@@ -292,8 +290,7 @@ export const deleteUser = mutation({
     if (actor[0]._id === args.userId) throw new Error("Cannot delete yourself");
 
     if (target.clerkId) {
-      const generatedApi = await import("./_generated/api");
-      await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.deleteClerkUser, {
+      await ctx.scheduler.runAfter(0, internal.clerk.deleteClerkUser, {
         clerkId: target.clerkId,
       });
     }
@@ -351,14 +348,13 @@ export const inviteUser = mutation({
     });
 
     // Create Clerk invitation (sends Clerk's default email)
-    const generatedApi = await import("./_generated/api");
-    await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.inviteClerkUser, {
+    await ctx.scheduler.runAfter(0, internal.clerk.inviteClerkUser, {
       email: args.email,
       role: args.role,
     });
 
     // Send branded invitation email via Resend
-    await ctx.scheduler.runAfter(0, generatedApi.internal.email.sendTeamInvitation, {
+    await ctx.scheduler.runAfter(0, internal.email.sendTeamInvitation, {
       to: args.email,
       role: args.role,
       invitedBy: actor[0].name || actor[0].email,

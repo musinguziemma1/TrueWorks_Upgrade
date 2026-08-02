@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { api, internal } from "./_generated/api";
 
 const ROLE_HIERARCHY: Record<string, number> = {
   superadmin: 5,
@@ -108,8 +109,7 @@ export const resend = mutation({
     const EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
     // Create new Clerk invitation
-    const generatedApi = await import("./_generated/api");
-    await ctx.scheduler.runAfter(0, generatedApi.internal.clerk.inviteClerkUser, {
+    await ctx.scheduler.runAfter(0, internal.clerk.inviteClerkUser, {
       email: invitation.email,
       role: invitation.role,
     });
@@ -122,7 +122,7 @@ export const resend = mutation({
     });
 
     // Send branded email
-    await ctx.scheduler.runAfter(0, generatedApi.internal.email.sendTeamInvitation, {
+    await ctx.scheduler.runAfter(0, internal.email.sendTeamInvitation, {
       to: invitation.email,
       role: invitation.role,
       invitedBy: invitation.invitedByName || invitation.invitedBy,
