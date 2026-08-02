@@ -8,7 +8,7 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
-    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    role: v.union(v.literal("superadmin"), v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer")),
     status: v.optional(v.union(v.literal("active"), v.literal("suspended"))),
     lastLoginAt: v.optional(v.number()),
     loginCount: v.optional(v.number()),
@@ -384,4 +384,16 @@ export default defineSchema({
     .index("by_orderId", ["orderId"])
     .index("by_status", ["status"])
     .index("by_customerEmail", ["customerEmail"]),
+
+  invitations: defineTable({
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    invitedBy: v.string(),
+    invitedByName: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("revoked"), v.literal("expired")),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
 });

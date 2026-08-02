@@ -14,8 +14,9 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     (sessionClaims?.metadata as { role?: string } | undefined)?.role ??
     (sessionClaims as { publicMetadata?: { role?: string } } | undefined)?.publicMetadata?.role
 
-  const validRoles = ["owner", "admin", "editor", "viewer"]
+  const validRoles = ["superadmin", "owner", "admin", "editor", "viewer"]
   let convexRole: string | null = null
+  let convexStatus: string | null = null
   let token: string | null = null
   try {
     token = await getToken({ template: "convex" })
@@ -27,12 +28,19 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     try {
       const u = await fetchQuery(api.users.current, {}, { token })
       convexRole = u?.role ?? null
+      convexStatus = u?.status ?? null
     } catch {
       convexRole = null
+      convexStatus = null
     }
   }
 
-  if (claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor" && token) {
+  // Block suspended users
+  if (convexStatus === "suspended") {
+    redirect("/?error=suspended")
+  }
+
+  if (claimsRole !== "superadmin" && claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "superadmin" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor" && token) {
     try {
       const cu = await currentUser()
       if (cu) {
@@ -53,7 +61,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     }
   }
 
-  if (claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor") redirect("/")
+  if (claimsRole !== "superadmin" && claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "superadmin" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor") redirect("/")
 
   return (
     <AdminSidebarProvider>

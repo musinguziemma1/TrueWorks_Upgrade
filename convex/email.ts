@@ -1,4 +1,5 @@
-import { httpAction } from "./_generated/server";
+import { httpAction, internalAction } from "./_generated/server";
+import { v } from "convex/values";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
@@ -281,4 +282,66 @@ export const sendNewsletter = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
+});
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrator",
+  editor: "Editor",
+  viewer: "Viewer",
+};
+
+export const sendTeamInvitation = internalAction({
+  args: {
+    to: v.string(),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    invitedBy: v.string(),
+    invitationId: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const signupUrl = `${SITE_URL}/sign-up`;
+    const expiryDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+    const html = baseTemplate(`
+      <h2>You've Been Invited to the TrueWorks Team</h2>
+      <p>Hi there,</p>
+      <p><strong>${escapeHtml(args.invitedBy)}</strong> has invited you to join the TrueWorks admin team as an <strong>${escapeHtml(ROLE_LABELS[args.role] ?? args.role)}</strong>.</p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>Your Role:</strong> ${escapeHtml(ROLE_LABELS[args.role] ?? args.role)}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Invited By:</strong> ${escapeHtml(args.invitedBy)}</p>
+        <p style="margin: 0;"><strong>Expires:</strong> ${expiryDate}</p>
+      </div>
+
+      <p>As an <strong>${escapeHtml(ROLE_LABELS[args.role] ?? args.role)}</strong>, you will be able to:</p>
+      <ul>
+        ${args.role === "admin"
+          ? "<li>Manage products, orders, customers, and content</li><li>View analytics and reports</li><li>Manage team members and settings</li>"
+          : args.role === "editor"
+          ? "<li>Create and edit products, content, and resources</li><li>Manage orders and customer communications</li><li>View analytics and reports</li>"
+          : "<li>View the admin dashboard and analytics</li><li>View products, orders, and customer data</li>"}
+      </ul>
+
+      <p>To accept this invitation and create your account, click the button below:</p>
+
+      <a href="${escapeUrl(signupUrl)}" class="button">Accept Invitation & Sign Up</a>
+
+      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+        This invitation expires on <strong>${expiryDate}</strong>. If you did not expect this invitation, you can safely ignore this email.
+      </p>
+
+      <p>If you have any questions, reply to this email or contact us at <a href="mailto:hello@trueworksgroup.com">hello@trueworksgroup.com</a>.</p>
+    `);
+
+    const sent = await sendEmail({
+      to: args.to,
+      subject: `You've Been Invited to Join TrueWorks as ${ROLE_LABELS[args.role] ?? args.role}`,
+      html,
+    });
+
+    return { sent };
+  },
 });

@@ -3,10 +3,18 @@
 import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 
+const ROLE_UNION = v.union(
+  v.literal("superadmin"),
+  v.literal("owner"),
+  v.literal("admin"),
+  v.literal("editor"),
+  v.literal("viewer")
+);
+
 export const syncRoleToClerk = internalAction({
   args: {
     clerkId: v.string(),
-    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    role: ROLE_UNION,
   },
   handler: async (_ctx, args) => {
     const secret = process.env.CLERK_SECRET_KEY;
@@ -109,7 +117,7 @@ export const deleteClerkUser = internalAction({
 export const inviteClerkUser = internalAction({
   args: {
     email: v.string(),
-    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
   },
   handler: async (_ctx, args) => {
     const secret = process.env.CLERK_SECRET_KEY;
@@ -126,7 +134,7 @@ export const inviteClerkUser = internalAction({
         body: JSON.stringify({
           email_address: args.email,
           public_metadata: { role: args.role },
-          redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/sign-in`,
+          redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/sign-up`,
         }),
       }
     );
@@ -136,5 +144,30 @@ export const inviteClerkUser = internalAction({
       throw new Error(`Clerk invite failed (${res.status}): ${text}`);
     }
     return await res.json();
+  },
+});
+
+export const revokeClerkInvitation = internalAction({
+  args: { invitationId: v.string() },
+  handler: async (_ctx, args) => {
+    const secret = process.env.CLERK_SECRET_KEY;
+    if (!secret) return null;
+
+    const res = await fetch(
+      `https://api.clerk.com/v1/invitations/${args.invitationId}/revoke`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Clerk revoke invitation failed (${res.status}): ${text}`);
+    }
+    return null;
   },
 });

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { useAuth } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Shield, Search, UserPlus, Trash2, Ban, CheckCircle, LogOut, MoreVertical } from "lucide-react";
+import { Shield, Search, UserPlus, Trash2, Ban, CheckCircle, LogOut, MoreVertical, Mail, Clock, XCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -48,6 +47,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ROLE_LABELS: Record<string, string> = {
+  superadmin: "Super Admin",
   owner: "Owner",
   admin: "Administrator",
   editor: "Editor",
@@ -55,6 +55,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
+  superadmin: "bg-red-100 text-red-800 border-red-200",
   owner: "bg-amber-100 text-amber-800 border-amber-200",
   admin: "bg-purple-100 text-purple-800 border-purple-200",
   editor: "bg-blue-100 text-blue-800 border-blue-200",
@@ -62,10 +63,18 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
+  superadmin: "Full system access. Can manage all users including owners and other superadmins.",
   owner: "Full access to everything. Cannot be demoted or deleted.",
   admin: "Full access except user management and settings.",
   editor: "Can manage products, content, resources, and orders.",
   viewer: "Read-only access to the dashboard.",
+};
+
+const INVITATION_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  accepted: "bg-green-100 text-green-800 border-green-200",
+  revoked: "bg-red-100 text-red-800 border-red-200",
+  expired: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 function initials(name?: string, email?: string) {
@@ -82,15 +91,30 @@ function fmtDate(ts: number) {
   });
 }
 
+function fmtTimeRemaining(expiresAt: number) {
+  const now = Date.now();
+  const diff = expiresAt - now;
+  if (diff <= 0) return "Expired";
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ${hours % 24}h remaining`;
+  if (hours > 0) return `${hours}h remaining`;
+  const minutes = Math.floor(diff / (1000 * 60));
+  return `${minutes}m remaining`;
+}
+
 export default function UsersPage() {
   const users = useQuery(api.users.list);
   const me = useQuery(api.users.current);
+  const invitations = useQuery(api.invitations.listAll);
   const { signOut } = useAuth();
   const setRole = useMutation(api.users.setRole);
   const suspendUser = useMutation(api.users.suspendUser);
   const activateUser = useMutation(api.users.activateUser);
   const deleteUser = useMutation(api.users.deleteUser);
   const inviteUser = useMutation(api.users.inviteUser);
+  const revokeInvitation = useMutation(api.invitations.revoke);
+  const resendInvitation = useMutation(api.invitations.resend);
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -112,11 +136,17 @@ export default function UsersPage() {
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage);
 
+  const isSuperAdmin = me?.role === "superadmin";
   const isOwner = me?.role === "owner";
-  const isAdmin = me?.role === "admin" || me?.role === "owner";
-  const isEditor = me?.role === "editor";
+  const isAdmin = me?.role === "admin" || me?.role === "owner" || me?.role === "superadmin";
+  const canManageUsers = isSuperAdmin || isOwner || isAdmin;
 
-  async function changeRole(userId: Id<"users">, role: "owner" | "admin" | "editor" | "viewer") {
+  // Pending invitations (not accepted, not expired, not revoked)
+  const pendingInvitations = (invitations ?? []).filter(
+    (inv) => inv.status === "pending" && inv.expiresAt > Date.now()
+  );
+
+  async function changeRole(userId: Id<"users">, role: "superadmin" | "owner" | "admin" | "editor" | "viewer") {
     try {
       await setRole({ userId, role });
       toast.success(`Role updated to ${ROLE_LABELS[role]}`);
@@ -162,12 +192,30 @@ export default function UsersPage() {
     }
     try {
       await inviteUser({ email: inviteEmail.trim(), role: inviteRole });
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      toast.success(`Invitation sent to ${inviteEmail.trim()}`);
       setInviteOpen(false);
       setInviteEmail("");
       setInviteRole("viewer");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to send invitation");
+    }
+  }
+
+  async function handleRevoke(invitationId: Id<"invitations">) {
+    try {
+      await revokeInvitation({ invitationId });
+      toast.success("Invitation revoked");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to revoke invitation");
+    }
+  }
+
+  async function handleResend(invitationId: Id<"invitations">) {
+    try {
+      await resendInvitation({ invitationId });
+      toast.success("Invitation resent");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to resend invitation");
     }
   }
 
@@ -181,7 +229,7 @@ export default function UsersPage() {
           { label: "Users & Roles" },
         ]}
         action={
-          (isOwner || isAdmin) ? (
+          canManageUsers ? (
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus className="mr-2 h-4 w-4" />
               Invite User
@@ -191,7 +239,7 @@ export default function UsersPage() {
       />
 
       {/* Role Legend */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Object.entries(ROLE_LABELS).map(([role, label]) => (
           <div key={role} className="rounded-lg border p-3">
             <Badge variant="outline" className={`mb-1.5 ${ROLE_COLORS[role]}`}>
@@ -201,6 +249,77 @@ export default function UsersPage() {
           </div>
         ))}
       </div>
+
+      {/* Pending Invitations */}
+      {canManageUsers && pendingInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Pending Invitations ({pendingInvitations.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Invited By</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingInvitations.map((inv) => (
+                  <TableRow key={inv._id}>
+                    <TableCell className="font-medium">{inv.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={ROLE_COLORS[inv.role]}>
+                        {ROLE_LABELS[inv.role] ?? inv.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {inv.invitedByName || inv.invitedBy}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {fmtTimeRemaining(inv.expiresAt)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isSuperAdmin && (
+                        <div className="flex items-center gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResend(inv._id)}
+                            title="Resend invitation"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevoke(inv._id)}
+                            title="Revoke invitation"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <div className="relative max-w-md">
@@ -240,7 +359,11 @@ export default function UsersPage() {
                 {paginated.map((u) => {
                   const isSelf = me?._id === u._id;
                   const isTargetOwner = u.role === "owner";
-                  const canManage = !isSelf && !isTargetOwner && (isOwner || isAdmin);
+                  const isTargetSuperAdmin = u.role === "superadmin";
+                  // Only superadmin can manage superadmins and owners
+                  const canManage = !isSelf && !isTargetOwner && !isTargetSuperAdmin && canManageUsers;
+                  // Superadmin-only actions: suspend, activate, delete
+                  const canSuspendDelete = !isSelf && !isTargetOwner && !isTargetSuperAdmin && isSuperAdmin;
                   const isSuspended = u.status === "suspended";
 
                   return (
@@ -293,7 +416,7 @@ export default function UsersPage() {
                             <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted">
                               <MoreVertical className="h-4 w-4" />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuContent align="end" className="w-56">
                               <div className="px-2 py-1.5">
                                 <p className="text-xs font-medium text-muted-foreground">Change Role</p>
                               </div>
@@ -309,34 +432,58 @@ export default function UsersPage() {
                                   {u.role === role && <CheckCircle className="ml-auto h-3.5 w-3.5" />}
                                 </DropdownMenuItem>
                               ))}
-                              <DropdownMenuSeparator />
-                              {isSuspended ? (
-                                <DropdownMenuItem onClick={() => handleActivate(u._id)}>
-                                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                                  Activate
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem onClick={() => handleSuspend(u._id)}>
-                                  <Ban className="mr-2 h-4 w-4 text-orange-600" />
-                                  Suspend
-                                </DropdownMenuItem>
+                              {isSuperAdmin && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <div className="px-2 py-1.5">
+                                    <p className="text-xs font-medium text-muted-foreground">Superadmin Actions</p>
+                                  </div>
+                                  <DropdownMenuItem
+                                    onClick={() => changeRole(u._id, "superadmin")}
+                                    disabled={u.role === "superadmin"}
+                                  >
+                                    <Badge variant="outline" className={`mr-2 text-[10px] ${ROLE_COLORS.superadmin}`}>
+                                      Superadmin
+                                    </Badge>
+                                    {u.role === "superadmin" && <CheckCircle className="ml-auto h-3.5 w-3.5" />}
+                                  </DropdownMenuItem>
+                                </>
                               )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setDeleteTarget(u._id);
-                                  setDeleteOpen(true);
-                                }}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
+                              {canSuspendDelete && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  {isSuspended ? (
+                                    <DropdownMenuItem onClick={() => handleActivate(u._id)}>
+                                      <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                      Activate
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleSuspend(u._id)}>
+                                      <Ban className="mr-2 h-4 w-4 text-orange-600" />
+                                      Suspend
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setDeleteTarget(u._id);
+                                      setDeleteOpen(true);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : isTargetOwner ? (
                           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
                             Owner
+                          </Badge>
+                        ) : isTargetSuperAdmin ? (
+                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-[10px]">
+                            Superadmin
                           </Badge>
                         ) : isSelf ? (
                           <Button
@@ -402,7 +549,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
             <DialogDescription>
-              Send an invitation to join the admin panel. They will receive an email with a link to sign up.
+              Send an invitation to join the admin panel. They will receive a branded email with a link to sign up. The invitation expires in 3 days.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
