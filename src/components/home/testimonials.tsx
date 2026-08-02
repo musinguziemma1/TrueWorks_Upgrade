@@ -19,7 +19,7 @@ const testimonials = [
       "As a growing NGO, the grant tracker was exactly what we needed. Donor reporting went from days to minutes. Exceptional quality.",
     name: "Grace Akello",
     title: "Finance Director",
-    organization: "East Africa NGO Alliance",
+    organization: "Global NGO Alliance",
     rating: 5,
   },
   {

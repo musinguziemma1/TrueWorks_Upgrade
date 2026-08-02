@@ -10,9 +10,9 @@ import FreeResource from "@/components/home/free-resource";
 import FinalCTA from "@/components/home/final-cta";
 
 export const metadata: Metadata = {
-  title: "TrueWorks Limited - Business Operating Systems for African Organizations",
+  title: "TrueWorks Limited - Business Operating Systems for Global organizations",
   description:
-    "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across Africa. Instant download, mobile money accepted.",
+    "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across the Globe. Instant download, mobile money accepted.",
 };
 
 export default function HomePage() {

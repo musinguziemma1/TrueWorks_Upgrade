@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "TrueWorks Limited — Business Operating Systems for African Organizations";
+export const alt = "TrueWorks Limited — Business Operating Systems for Global organizations";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -57,7 +57,7 @@ export default function OgImage() {
             marginBottom: "24px",
           }}
         >
-          Business Operating Systems for African Organizations
+          Business Operating Systems for Global organizations
         </div>
         <div style={{ fontSize: "26px", color: "rgba(255,255,255,0.7)", maxWidth: "820px" }}>
           Premium Excel templates, financial models, and dashboards — instant download.
@@ -73,7 +73,7 @@ export default function OgImage() {
             fontWeight: 700,
           }}
         >
-          trueworksug.com
+          trueworksgroup.com
         </div>
       </div>
     ),

@@ -22,13 +22,13 @@ const sections = [
   { id: "pricing", title: "2. Products and Pricing", content: "All prices are listed in US Dollars (USD) unless otherwise stated. We reserve the right to modify prices at any time without prior notice. Products are digital templates and dashboards delivered via instant download after payment confirmation." },
   { id: "payment", title: "3. Payment Methods", content: "We accept payments via MTN Mobile Money, Airtel Money, Visa, and Mastercard. Payment is processed securely through our checkout system. Your payment information is never stored on our servers." },
   { id: "delivery", title: "4. Digital Delivery", content: "Upon successful payment, you will receive immediate access to download your purchased template. A download link will also be sent to the email address you provided. It is your responsibility to ensure the email address is correct." },
-  { id: "refunds", title: "5. Refund and Exchange Policy", content: "We offer a 30-day satisfaction guarantee. If a template does not meet your needs, contact us and we will make it right or issue a full refund. Refund requests must be submitted within 30 days of purchase." },
+  { id: "refunds", title: "5. Refund and Exchange Policy", content: "We offer a 7-day satisfaction guarantee. If a template does not meet your needs, contact us and we will make it right or issue a full refund. Refund requests must be submitted within 7 days of purchase." },
   { id: "license", title: "6. License and Usage", content: "When you purchase a template, you receive a single-user license. You may use the template for your personal or organizational purposes. You may not resell, redistribute, or sublicense the template or any derivative works." },
   { id: "ip", title: "7. Intellectual Property", content: "All templates, dashboards, designs, and content on this website are the intellectual property of TrueWorks Limited unless otherwise stated. Unauthorized reproduction or distribution is prohibited." },
   { id: "accounts", title: "8. User Accounts", content: "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Notify us immediately of any unauthorized use." },
   { id: "liability", title: "9. Limitation of Liability", content: "TrueWorks Limited shall not be liable for any indirect, incidental, or consequential damages arising from the use or inability to use our products. Our total liability shall not exceed the amount paid for the product in question." },
   { id: "changes", title: "10. Changes to Terms", content: "We reserve the right to update these terms at any time. Changes will be posted on this page with an updated effective date. Continued use of our services after changes constitutes acceptance of the new terms." },
-  { id: "contact", title: "11. Contact", content: "For questions about these terms, contact us at hello@trueworksug.com, via WhatsApp at +256 700 123 456, or visit our Contact page." },
+  { id: "contact", title: "11. Contact", content: "For questions about these terms, contact us at hello@trueworksgroup.com, via WhatsApp at +256 700 123 456, or visit our Contact page." },
 ];
 
 export default function TermsContent() {
@@ -95,11 +95,11 @@ export default function TermsContent() {
                   <p className="mt-2 text-xs text-muted">Our team is ready to assist.</p>
                   <div className="mt-4 space-y-2.5">
                     <a
-                      href="mailto:hello@trueworksug.com"
+                      href="mailto:hello@trueworksgroup.com"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"
                     >
                       <Mail className="h-3.5 w-3.5 shrink-0 text-accent-dark" />
-                      hello@trueworksug.com
+                      hello@trueworksgroup.com
                     </a>
                     <a
                       href="https://wa.me/256700123456"

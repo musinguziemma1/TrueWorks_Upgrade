@@ -23,7 +23,7 @@ export default function TrustedBy() {
           transition={{ duration: 0.5 }}
           className="text-center text-xs font-semibold uppercase tracking-[0.22em] text-muted"
         >
-          Trusted by professionals across Africa
+          Trusted by professionals across the Globe
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 16 }}

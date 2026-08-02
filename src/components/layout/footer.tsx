@@ -26,7 +26,7 @@ const companyLinks = [
 ];
 
 const contactRows = [
-  { icon: Mail, text: "hello@trueworksug.com", href: "mailto:hello@trueworksug.com" },
+  { icon: Mail, text: "hello@trueworksgroup.com", href: "mailto:hello@trueworksgroup.com" },
   { icon: Phone, text: "+256 700 123 456", href: "tel:+256700123456" },
   { icon: MapPin, text: "Plot 42, Acacia Avenue, Kampala, Uganda" },
   { icon: Clock, text: "Mon – Fri: 8:00 – 17:00 EAT" },
@@ -46,7 +46,7 @@ export default function Footer() {
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/60">
               Premium Excel templates, financial models and dashboards that help
-              African organizations operate with clarity and confidence.
+              Global organizations operate with clarity and confidence.
             </p>
             <div className="mt-6 flex items-center gap-2.5">
               {socialLinks.map((social) => (

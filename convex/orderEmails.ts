@@ -3,8 +3,8 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksug.com>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 
 function escapeHtml(value: unknown): string {
   const AMP = "&" + "amp;";

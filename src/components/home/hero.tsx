@@ -27,7 +27,7 @@ const slides = [
       </>
     ),
     description:
-      "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across Africa.",
+      "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across the Globe.",
     kpis: [
       { label: "Bed Occupancy", value: "78%", delta: "+4.2%" },
 { label: "Revenue / Bed", value: "$2,400", delta: "+11%" },
@@ -431,7 +431,7 @@ export default function Hero() {
                 <span className="hidden h-4 w-px bg-white/20 sm:block" aria-hidden />
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-accent" />
-                  30-day guarantee
+                  7-day guarantee
                 </span>
               </motion.div>
             </div>
@@ -475,7 +475,7 @@ export default function Hero() {
             { value: "500+", label: "Premium templates" },
             { value: "1,000+", label: "Organizations served" },
             { value: "8", label: "Industry verticals" },
-            { value: "30-day", label: "Money-back guarantee" },
+            { value: "7-day", label: "Money-back guarantee" },
           ].map((stat) => (
             <div key={stat.label} className="text-center sm:text-left">
               <dt className="sr-only">{stat.label}</dt>

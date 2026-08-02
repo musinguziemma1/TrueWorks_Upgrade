@@ -24,7 +24,7 @@ const features = [
   },
   {
     icon: RefreshCw,
-    title: "30-Day Guarantee",
+    title: "7-day Guarantee",
     description:
       "If a template doesn't fit your needs, we'll make it right or refund you - no questions asked.",
   },

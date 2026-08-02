@@ -3,7 +3,7 @@ import { api } from "@convex/_generated/api";
 import { convexServer } from "@/lib/convex-server";
 import ProductDetail from "./content";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 
 type Props = { params: Promise<{ slug: string }> };
 

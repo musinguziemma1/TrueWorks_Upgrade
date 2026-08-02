@@ -163,7 +163,7 @@ function StoreContentInner() {
               <span className="text-gradient-gold">Business Systems</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 lg:text-lg">
-              Professional-grade Excel templates and dashboards built for African
+              Professional-grade Excel templates and dashboards built for Global
               organizations. Pay securely, download instantly, and put them to work
               the same day.
             </p>
@@ -184,7 +184,7 @@ function StoreContentInner() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
                   ✓
                 </span>
-                30-Day Guarantee
+                7-day Guarantee
               </span>
             </div>
           </div>

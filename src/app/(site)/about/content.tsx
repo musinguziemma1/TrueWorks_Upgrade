@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const milestones = [
   { year: "2018", title: "Founded", description: "TrueWorks Limited was established in Kampala, Uganda with a vision to transform business operations through technology." },
   { year: "2019", title: "First Templates", description: "Launched our first collection of business document templates, serving local enterprises with professional solutions." },
-  { year: "2020", title: "Growth", description: "Expanded our team and customer base across East Africa, adding financial modeling and KPI dashboard templates." },
+  { year: "2020", title: "Growth", description: "Expanded our team and customer base globally, adding financial modeling and KPI dashboard templates." },
   { year: "2021", title: "Enterprise", description: "Secured enterprise partnerships with major organizations, delivering custom template solutions at scale." },
   { year: "2023", title: "Expansion", description: "Reached 1,000+ customers across 50+ industries, launched new product lines and digital tools." },
   { year: "2025", title: "Looking Ahead", description: "Continuing to innovate with smarter templates, expanded services, and a growing footprint across the continent." },
@@ -202,7 +202,7 @@ export default function AboutContent() {
               <div className="rounded-xl border border-border/70 bg-white p-8 shadow-card">
                 <h3 className="font-heading text-xl font-semibold text-primary">TrueWorks Is</h3>
                 <ul className="mt-5 space-y-3">
-                  {["Professional", "Efficient", "Accessible", "Trustworthy", "African"].map((trait) => (
+                  {["Professional", "Efficient", "Accessible", "Trustworthy", "Global"].map((trait) => (
                     <li key={trait} className="flex items-center gap-3 text-sm text-muted">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
                         <span className="text-xs font-bold text-accent">+</span>

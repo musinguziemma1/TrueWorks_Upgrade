@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { api } from "@convex/_generated/api";
 import { convexServer } from "@/lib/convex-server";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [

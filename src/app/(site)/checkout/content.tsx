@@ -765,7 +765,7 @@ export default function CheckoutContent() {
                   </p>
                   <p className="flex items-center gap-2.5 text-xs text-muted">
                     <RotateCcw className="h-4 w-4 text-secondary" />
-                    30-day money-back guarantee
+                    7-day money-back guarantee
                   </p>
                 </div>
 

@@ -6,7 +6,7 @@ const COUNTRY_NAME_TO_ISO: Record<string, string> = {
   "Bhutan": "064", "Bolivia": "068", "Bosnia and Herzegovina": "070", "Botswana": "072",
   "Brazil": "076", "Brunei": "096", "Bulgaria": "100", "Burkina Faso": "854",
   "Burundi": "108", "Cambodia": "116", "Cameroon": "120", "Canada": "124",
-  "Central African Republic": "140", "Chad": "148", "Chile": "152", "China": "156",
+  "Central Global Republic": "140", "Chad": "148", "Chile": "152", "China": "156",
   "Colombia": "170", "Comoros": "174", "Congo": "178", "Costa Rica": "188",
   "Croatia": "191", "Cuba": "192", "Cyprus": "196", "Czech Republic": "203",
   "Denmark": "208", "Djibouti": "262", "Dominican Republic": "214", "Ecuador": "218",

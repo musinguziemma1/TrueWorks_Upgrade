@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 
 const contactInfo = [
-  { icon: Mail, title: "Email Us", detail: "hello@trueworksug.com", sub: "We respond within 24 hours", href: "mailto:hello@trueworksug.com" },
+  { icon: Mail, title: "Email Us", detail: "hello@trueworksgroup.com", sub: "We respond within 24 hours", href: "mailto:hello@trueworksgroup.com" },
   { icon: Phone, title: "Call Us", detail: "+256 700 123 456", sub: "Available during business hours", href: "tel:+256700123456" },
   { icon: MessageCircle, title: "WhatsApp", detail: "+256 700 123 456", sub: "Chat with us on WhatsApp", href: "https://wa.me/256700123456" },
   { icon: Clock, title: "Business Hours", detail: "Mon – Fri: 8:00 – 17:00", sub: "Saturday: 9:00 – 13:00 EAT", href: undefined },
@@ -37,7 +37,7 @@ const supportCards = [
   { icon: Headphones, title: "Technical Support", description: "Having trouble with a template or dashboard? Our team will get you back on track.", linkText: "Get Support", subject: "Technical Support" },
   { icon: ShoppingBag, title: "Sales Inquiries", description: "Interested in our products or need a quote for bulk purchases? Talk to sales.", linkText: "Contact Sales", subject: "Sales" },
   { icon: FileDown, title: "Template Requests", description: "Need a custom template for your organization? We build tailored solutions.", linkText: "Request Template", subject: "Template Request" },
-  { icon: Handshake, title: "Partnerships", description: "Looking to partner with TrueWorks? We collaborate across Africa and beyond.", linkText: "Explore Partnerships", subject: "Partnership" },
+  { icon: Handshake, title: "Partnerships", description: "Looking to partner with TrueWorks? We collaborate across the Globe and beyond.", linkText: "Explore Partnerships", subject: "Partnership" },
 ];
 
 function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -67,7 +67,7 @@ export default function ContactContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!convexClient) {
-      setError("Service unavailable. Please email us directly at hello@trueworksug.com");
+      setError("Service unavailable. Please email us directly at hello@trueworksgroup.com");
       return;
     }
     setSending(true);

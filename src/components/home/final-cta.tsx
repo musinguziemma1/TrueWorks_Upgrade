@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 const assurances = [
   { icon: ShieldCheck, label: "Secure payment" },
   { icon: Download, label: "Instant download" },
-  { icon: RefreshCw, label: "30-day guarantee" },
+  { icon: RefreshCw, label: "7-day guarantee" },
 ];
 
 export default function FinalCTA() {
@@ -31,7 +31,7 @@ export default function FinalCTA() {
           Ready to Build a Better Organization?
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
-          Join more than a thousand African organizations running on TrueWorks
+          Join more than a thousand Global organizations running on TrueWorks
           systems.
         </p>
         <div className="mt-9">

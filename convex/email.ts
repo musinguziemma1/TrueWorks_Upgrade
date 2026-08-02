@@ -1,8 +1,8 @@
 import { httpAction } from "./_generated/server";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksug.com>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksug.com";
+const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
 
 /**
@@ -138,7 +138,7 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
     </div>
     <p>Your download links will be available in your account once payment is confirmed.</p>
     <a href="${SITE_URL}/account/orders" class="button">View Your Orders</a>
-    <p>If you have any questions, reply to this email or contact us at hello@trueworksug.com</p>
+    <p>If you have any questions, reply to this email or contact us at hello@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -163,7 +163,7 @@ export const sendDownloadReady = httpAction(async (ctx, request) => {
     <p>Your purchase of <strong>${escapeHtml(productName)}</strong> is ready to download.</p>
     <p>Order: ${escapeHtml(orderNumber)}</p>
     <a href="${escapeUrl(downloadUrl)}" class="button">Download Now</a>
-    <p><strong>Note:</strong> This download link will expire in 30 days. Please save the file to your computer after downloading.</p>
+    <p><strong>Note:</strong> This download link will expire in 7 days. Please save the file to your computer after downloading.</p>
     <p>You can also access your downloads anytime from your account:</p>
     <a href="${SITE_URL}/account/downloads" class="button">View All Downloads</a>
   `);
@@ -196,7 +196,7 @@ export const sendPaymentFailed = httpAction(async (ctx, request) => {
     </ul>
     <p>No worries — you can try again:</p>
     <a href="${SITE_URL}/store" class="button">Try Again</a>
-    <p>If you continue to experience issues, please contact us at hello@trueworksug.com</p>
+    <p>If you continue to experience issues, please contact us at hello@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -221,7 +221,7 @@ export const sendRefundConfirmation = httpAction(async (ctx, request) => {
     <p>Your refund of <strong>$${Number(amount).toFixed(2)}</strong> for order <strong>${escapeHtml(orderNumber)}</strong> has been processed.</p>
     ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}
     <p>The refund will appear on your statement within 5-10 business days.</p>
-    <p>If you have any questions, please contact us at hello@trueworksug.com</p>
+    <p>If you have any questions, please contact us at hello@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -243,7 +243,7 @@ export const sendWelcomeEmail = httpAction(async (ctx, request) => {
   const html = baseTemplate(`
     <h2>Welcome to TrueWorks!</h2>
     <p>Hi ${escapeHtml(customerName)},</p>
-    <p>Welcome to TrueWorks — your trusted source for premium business templates and systems built for African organizations.</p>
+    <p>Welcome to TrueWorks — your trusted source for premium business templates and systems built for Global organizations.</p>
     <p>Here's what you can do:</p>
     <ul>
       <li>Browse our collection of Excel templates, dashboards, and financial models</li>

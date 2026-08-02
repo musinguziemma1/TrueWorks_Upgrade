@@ -29,8 +29,8 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 const summary = [
   {
     icon: Clock,
-    title: "30-Day Window",
-    description: "Request a refund within 30 days of purchase.",
+    title: "7-day Window",
+    description: "Request a refund within 7 days of purchase.",
   },
   {
     icon: RefreshCw,
@@ -54,12 +54,12 @@ const eligible = [
 const notEligible = [
   "You simply changed your mind after downloading the files",
   "You purchased the wrong template for your use case (we encourage contacting us first)",
-  "Refund request submitted more than 30 days after purchase",
+  "Refund request submitted more than 7 days after purchase",
   "Product has been used in published reports or distributed internally",
 ];
 
 const process = [
-  { step: "1", title: "Email Us", description: "Send your order number and reason to hello@trueworksug.com within 30 days of purchase." },
+  { step: "1", title: "Email Us", description: "Send your order number and reason to hello@trueworksgroup.com within 7 days of purchase." },
   { step: "2", title: "We Review", description: "Our team reviews your request within 1 business day and confirms eligibility." },
   { step: "3", title: "Refund Issued", description: "Approved refunds are returned to your original payment method within 5–10 business days." },
 ];
@@ -75,7 +75,7 @@ export default function RefundPolicyContent() {
             Refund Policy
           </span>
           <h1 className="mt-6 font-heading text-4xl font-semibold leading-tight text-white sm:text-5xl">
-            30-Day Satisfaction Guarantee
+            7-day Satisfaction Guarantee
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-white/75">
             We stand behind every template. If something isn&apos;t right, we&apos;ll make it right.
@@ -174,7 +174,7 @@ export default function RefundPolicyContent() {
               </span>
               <h3 className="mt-4 font-heading text-lg font-semibold text-primary">Ready to request a refund?</h3>
               <p className="mt-2 text-sm text-muted">
-                Email <a href="mailto:hello@trueworksug.com" className="font-semibold text-primary underline">hello@trueworksug.com</a> with your order number.
+                Email <a href="mailto:hello@trueworksgroup.com" className="font-semibold text-primary underline">hello@trueworksgroup.com</a> with your order number.
               </p>
               <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link

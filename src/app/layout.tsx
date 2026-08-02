@@ -20,13 +20,13 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://trueworksug.com"),
+  metadataBase: new URL("https://trueworksgroup.com"),
   title: {
-    default: "TrueWorks Limited - Business Operating Systems for African Organizations",
+    default: "TrueWorks Limited - Business Operating Systems for Global organizations",
     template: "%s | TrueWorks Limited",
   },
   description:
-    "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across Africa.",
+    "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
   keywords: [
     "Business Operating Systems",
     "Excel templates",
@@ -36,21 +36,21 @@ export const metadata: Metadata = {
     "NGO systems",
     "business automation",
     "Uganda",
-    "Africa",
+    "Global",
     "TrueWorks",
   ],
   openGraph: {
     type: "website",
     siteName: "TrueWorks Limited",
-    title: "TrueWorks Limited - Business Operating Systems for African Organizations",
+    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description:
-      "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, dashboards and business systems for African organizations.",
+      "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, dashboards and business systems for Global organizations.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrueWorks Limited - Business Operating Systems for African Organizations",
+    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description:
-      "Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across Africa.",
+      "Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
   },
 };
 
@@ -58,8 +58,8 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "TrueWorks Limited",
-  url: "https://trueworksug.com",
-  logo: "https://trueworksug.com/images/logo-horizontal.svg",
+  url: "https://trueworksgroup.com",
+  logo: "https://trueworksgroup.com/images/logo-horizontal.svg",
   description:
     "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger.",
   address: {
@@ -69,7 +69,7 @@ const organizationJsonLd = {
   },
   contactPoint: {
     "@type": "ContactPoint",
-    email: "hello@trueworksug.com",
+    email: "hello@trueworksgroup.com",
     contactType: "customer service",
   },
 };

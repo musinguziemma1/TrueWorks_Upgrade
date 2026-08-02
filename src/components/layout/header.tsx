@@ -59,11 +59,11 @@ export default function Header() {
           </p>
           <div className="flex items-center gap-6">
             <a
-              href="mailto:hello@trueworksug.com"
+              href="mailto:hello@trueworksgroup.com"
               className="flex items-center gap-1.5 transition-colors hover:text-accent-light"
             >
               <Mail className="h-3.5 w-3.5 text-accent" />
-              hello@trueworksug.com
+              hello@trueworksgroup.com
             </a>
             <a
               href="tel:+256700123456"

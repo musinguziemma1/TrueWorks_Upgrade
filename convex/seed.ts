@@ -562,10 +562,10 @@ const resourcesSeed = [
     downloadCount: 124,
   },
   {
-    title: "Financial Modeling Best Practices for East African SMEs",
-    slug: "financial-modeling-best-practices-east-african-smes",
-    description: "A practical guide to building financial models that help small and medium enterprises secure funding and plan for growth in the East African market.",
-    content: "Covers 3-statement modeling, DCF valuation, sensitivity analysis, and investor-ready presentation formats tailored for the East African business context.",
+    title: "Financial Modeling Best Practices for East Global SMEs",
+    slug: "financial-modeling-best-practices-east-Global-smes",
+    description: "A practical guide to building financial models that help small and medium enterprises secure funding and plan for growth in the East Global market.",
+    content: "Covers 3-statement modeling, DCF valuation, sensitivity analysis, and investor-ready presentation formats tailored for the East Global business context.",
     category: "Guide",
     type: "document" as const,
     status: "published" as const,
@@ -646,9 +646,9 @@ const resourcesSeed = [
     downloadCount: 92,
   },
   {
-    title: "Grant Writing Checklist for African NGOs",
-    slug: "grant-writing-checklist-african-ngos",
-    description: "A comprehensive checklist to prepare your next grant application, tailored for African nonprofit organizations.",
+    title: "Grant Writing Checklist for Global NGOs",
+    slug: "grant-writing-checklist-Global-ngos",
+    description: "A comprehensive checklist to prepare your next grant application, tailored for Global nonprofit organizations.",
     content: "Downloadable checklist covering eligibility, budget preparation, narrative writing, supporting documents, and submission best practices.",
     category: "Checklist",
     type: "download" as const,
@@ -958,7 +958,7 @@ export const run = internalMutation({
     }
     results.reviews = reviewCount;
 
-    // Seed analytics for the last 30 days
+    // Seed analytics for the last 7 days
     let analyticsCount = 0;
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now - i * oneDay);
