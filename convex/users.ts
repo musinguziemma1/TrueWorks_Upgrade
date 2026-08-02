@@ -79,6 +79,16 @@ export async function getCurrentUser(ctx: QueryCtx) {
     if (users[0]) return users[0];
   }
 
+  // Last resort: lookup by email from identity
+  const email = identity.email ?? (identity as { emailAddresses?: Array<{ emailAddress: string }> })?.emailAddresses?.[0]?.emailAddress;
+  if (email) {
+    users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), email))
+      .collect();
+    if (users[0]) return users[0];
+  }
+
   return null;
 }
 
@@ -395,19 +405,31 @@ export const seedAdmin = mutation({
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .collect();
-    if (existing.length > 0) {
+
+    // Also try finding by email as fallback
+    let existingByEmail: typeof existing = [];
+    if (existing.length === 0) {
+      existingByEmail = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .collect();
+    }
+
+    const foundUser = existing[0] ?? existingByEmail[0];
+    if (foundUser) {
       // User already exists — update tokenIdentifier and return
       const now = Date.now();
       const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
-      await ctx.db.patch(existing[0]._id, {
+      await ctx.db.patch(foundUser._id, {
         tokenIdentifier: identity.tokenIdentifier,
+        clerkId: args.clerkId,
         email: args.email,
-        name: args.name ?? existing[0].name,
-        avatar: args.avatar ?? existing[0].avatar,
-        role: isSuperAdminEmail ? "superadmin" : existing[0].role,
+        name: args.name ?? foundUser.name,
+        avatar: args.avatar ?? foundUser.avatar,
+        role: isSuperAdminEmail ? "superadmin" : foundUser.role,
         updatedAt: now,
       });
-      return existing[0]._id;
+      return foundUser._id;
     }
 
     // New user — check permissions
@@ -419,7 +441,12 @@ export const seedAdmin = mutation({
     };
     const claimsRole =
       claims.role ?? claims.metadata?.role ?? claims.publicMetadata?.role;
-    if (claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "superadmin" && !isAdminEmail(args.email)) {
+
+    // Allow if: has admin role in Clerk claims OR email is in admin allowlist
+    const hasClerkAdminRole = claimsRole === "admin" || claimsRole === "owner" || claimsRole === "superadmin";
+    const hasAdminEmail = isAdminEmail(args.email);
+
+    if (!hasClerkAdminRole && !hasAdminEmail) {
       throw new Error(
         "Unauthorized: Admin role required on Clerk session or admin email allowlist"
       );
