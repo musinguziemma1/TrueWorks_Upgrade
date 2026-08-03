@@ -15,6 +15,8 @@ import {
   Zap,
   Loader2,
   Star,
+  Play,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -32,6 +34,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { ExcelPreview } from "@/components/ui/excel-preview";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Id } from "@convex/_generated/dataModel";
 
 const trustBadges = [
@@ -46,6 +49,7 @@ export default function ProductDetail() {
   const router = useRouter();
   const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [showVideo, setShowVideo] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
 
   const [reviewName, setReviewName] = useState("");
@@ -328,6 +332,18 @@ export default function ProductDetail() {
                 </Button>
               </div>
 
+              {p.demoVideo && (
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="mt-3 w-full text-sm font-medium text-muted hover:text-primary"
+                  onClick={() => setShowVideo(true)}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Watch Demo Video
+                </Button>
+              )}
+
               <div className="mt-8 grid grid-cols-3 gap-3">
                 {trustBadges.map((badge) => (
                   <div
@@ -353,36 +369,6 @@ export default function ProductDetail() {
                 <TabsTrigger value="reviews">Reviews ({p.reviewCount})</TabsTrigger>
               </TabsList>
               <TabsContent value="description" className="max-w-3xl">
-                {p.demoVideo && (
-                  <div className="mb-6">
-                    {p.demoVideo.includes("youtube.com") || p.demoVideo.includes("youtu.be") ? (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl">
-                        <iframe
-                          src={`https://www.youtube.com/embed/${p.demoVideo.includes("youtu.be") ? p.demoVideo.split("/").pop()?.split("?")[0] : new URL(p.demoVideo).searchParams.get("v") ?? p.demoVideo.split("/").pop()?.split("?")[0]}`}
-                          className="absolute inset-0 h-full w-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : p.demoVideo.includes("vimeo.com") ? (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl">
-                        <iframe
-                          src={`https://player.vimeo.com/video/${p.demoVideo.split("/").pop()?.split("?")[0]}`}
-                          className="absolute inset-0 h-full w-full"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <video
-                        src={p.demoVideo}
-                        controls
-                        className="w-full rounded-xl"
-                        preload="metadata"
-                      />
-                    )}
-                  </div>
-                )}
                 <div
                   className="prose prose-sm max-w-none leading-relaxed text-muted [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-primary [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-primary [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-primary [&_p]:mb-3 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_a]:text-primary [&_a]:underline"
                   dangerouslySetInnerHTML={{ __html: p.description }}
@@ -575,6 +561,44 @@ export default function ProductDetail() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Video Modal */}
+      <Dialog open={showVideo} onOpenChange={setShowVideo}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-0">
+          <button
+            onClick={() => setShowVideo(false)}
+            className="absolute right-3 top-3 z-10 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {p.demoVideo && (
+            <div className="relative aspect-video w-full">
+              {p.demoVideo.includes("youtube.com") || p.demoVideo.includes("youtu.be") ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${p.demoVideo.includes("youtu.be") ? p.demoVideo.split("/").pop()?.split("?")[0] : new URL(p.demoVideo).searchParams.get("v") ?? p.demoVideo.split("/").pop()?.split("?")[0]}?autoplay=1`}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : p.demoVideo.includes("vimeo.com") ? (
+                <iframe
+                  src={`https://player.vimeo.com/video/${p.demoVideo.split("/").pop()?.split("?")[0]}?autoplay=1`}
+                  className="absolute inset-0 h-full w-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={p.demoVideo}
+                  controls
+                  autoPlay
+                  className="h-full w-full"
+                />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
