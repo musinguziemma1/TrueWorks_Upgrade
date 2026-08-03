@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,6 +18,12 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+interface MergeInfo {
+  rowSpan: number;
+  colSpan: number;
+  hidden: boolean;
+}
+
 interface ExcelTableProps {
   data: string[][];
   merges: { startRow: number; startCol: number; endRow: number; endCol: number }[];
@@ -25,29 +31,27 @@ interface ExcelTableProps {
   pageSize?: number;
 }
 
-function getCellSpan(
-  merges: ExcelTableProps["merges"],
-  rowIdx: number,
-  colIdx: number
-): { rowSpan: number; colSpan: number; hidden: boolean } | null {
-  for (const merge of merges) {
-    if (rowIdx === merge.startRow && colIdx === merge.startCol) {
-      return {
-        rowSpan: merge.endRow - merge.startRow + 1,
-        colSpan: merge.endCol - merge.startCol + 1,
-        hidden: false,
-      };
-    }
-    if (
-      rowIdx >= merge.startRow &&
-      rowIdx <= merge.endRow &&
-      colIdx >= merge.startCol &&
-      colIdx <= merge.endCol
-    ) {
-      return { rowSpan: 1, colSpan: 1, hidden: true };
+function buildMergeMap(
+  merges: ExcelTableProps["merges"]
+): Map<string, MergeInfo> {
+  const map = new Map<string, MergeInfo>();
+  for (const m of merges) {
+    for (let r = m.startRow; r <= m.endRow; r++) {
+      for (let c = m.startCol; c <= m.endCol; c++) {
+        const key = `${r}:${c}`;
+        if (r === m.startRow && c === m.startCol) {
+          map.set(key, {
+            rowSpan: m.endRow - m.startRow + 1,
+            colSpan: m.endCol - m.startCol + 1,
+            hidden: false,
+          });
+        } else {
+          map.set(key, { rowSpan: 1, colSpan: 1, hidden: true });
+        }
+      }
     }
   }
-  return null;
+  return map;
 }
 
 function formatCell(value: string): string {
@@ -68,39 +72,34 @@ function formatCell(value: string): string {
 export function ExcelTable({ data, merges, globalFilter, pageSize = 100 }: ExcelTableProps) {
   const headerRow = data[0] ?? [];
   const dataRows = data.slice(1);
+  const maxCols = Math.max(...data.map((r) => r.length), 0);
+
+  const mergeMap = useMemo(() => buildMergeMap(merges), [merges]);
+
+  const getMerge = useCallback(
+    (rowIdx: number, colIdx: number): MergeInfo | undefined => {
+      return mergeMap.get(`${rowIdx}:${colIdx}`);
+    },
+    [mergeMap]
+  );
 
   const columns = useMemo<ColumnDef<string[], unknown>[]>(() => {
-    const maxCols = Math.max(...data.map((r) => r.length), 0);
     return Array.from({ length: maxCols }, (_, colIdx) => ({
       id: String(colIdx),
       header: () => headerRow[colIdx] || `Col ${colIdx + 1}`,
       accessorFn: (row: string[]) => row[colIdx] ?? "",
-      cell: ({ row }) => {
-        const actualRowIdx = row.index + 1;
-        const span = getCellSpan(merges, actualRowIdx, colIdx);
-        if (span?.hidden) return null;
-        return (
-          <span className="text-foreground">
-            {formatCell(row.original[colIdx] ?? "")}
-          </span>
-        );
-      },
-      meta: {
-        rowSpan: (rowIndex: number) => {
-          const actualRowIdx = rowIndex + 1;
-          const span = getCellSpan(merges, actualRowIdx, colIdx);
-          return span?.hidden ? 0 : (span?.rowSpan ?? 1);
-        },
-        colSpan: (rowIndex: number) => {
-          const actualRowIdx = rowIndex + 1;
-          const span = getCellSpan(merges, actualRowIdx, colIdx);
-          return span?.hidden ? 0 : (span?.colSpan ?? 1);
-        },
-      },
     }));
-  }, [headerRow, merges, data]);
+  }, [headerRow, maxCols]);
 
-  const tableData = useMemo(() => dataRows, [dataRows]);
+  const filteredData = useMemo(() => {
+    if (!globalFilter.trim()) return dataRows;
+    const q = globalFilter.toLowerCase();
+    return dataRows.filter((row) =>
+      row.some((cell) => String(cell).toLowerCase().includes(q))
+    );
+  }, [dataRows, globalFilter]);
+
+  const tableData = useMemo(() => filteredData, [filteredData]);
 
   const table = useReactTable({
     data: tableData,
@@ -109,20 +108,11 @@ export function ExcelTable({ data, merges, globalFilter, pageSize = 100 }: Excel
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     state: {
-      globalFilter,
       pagination: {
         pageIndex: 0,
         pageSize,
       },
     },
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = String(filterValue).toLowerCase();
-      if (!search) return true;
-      return row.original.some((cell) =>
-        String(cell).toLowerCase().includes(search)
-      );
-    },
-    filterFns: {},
   });
 
   return (
@@ -149,40 +139,47 @@ export function ExcelTable({ data, merges, globalFilter, pageSize = 100 }: Excel
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={Number(row.id) % 2 === 0 ? "bg-white" : "bg-gray-50/80"}
-              >
-                <TableCell className="sticky left-0 z-10 bg-gray-100 border border-r border-b border-border text-center text-xs text-muted font-medium">
-                  {row.index + 2}
-                </TableCell>
-                {row.getVisibleCells().map((cell) => {
-                  const cellContent = flexRender(cell.column.columnDef.cell, cell.getContext());
-                  if (cellContent === null || cellContent === "") {
-                    return <TableCell key={cell.id} className="border border-r border-b border-border px-3 py-1.5" />;
-                  }
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className="border border-r border-b border-border px-3 py-1.5 whitespace-nowrap hover:bg-primary/5 transition-colors"
-                    >
-                      {cellContent}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const globalRowIdx = row.index + 1;
+              return (
+                <TableRow
+                  key={row.id}
+                  className={row.index % 2 === 0 ? "bg-white" : "bg-gray-50/80"}
+                >
+                  <TableCell className="sticky left-0 z-10 bg-gray-100 border border-r border-b border-border text-center text-xs text-muted font-medium">
+                    {globalRowIdx + 1}
+                  </TableCell>
+                  {Array.from({ length: maxCols }, (_, colIdx) => {
+                    const merge = getMerge(globalRowIdx, colIdx);
+                    if (merge?.hidden) return null;
+
+                    const value = row.original[colIdx] ?? "";
+                    const formatted = formatCell(value);
+
+                    return (
+                      <TableCell
+                        key={colIdx}
+                        className="border border-r border-b border-border px-3 py-1.5 text-sm text-foreground whitespace-nowrap hover:bg-primary/5 transition-colors"
+                        {...(merge && !merge.hidden && (merge.rowSpan > 1 || merge.colSpan > 1)
+                          ? { rowSpan: merge.rowSpan, colSpan: merge.colSpan }
+                          : {})}
+                      >
+                        {formatted}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination Footer */}
       <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted shrink-0">
         <span>
-          {table.getFilteredRowModel().rows.length === dataRows.length
+          {filteredData.length === dataRows.length
             ? `${dataRows.length.toLocaleString()} rows`
-            : `${table.getFilteredRowModel().rows.length.toLocaleString()} of ${dataRows.length.toLocaleString()} rows`}
+            : `${filteredData.length.toLocaleString()} of ${dataRows.length.toLocaleString()} rows`}
         </span>
         <div className="flex items-center gap-2">
           <button
