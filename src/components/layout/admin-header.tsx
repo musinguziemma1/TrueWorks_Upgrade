@@ -23,6 +23,7 @@ import {
   FileText,
   Mail,
   Percent,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -56,6 +57,7 @@ const searchLinks = [
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Content", href: "/admin/content", icon: FileText },
   { label: "Email Marketing", href: "/admin/email", icon: Mail },
+  { label: "Reviews", href: "/admin/reviews", icon: MessageSquare },
   { label: "Coupons", href: "/admin/coupons", icon: Percent },
 ]
 
