@@ -32,6 +32,7 @@ import {
   BookOpen,
   UserCircle,
   MessageSquare,
+  ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -94,6 +95,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Profile", href: "/admin/profile", icon: <UserCircle className="h-4 w-4" /> },
       { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" /> },
+      { label: "Audit Log", href: "/admin/audit", icon: <ClipboardList className="h-4 w-4" /> },
       { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
       { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" /> },
       { label: "Support", href: "/admin/support", icon: <LifeBuoy className="h-4 w-4" /> },

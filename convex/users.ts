@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { auditLog } from "./lib/audit";
 
 const DEFAULT_ADMIN_EMAILS = ["musinguzie612@gmail.com"];
 const SUPERADMIN_EMAILS = ["musinguzie612@gmail.com"];
@@ -228,6 +229,14 @@ export const setRole = mutation({
       });
     }
 
+    await auditLog(ctx, {
+      action: "user.role_change",
+      entityType: "user",
+      entityId: args.userId,
+      summary: `Changed role of "${target.name ?? target.email}" from ${target.role} to ${args.role}`,
+      changes: { from: target.role, to: args.role },
+    });
+
     return null;
   },
 });
@@ -260,6 +269,13 @@ export const suspendUser = mutation({
       });
     }
 
+    await auditLog(ctx, {
+      action: "user.suspend",
+      entityType: "user",
+      entityId: args.userId,
+      summary: `Suspended user "${target.name ?? target.email}"`,
+    });
+
     return null;
   },
 });
@@ -288,6 +304,13 @@ export const activateUser = mutation({
         clerkId: target.clerkId,
       });
     }
+
+    await auditLog(ctx, {
+      action: "user.activate",
+      entityType: "user",
+      entityId: args.userId,
+      summary: `Activated user "${target.name ?? target.email}"`,
+    });
 
     return null;
   },

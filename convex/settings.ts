@@ -76,13 +76,30 @@ export const set = mutation({
       .collect();
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, { value: args.value, updatedAt: Date.now() });
+      const { auditLog } = await import("./lib/audit");
+      await auditLog(ctx, {
+        action: "settings.update",
+        entityType: "settings",
+        entityId: existing[0]._id,
+        summary: `Updated setting "${args.key}"`,
+        changes: { key: args.key, value: args.value },
+      });
       return existing[0]._id;
     }
-    return await ctx.db.insert("settings", {
+    const id = await ctx.db.insert("settings", {
       key: args.key,
       value: args.value,
       updatedAt: Date.now(),
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "settings.create",
+      entityType: "settings",
+      entityId: id,
+      summary: `Created setting "${args.key}"`,
+      changes: { key: args.key, value: args.value },
+    });
+    return id;
   },
 });
 
@@ -92,6 +109,7 @@ export const setMultiple = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const keys: string[] = [];
     for (const { key, value } of args.settings) {
       const existing = await ctx.db
         .query("settings")
@@ -102,7 +120,15 @@ export const setMultiple = mutation({
       } else {
         await ctx.db.insert("settings", { key, value, updatedAt: Date.now() });
       }
+      keys.push(key);
     }
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "settings.bulk_update",
+      entityType: "settings",
+      entityId: "bulk",
+      summary: `Bulk updated ${keys.length} settings: ${keys.join(", ")}`,
+    });
   },
 });
 

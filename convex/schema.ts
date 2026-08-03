@@ -309,9 +309,11 @@ export default defineSchema({
   auditLogs: defineTable({
     actorId: v.optional(v.id("users")),
     actorEmail: v.string(),
+    actorName: v.optional(v.string()),
     action: v.string(),
     entityType: v.string(),
     entityId: v.string(),
+    summary: v.string(),
     changes: v.optional(v.any()),
     ipAddress: v.optional(v.string()),
     createdAt: v.number(),

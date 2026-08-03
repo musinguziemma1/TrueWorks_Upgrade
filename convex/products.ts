@@ -157,6 +157,18 @@ export const create = mutation({
       updatedAt: now,
     });
     await syncCategoryProductCount(ctx, args.category);
+    const identity = await ctx.auth.getUserIdentity();
+    const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
+    await ctx.db.insert("auditLogs", {
+      actorId: actor?._id,
+      actorEmail: actor?.email ?? identity?.email ?? "system",
+      actorName: actor?.name,
+      action: "product.create",
+      entityType: "product",
+      entityId: id,
+      summary: `Created product "${args.name}" (${args.sku})`,
+      createdAt: now,
+    });
     return id;
   },
 });
@@ -200,6 +212,19 @@ export const update = mutation({
       await syncCategoryProductCount(ctx, oldProduct.category);
       await syncCategoryProductCount(ctx, updates.category);
     }
+    const identity = await ctx.auth.getUserIdentity();
+    const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
+    await ctx.db.insert("auditLogs", {
+      actorId: actor?._id,
+      actorEmail: actor?.email ?? identity?.email ?? "system",
+      actorName: actor?.name,
+      action: "product.update",
+      entityType: "product",
+      entityId: id,
+      summary: `Updated product "${oldProduct?.name ?? id}"`,
+      changes: filtered,
+      createdAt: Date.now(),
+    });
   },
 });
 
@@ -212,6 +237,18 @@ export const remove = mutation({
     if (product) {
       await syncCategoryProductCount(ctx, product.category);
     }
+    const identity = await ctx.auth.getUserIdentity();
+    const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
+    await ctx.db.insert("auditLogs", {
+      actorId: actor?._id,
+      actorEmail: actor?.email ?? identity?.email ?? "system",
+      actorName: actor?.name,
+      action: "product.delete",
+      entityType: "product",
+      entityId: args.id,
+      summary: `Deleted product "${product?.name ?? args.id}"`,
+      createdAt: Date.now(),
+    });
   },
 });
 

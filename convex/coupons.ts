@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const list = query({
   args: { activeOnly: v.optional(v.boolean()) },
@@ -34,11 +35,18 @@ export const create = mutation({
     if (existing.length > 0) {
       throw new Error(`Coupon with code "${args.code}" already exists`);
     }
-    return await ctx.db.insert("coupons", {
+    const id = await ctx.db.insert("coupons", {
       ...args,
       usageCount: 0,
       createdAt: Date.now(),
     });
+    await auditLog(ctx, {
+      action: "coupon.create",
+      entityType: "coupon",
+      entityId: id,
+      summary: `Created coupon "${args.code}" (${args.type} ${args.value})`,
+    });
+    return id;
   },
 });
 
@@ -57,7 +65,15 @@ export const update = mutation({
     await requireAdmin(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const old = await ctx.db.get(id);
     await ctx.db.patch(id, filtered);
+    await auditLog(ctx, {
+      action: "coupon.update",
+      entityType: "coupon",
+      entityId: id,
+      summary: `Updated coupon "${old?.code ?? id}"`,
+      changes: filtered,
+    });
   },
 });
 
@@ -65,7 +81,14 @@ export const remove = mutation({
   args: { id: v.id("coupons") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const coupon = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    await auditLog(ctx, {
+      action: "coupon.delete",
+      entityType: "coupon",
+      entityId: args.id,
+      summary: `Deleted coupon "${coupon?.code ?? args.id}"`,
+    });
   },
 });
 

@@ -184,6 +184,15 @@ export const updateStatus = mutation({
         previousPaymentStatus: previous.paymentStatus,
       });
     }
+
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "order.status_update",
+      entityType: "order",
+      entityId: id,
+      summary: `Updated order "${previous.orderNumber}" — payment: ${args.paymentStatus ?? previous.paymentStatus}, order: ${args.orderStatus ?? previous.orderStatus}`,
+      changes: filtered,
+    });
   },
 });
 
