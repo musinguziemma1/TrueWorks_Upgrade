@@ -7,6 +7,9 @@ const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET ?? "";
 const PESAPAL_BASE_URL = process.env.PESAPAL_BASE_URL ?? "https://www.pesapal.com/api";
 const PESAPAL_IFRAME_URL = process.env.PESAPAL_IFRAME_URL ?? "https://www.pesapal.com/iframe/PesapalIframe3";
 const PESAPAL_POST_URL = process.env.PESAPAL_POST_URL ?? "https://www.pesapal.com/api/post";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
+const EMAIL_BASE = process.env.NEXT_PUBLIC_CONVEX_URL ?? "";
 
 async function getPesapalToken(): Promise<string> {
   const response = await fetch(`${PESAPAL_BASE_URL}/Auth/RequestToken`, {
@@ -97,6 +100,29 @@ export const initiatePayment = httpAction(async (ctx, request) => {
   }
 });
 
+async function sendPaymentEmail(order: any) {
+  if (!EMAIL_API_SECRET || !EMAIL_BASE) return;
+  try {
+    const productNames = order.items.map((i: any) => i.productName || "Product").join(", ");
+    await fetch(`${EMAIL_BASE}/email/download-ready`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-email-secret": EMAIL_API_SECRET,
+      },
+      body: JSON.stringify({
+        customerEmail: order.customerEmail,
+        customerName: order.customerName || "Customer",
+        orderNumber: order.orderNumber,
+        productName: productNames,
+        downloadUrl: `${SITE_URL}/account/downloads`,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to send payment email:", e);
+  }
+}
+
 export const handleCallback = httpAction(async (ctx, request) => {
   const url = new URL(request.url);
   const orderTrackingId = url.searchParams.get("order_tracking_id");
@@ -168,6 +194,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
               id: order._id,
               orderStatus: "completed",
             });
+            await sendPaymentEmail(order);
           }
         }
       }

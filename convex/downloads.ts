@@ -61,8 +61,12 @@ export const recordDownload = mutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) throw new Error("You must be logged in to download");
+
     const download = await ctx.db.get(args.id);
     if (!download) throw new Error("Download record not found");
+    if (download.email !== me.email) throw new Error("Access denied: this download does not belong to you");
     if (download.status !== "active") throw new Error("Download is not active");
     if (download.remainingDownloads <= 0) throw new Error("No downloads remaining");
     if (download.expiresAt < Date.now()) {

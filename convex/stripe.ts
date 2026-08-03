@@ -5,8 +5,37 @@ import { Id } from "./_generated/dataModel";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
+const EMAIL_BASE = process.env.NEXT_PUBLIC_CONVEX_URL ?? "";
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
+
+async function sendPaymentEmail(order: any, items: any[]) {
+  if (!EMAIL_API_SECRET || !EMAIL_BASE) return;
+  try {
+    const itemList = items.map((i: any) => ({
+      name: i.productName || i.name || "Product",
+      quantity: i.quantity,
+      price: i.price,
+    }));
+    await fetch(`${EMAIL_BASE}/email/download-ready`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-email-secret": EMAIL_API_SECRET,
+      },
+      body: JSON.stringify({
+        customerEmail: order.customerEmail,
+        customerName: order.customerName || "Customer",
+        orderNumber: order.orderNumber,
+        productName: itemList.map((i: any) => i.name).join(", "),
+        downloadUrl: `${SITE_URL}/account/downloads`,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to send payment email:", e);
+  }
+}
 
 async function stripePost(path: string, params?: Record<string, string>) {
   const body = params ? new URLSearchParams(params).toString() : undefined;
@@ -227,6 +256,8 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
             orderStatus: "completed",
             paymentId: pi.id as string,
           });
+
+          await sendPaymentEmail(order, order.items);
         }
 
         await ctx.runMutation(internal.notifications.createPublic, {

@@ -159,19 +159,34 @@ export const sendDownloadReady = httpAction(async (ctx, request) => {
   const { customerEmail, customerName, orderNumber, downloadUrl, productName } = body;
 
   const html = baseTemplate(`
-    <h2>Your Download is Ready!</h2>
+    <h2>Payment Approved — Your Download is Ready!</h2>
     <p>Hi ${escapeHtml(customerName)},</p>
-    <p>Your purchase of <strong>${escapeHtml(productName)}</strong> is ready to download.</p>
-    <p>Order: ${escapeHtml(orderNumber)}</p>
-    <a href="${escapeUrl(downloadUrl)}" class="button">Download Now</a>
+    <p>Great news! Your payment has been approved and your purchase is ready to download.</p>
+
+    <div class="order-box">
+      <h3 style="margin: 0 0 12px 0; color: #0b2545;">Invoice</h3>
+      <p style="margin: 0 0 4px 0;"><strong>Order:</strong> ${escapeHtml(orderNumber)}</p>
+      <p style="margin: 0 0 4px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</p>
+      <p style="margin: 0 0 12px 0;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: 600;">Paid</span></p>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <p style="margin: 0;"><strong>Product(s):</strong> ${escapeHtml(productName)}</p>
+      </div>
+    </div>
+
+    <a href="${escapeUrl(downloadUrl)}" class="button">Download Your File</a>
+
     <p><strong>Note:</strong> This download link will expire in 7 days. Please save the file to your computer after downloading.</p>
     <p>You can also access your downloads anytime from your account:</p>
     <a href="${SITE_URL}/account/downloads" class="button">View All Downloads</a>
+
+    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      Please keep this email for your records. If you have any questions about your order, reply to this email or contact us at <a href="mailto:hello@trueworksgroup.com">hello@trueworksgroup.com</a>.
+    </p>
   `);
 
   const sent = await sendEmail({
     to: customerEmail,
-    subject: `Download Ready - ${String(productName).slice(0, 64)}`,
+    subject: `Payment Approved — Download Ready (${String(orderNumber).slice(0, 64)})`,
     html,
   });
 
