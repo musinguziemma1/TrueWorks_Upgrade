@@ -60,6 +60,14 @@ export const remove = mutation({
   args: { id: v.id("subscribers") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const sub = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "subscriber.remove",
+      entityType: "subscriber",
+      entityId: args.id,
+      summary: `Removed subscriber "${sub?.email ?? "unknown"}"`,
+    });
   },
 });

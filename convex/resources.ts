@@ -113,13 +113,21 @@ export const create = mutation({
       throw new Error(`Resource with slug "${args.slug}" already exists`);
     }
     const now = Date.now();
-    return await ctx.db.insert("resources", {
+    const id = await ctx.db.insert("resources", {
       ...args,
       attachments: args.attachments ?? [],
       downloadCount: 0,
       createdAt: now,
       updatedAt: now,
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "resource.create",
+      entityType: "resource",
+      entityId: id,
+      summary: `Created resource "${args.title}"`,
+    });
+    return id;
   },
 });
 
@@ -148,7 +156,16 @@ export const update = mutation({
     await requireAdmin(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const old = await ctx.db.get(id);
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "resource.update",
+      entityType: "resource",
+      entityId: id,
+      summary: `Updated resource "${old?.title ?? id}"`,
+      changes: filtered,
+    });
   },
 });
 
@@ -156,7 +173,15 @@ export const remove = mutation({
   args: { id: v.id("resources") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const resource = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "resource.delete",
+      entityType: "resource",
+      entityId: args.id,
+      summary: `Deleted resource "${resource?.title ?? args.id}"`,
+    });
   },
 });
 

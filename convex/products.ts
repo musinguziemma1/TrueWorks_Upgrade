@@ -320,6 +320,14 @@ export const bulkImport = mutation({
       }
     }
 
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "product.bulk_import",
+      entityType: "product",
+      entityId: "bulk",
+      summary: `Bulk imported ${args.products.length} products (${results.filter(r => r.success).length} succeeded)`,
+    });
+
     return results;
   },
 });

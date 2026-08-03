@@ -115,6 +115,13 @@ export const approve = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "approved" });
     await recalculateProductRating(ctx, review.productId);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "review.approve",
+      entityType: "review",
+      entityId: args.id,
+      summary: `Approved review by "${review.customerName}" on product`,
+    });
   },
 });
 
@@ -126,6 +133,13 @@ export const reject = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "rejected" });
     await recalculateProductRating(ctx, review.productId);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "review.reject",
+      entityType: "review",
+      entityId: args.id,
+      summary: `Rejected review by "${review.customerName}" on product`,
+    });
   },
 });
 
@@ -136,6 +150,13 @@ export const toggleFeatured = mutation({
     const review = await ctx.db.get(args.id);
     if (review) {
       await ctx.db.patch(args.id, { featured: !review.featured });
+      const { auditLog } = await import("./lib/audit");
+      await auditLog(ctx, {
+        action: "review.toggle_featured",
+        entityType: "review",
+        entityId: args.id,
+        summary: `${review.featured ? "Unfeatured" : "Featured"} review by "${review.customerName}"`,
+      });
     }
   },
 });
@@ -148,5 +169,12 @@ export const remove = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.delete(args.id);
     await recalculateProductRating(ctx, review.productId);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "review.delete",
+      entityType: "review",
+      entityId: args.id,
+      summary: `Deleted review by "${review.customerName}" on product`,
+    });
   },
 });

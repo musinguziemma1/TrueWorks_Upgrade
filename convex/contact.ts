@@ -69,6 +69,14 @@ export const remove = mutation({
   args: { id: v.id("contactMessages") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const msg = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "contact.delete",
+      entityType: "contactMessage",
+      entityId: args.id,
+      summary: `Deleted contact message from "${msg?.name ?? msg?.email ?? "unknown"}"`,
+    });
   },
 });

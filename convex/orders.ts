@@ -144,7 +144,15 @@ export const create = mutation({
   args: orderCreateArgs,
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    return await insertOrder(ctx, args);
+    const id = await insertOrder(ctx, args);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "order.create",
+      entityType: "order",
+      entityId: id,
+      summary: `Created order for ${args.customerEmail} — ${args.items.length} item(s)`,
+    });
+    return id;
   },
 });
 
@@ -200,7 +208,15 @@ export const remove = mutation({
   args: { id: v.id("orders") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const order = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "order.delete",
+      entityType: "order",
+      entityId: args.id,
+      summary: `Deleted order "${order?.orderNumber ?? args.id}"`,
+    });
   },
 });
 

@@ -3,25 +3,13 @@ import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 
 export const list = query({
-  args: {
-    type: v.optional(v.string()),
-    status: v.optional(v.string()),
-  },
+  args: { type: v.optional(v.union(v.literal("page"), v.literal("post"), v.literal("resource"))) },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    if (args.type) {
-      return await ctx.db
-        .query("pages")
-        .withIndex("by_type", (q) => q.eq("type", args.type as "page" | "post" | "resource"))
-        .collect();
-    }
-    if (args.status) {
-      return await ctx.db
-        .query("pages")
-        .withIndex("by_status", (q) => q.eq("status", args.status as "draft" | "published"))
-        .collect();
-    }
-    return await ctx.db.query("pages").order("desc").take(100);
+    const q = args.type
+      ? ctx.db.query("pages").withIndex("by_type", (q) => q.eq("type", args.type!))
+      : ctx.db.query("pages");
+    return await q.order("desc").collect();
   },
 });
 
@@ -51,11 +39,19 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const now = Date.now();
-    return await ctx.db.insert("pages", {
+    const id = await ctx.db.insert("pages", {
       ...args,
       createdAt: now,
       updatedAt: now,
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "page.create",
+      entityType: "page",
+      entityId: id,
+      summary: `Created ${args.type} "${args.title}"`,
+    });
+    return id;
   },
 });
 
@@ -76,7 +72,16 @@ export const update = mutation({
     await requireAdmin(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const old = await ctx.db.get(id);
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "page.update",
+      entityType: "page",
+      entityId: id,
+      summary: `Updated ${old?.type ?? "page"} "${old?.title ?? id}"`,
+      changes: filtered,
+    });
   },
 });
 
@@ -84,6 +89,14 @@ export const remove = mutation({
   args: { id: v.id("pages") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const page = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "page.delete",
+      entityType: "page",
+      entityId: args.id,
+      summary: `Deleted ${page?.type ?? "page"} "${page?.title ?? args.id}"`,
+    });
   },
 });

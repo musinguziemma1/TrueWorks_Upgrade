@@ -65,7 +65,7 @@ export const create = mutation({
       throw new Error(`Customer with email "${args.email}" already exists`);
     }
     const now = Date.now();
-    return await ctx.db.insert("customers", {
+    const id = await ctx.db.insert("customers", {
       ...args,
       lifetimeValue: 0,
       totalOrders: 0,
@@ -73,6 +73,14 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "customer.create",
+      entityType: "customer",
+      entityId: id,
+      summary: `Created customer "${args.name}" (${args.email})`,
+    });
+    return id;
   },
 });
 
@@ -92,7 +100,16 @@ export const update = mutation({
     await requireAdmin(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const old = await ctx.db.get(id);
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "customer.update",
+      entityType: "customer",
+      entityId: id,
+      summary: `Updated customer "${old?.name ?? id}"`,
+      changes: filtered,
+    });
   },
 });
 
@@ -134,6 +151,14 @@ export const remove = mutation({
   args: { id: v.id("customers") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const customer = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "customer.delete",
+      entityType: "customer",
+      entityId: args.id,
+      summary: `Deleted customer "${customer?.name ?? args.id}"`,
+    });
   },
 });

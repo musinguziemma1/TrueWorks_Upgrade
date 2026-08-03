@@ -122,5 +122,12 @@ export const deleteFile = mutation({
       await ctx.storage.delete(file.storageId as Id<"_storage">);
     }
     await ctx.db.delete(args.id);
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "media.delete",
+      entityType: "mediaFile",
+      entityId: args.id,
+      summary: `Deleted file "${file?.name ?? "unknown"}"`,
+    });
   },
 });

@@ -142,6 +142,13 @@ export const remove = mutation({
       .collect();
     if (existing.length > 0) {
       await ctx.db.delete(existing[0]._id);
+      const { auditLog } = await import("./lib/audit");
+      await auditLog(ctx, {
+        action: "settings.delete",
+        entityType: "settings",
+        entityId: existing[0]._id,
+        summary: `Deleted setting "${args.key}"`,
+      });
     }
   },
 });

@@ -343,6 +343,12 @@ export const deleteUser = mutation({
     }
 
     await ctx.db.delete(args.userId);
+    await auditLog(ctx, {
+      action: "user.delete",
+      entityType: "user",
+      entityId: args.userId,
+      summary: `Deleted user "${target.name ?? target.email}"`,
+    });
     return null;
   },
 });
@@ -406,6 +412,13 @@ export const inviteUser = mutation({
       role: args.role,
       invitedBy: actor[0].name || actor[0].email,
       invitationId,
+    });
+
+    await auditLog(ctx, {
+      action: "user.invite",
+      entityType: "user",
+      entityId: invitationId,
+      summary: `Invited "${args.email}" as ${args.role}`,
     });
 
     return { invitationId };
@@ -479,7 +492,7 @@ export const seedAdmin = mutation({
     const tokenIdentifier = identity.tokenIdentifier;
     const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
     const assignedRole = isSuperAdminEmail ? "superadmin" : "admin";
-    return await ctx.db.insert("users", {
+    const id = await ctx.db.insert("users", {
       clerkId: args.clerkId,
       tokenIdentifier,
       email: args.email,
@@ -490,6 +503,13 @@ export const seedAdmin = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await auditLog(ctx, {
+      action: "user.seed_admin",
+      entityType: "user",
+      entityId: id,
+      summary: `Seeded admin account "${args.email}" as ${assignedRole}`,
+    });
+    return id;
   },
 });
 

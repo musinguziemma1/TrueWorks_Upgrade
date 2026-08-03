@@ -101,5 +101,13 @@ export const adminUpdateStatus = mutation({
       adminNotes: args.adminNotes,
       updatedAt: Date.now(),
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "return.status_update",
+      entityType: "return",
+      entityId: args.id,
+      summary: `Updated return "${ret.orderNumber}" to ${args.status}`,
+      changes: { from: ret.status, to: args.status, adminNotes: args.adminNotes },
+    });
   },
 });

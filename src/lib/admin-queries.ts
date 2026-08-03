@@ -186,8 +186,8 @@ export const deleteCoupon = {
   useMutation: () => useMutation(api.coupons.remove),
 };
 
-export function usePages(args?: { type?: string; status?: string }) {
-  return useQuery(api.pages.list, args ?? {});
+export function usePages(args?: { type?: "page" | "post" | "resource"; status?: string }) {
+  return useQuery(api.pages.list, args ? { type: args.type } : {});
 }
 
 export const createPage = {

@@ -76,6 +76,13 @@ export const revoke = mutation({
     if (invitation.status !== "pending") throw new Error("Can only revoke pending invitations");
 
     await ctx.db.patch(args.invitationId, { status: "revoked" });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "invitation.revoke",
+      entityType: "invitation",
+      entityId: args.invitationId,
+      summary: `Revoked invitation for "${invitation.email}"`,
+    });
     return null;
   },
 });
@@ -127,6 +134,14 @@ export const resend = mutation({
       role: invitation.role,
       invitedBy: invitation.invitedByName || invitation.invitedBy,
       invitationId: args.invitationId,
+    });
+
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "invitation.resend",
+      entityType: "invitation",
+      entityId: args.invitationId,
+      summary: `Resent invitation to "${invitation.email}"`,
     });
 
     return null;

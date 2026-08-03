@@ -21,6 +21,7 @@ import type * as downloads from "../downloads.js";
 import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
+import type * as lib_audit from "../lib/audit.js";
 import type * as mediaFiles from "../mediaFiles.js";
 import type * as notifications from "../notifications.js";
 import type * as orderEmails from "../orderEmails.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   email: typeof email;
   http: typeof http;
   invitations: typeof invitations;
+  "lib/audit": typeof lib_audit;
   mediaFiles: typeof mediaFiles;
   notifications: typeof notifications;
   orderEmails: typeof orderEmails;

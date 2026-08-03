@@ -13,7 +13,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    return await ctx.db.insert("mediaFiles", {
+    const id = await ctx.db.insert("mediaFiles", {
       name: args.name,
       contentType: args.contentType,
       folder: args.folder,
@@ -22,5 +22,13 @@ export const create = mutation({
       url: args.url,
       createdAt: Date.now(),
     });
+    const { auditLog } = await import("./lib/audit");
+    await auditLog(ctx, {
+      action: "media.upload",
+      entityType: "mediaFile",
+      entityId: id,
+      summary: `Uploaded file "${args.name}"`,
+    });
+    return id;
   },
 });
