@@ -2,6 +2,21 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
+import { Id } from "./_generated/dataModel";
+
+async function recalculateProductRating(ctx: any, productId: Id<"products">) {
+  const approved = await ctx.db
+    .query("reviews")
+    .withIndex("by_productId", (q: any) => q.eq("productId", productId))
+    .collect()
+    .then((rs: any[]) => rs.filter((r: any) => r.status === "approved"));
+  const totalRating = approved.reduce((sum: number, r: any) => sum + r.rating, 0);
+  const count = approved.length;
+  await ctx.db.patch(productId, {
+    reviewCount: count,
+    rating: count > 0 ? Math.round((totalRating / count) * 10) / 10 : 0,
+  });
+}
 
 export const list = query({
   args: {
@@ -24,7 +39,6 @@ export const list = query({
     } else {
       reviews = await ctx.db.query("reviews").order("desc").take(100);
     }
-    // Non-admins can only see approved reviews
     if (!isAdmin) {
       return reviews.filter((r) => r.status === "approved");
     }
@@ -56,7 +70,6 @@ export const create = mutation({
       throw new Error("Rating must be between 1 and 5");
     }
 
-    // Rate limit: max 3 reviews per product per name per hour
     await checkRateLimit(
       ctx,
       "review",
@@ -88,19 +101,7 @@ export const approve = mutation({
     const review = await ctx.db.get(args.id);
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "approved" });
-    const product = await ctx.db.get(review.productId);
-    if (product) {
-      const approved = await ctx.db
-        .query("reviews")
-        .withIndex("by_productId", (q) => q.eq("productId", review.productId))
-        .collect()
-        .then((rs) => rs.filter((r) => r.status === "approved" || r._id === args.id));
-      const totalRating = approved.reduce((sum, r) => sum + r.rating, 0);
-      await ctx.db.patch(review.productId, {
-        reviewCount: approved.length,
-        rating: approved.length > 0 ? Math.round((totalRating / approved.length) * 10) / 10 : 0,
-      });
-    }
+    await recalculateProductRating(ctx, review.productId);
   },
 });
 
@@ -108,7 +109,10 @@ export const reject = mutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const review = await ctx.db.get(args.id);
+    if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "rejected" });
+    await recalculateProductRating(ctx, review.productId);
   },
 });
 
@@ -130,18 +134,6 @@ export const remove = mutation({
     const review = await ctx.db.get(args.id);
     if (!review) throw new Error("Review not found");
     await ctx.db.delete(args.id);
-    const product = await ctx.db.get(review.productId);
-    if (product) {
-      const remaining = await ctx.db
-        .query("reviews")
-        .withIndex("by_productId", (q) => q.eq("productId", review.productId))
-        .collect()
-        .then((rs) => rs.filter((r) => r._id !== args.id && r.status === "approved"));
-      const totalRating = remaining.reduce((sum, r) => sum + r.rating, 0);
-      await ctx.db.patch(review.productId, {
-        reviewCount: remaining.length,
-        rating: remaining.length > 0 ? Math.round((totalRating / remaining.length) * 10) / 10 : 0,
-      });
-    }
+    await recalculateProductRating(ctx, review.productId);
   },
 });

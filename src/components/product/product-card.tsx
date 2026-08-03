@@ -9,13 +9,13 @@ import {
   Heart,
   Eye,
   Share2,
-  Star,
   BadgePercent,
   Copy,
   Check,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Stars } from "./stars";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import { useWishlist } from "@/components/layout/wishlist-context";
@@ -328,23 +328,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </p>
 
           {/* Rating + sales */}
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }, (_, i) => (
-                <Star
-                  key={i}
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    i < Math.round(product.rating)
-                      ? "fill-accent text-accent"
-                      : "text-border"
-                  )}
-                />
-              ))}
-              <span className="ml-1 text-xs font-medium text-foreground">{product.rating}</span>
+          {product.reviewCount > 0 && (
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Stars rating={product.rating} starClassName="h-3.5 w-3.5" />
+                <span className="ml-1 text-xs font-medium text-foreground">{product.rating}</span>
+              </div>
+              <span className="text-xs text-muted">({product.reviewCount} reviews)</span>
             </div>
-            <span className="text-xs text-muted">({product.reviewCount} reviews)</span>
-          </div>
+          )}
 
           {/* Tags */}
           <div className="mt-3 flex flex-wrap gap-1">

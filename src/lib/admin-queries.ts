@@ -150,6 +150,26 @@ export const deleteCustomer = {
   useMutation: () => useMutation(api.customers.remove),
 };
 
+export function useReviews(args?: { productId?: Id<"products">; status?: string }) {
+  return useQuery(api.reviews.list, args ?? {});
+}
+
+export const approveReview = {
+  useMutation: () => useMutation(api.reviews.approve),
+};
+
+export const rejectReview = {
+  useMutation: () => useMutation(api.reviews.reject),
+};
+
+export const toggleFeaturedReview = {
+  useMutation: () => useMutation(api.reviews.toggleFeatured),
+};
+
+export const deleteReview = {
+  useMutation: () => useMutation(api.reviews.remove),
+};
+
 export function useCoupons(activeOnly?: boolean) {
   return useQuery(api.coupons.list, { activeOnly });
 }
