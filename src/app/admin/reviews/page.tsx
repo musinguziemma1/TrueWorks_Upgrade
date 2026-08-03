@@ -170,7 +170,7 @@ export default function ReviewsPage() {
               <Select
                 value={statusFilter}
                 onValueChange={(v) => {
-                  if (v) setStatusFilter(v);
+                  setStatusFilter(v as string);
                   setPage(1);
                 }}
               >
