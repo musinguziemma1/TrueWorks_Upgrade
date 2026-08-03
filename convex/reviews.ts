@@ -1,7 +1,8 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
+import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 async function recalculateProductRating(ctx: any, productId: Id<"products">) {
@@ -78,7 +79,7 @@ export const create = mutation({
       3_600_000
     );
 
-    return await ctx.db.insert("reviews", {
+    const reviewId = await ctx.db.insert("reviews", {
       productId: args.productId,
       customerId: undefined,
       customerName: args.customerName,
@@ -91,6 +92,18 @@ export const create = mutation({
       reported: false,
       createdAt: Date.now(),
     });
+
+    const product = await ctx.db.get(args.productId);
+    if (product) {
+      await ctx.runMutation(internal.notifications.createPublic, {
+        type: "review",
+        title: "New Review Submitted",
+        message: `${args.customerName} left a ${args.rating}-star review on "${product.name}"`,
+        link: "/admin/reviews",
+      });
+    }
+
+    return reviewId;
   },
 });
 
