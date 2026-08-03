@@ -118,7 +118,12 @@ function ShopByIndustryInner() {
                     <p className="font-heading text-base font-semibold text-primary">
                       {cat.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted">
+                    {cat.description && (
+                      <p className="mt-1 text-xs leading-relaxed text-muted line-clamp-2">
+                        {cat.description}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-[11px] font-medium text-accent-dark">
                       {cat.productCount} {cat.productCount === 1 ? "template" : "templates"}
                     </p>
                   </div>

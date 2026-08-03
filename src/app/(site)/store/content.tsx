@@ -55,6 +55,9 @@ function StoreContentInner() {
     status: "published",
   });
 
+  const dbCategories = useQuery(api.categories.list, {});
+  const categoryNames = (dbCategories ?? []).map((c) => c.name);
+
   const isLoading = allProducts === undefined;
   const products: StoreProduct[] = (allProducts ?? []) as StoreProduct[];
 
@@ -197,6 +200,7 @@ function StoreContentInner() {
           {/* Sidebar */}
           <StoreSidebar
             products={products}
+            categories={categoryNames}
             search={search}
             onSearchChange={(v) => { setSearch(v); setCurrentPage(1); }}
             activeCategory={activeCategory}

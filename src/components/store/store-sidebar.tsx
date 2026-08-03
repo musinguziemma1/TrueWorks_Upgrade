@@ -26,6 +26,7 @@ import type { StoreProduct } from "@/components/product/product-card"
 
 interface StoreSidebarProps {
   products: StoreProduct[]
+  categories: string[]
   search: string
   onSearchChange: (v: string) => void
   activeCategory: string
@@ -49,15 +50,7 @@ interface StoreSidebarProps {
   totalCount: number
 }
 
-const allCategories = [
-  "All",
-  "Hospital & Healthcare",
-  "Finance & Accounting",
-  "NGO & Grants",
-  "Education & E-Learning",
-  "Project Management",
-  "Sales & CRM",
-]
+const allCategoriesBase = ["All"]
 
 const allIndustries = [
   "Healthcare",
@@ -115,6 +108,7 @@ function FilterSection({
 
 export function StoreSidebar({
   products,
+  categories: dbCategories,
   search,
   onSearchChange,
   activeCategory,
@@ -137,6 +131,7 @@ export function StoreSidebar({
   resultCount,
   totalCount,
 }: StoreSidebarProps) {
+  const allCategories = [...allCategoriesBase, ...dbCategories]
   const [showMobile, setShowMobile] = useState(false)
 
   const stats = useMemo(() => {
