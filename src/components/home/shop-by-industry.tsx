@@ -3,29 +3,74 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Stethoscope,
+  ArrowUpRight,
+  Hospital,
+  BarChart3,
+  Heart,
+  GraduationCap,
+  Kanban,
+  Users,
   Briefcase,
   TrendingUp,
-  Heart,
-  Users,
-  GraduationCap,
   Church,
   Sprout,
-  ArrowUpRight,
+  Folder,
+  type LucideIcon,
 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { convexClient } from "@/lib/convex";
 
-const industries = [
-  { name: "Healthcare", icon: Stethoscope },
-  { name: "Business", icon: Briefcase },
-  { name: "Finance", icon: TrendingUp },
-  { name: "NGO", icon: Heart },
-  { name: "HR", icon: Users },
-  { name: "Schools", icon: GraduationCap },
-  { name: "Churches", icon: Church },
-  { name: "Agriculture", icon: Sprout },
-];
+const iconMap: Record<string, LucideIcon> = {
+  Hospital,
+  BarChart3,
+  Heart,
+  HeartHand: Heart,
+  GraduationCap,
+  Kanban,
+  Users,
+  Briefcase,
+  TrendingUp,
+  Church,
+  Sprout,
+};
+
+function getIcon(name: string): LucideIcon {
+  return iconMap[name] ?? Folder;
+}
 
 export default function ShopByIndustry() {
+  if (!convexClient) return null;
+  return <ShopByIndustryInner />;
+}
+
+function ShopByIndustryInner() {
+  const categories = useQuery(api.categories.list, {});
+
+  if (categories === undefined) {
+    return (
+      <section className="bg-white py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">Industries</p>
+            <h2 className="mt-3 font-heading text-3xl font-semibold text-primary md:text-4xl">Built for Your Sector</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-xl border border-border/70 bg-surface p-6">
+                <div className="h-12 w-12 rounded-xl bg-muted" />
+                <div className="mt-4 h-4 w-24 rounded bg-muted" />
+                <div className="mt-2 h-3 w-20 rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const items = categories;
+
   return (
     <section className="bg-white py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -49,35 +94,38 @@ export default function ShopByIndustry() {
         </motion.div>
 
         <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
-          {industries.map((industry, i) => (
-            <motion.div
-              key={industry.name}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-            >
-              <Link
-                href={`/store?category=${encodeURIComponent(industry.name)}`}
-                className="group flex h-full flex-col items-start gap-4 rounded-xl border border-border/70 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:bg-white hover:shadow-elevated"
+          {items.map((cat, i) => {
+            const Icon = getIcon(cat.icon ?? "");
+            return (
+              <motion.div
+                key={cat._id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
               >
-                <div className="flex w-full items-start justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white transition-colors duration-300 group-hover:bg-accent group-hover:text-primary-dark">
-                    <industry.icon className="h-5 w-5" />
-                  </span>
-                  <ArrowUpRight className="h-4 w-4 text-border transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-accent-dark" />
-                </div>
-                <div>
-                  <p className="font-heading text-base font-semibold text-primary">
-                    {industry.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted">
-                    Browse templates
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                <Link
+                  href={`/store?category=${encodeURIComponent(cat.name)}`}
+                  className="group flex h-full flex-col items-start gap-4 rounded-xl border border-border/70 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent/50 hover:bg-white hover:shadow-elevated"
+                >
+                  <div className="flex w-full items-start justify-between">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white transition-colors duration-300 group-hover:bg-accent group-hover:text-primary-dark">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <ArrowUpRight className="h-4 w-4 text-border transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-accent-dark" />
+                  </div>
+                  <div>
+                    <p className="font-heading text-base font-semibold text-primary">
+                      {cat.name}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {cat.productCount} {cat.productCount === 1 ? "template" : "templates"}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
