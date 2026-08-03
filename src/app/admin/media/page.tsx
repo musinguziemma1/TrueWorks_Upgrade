@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Upload, Search, Folder, File, FileImage, FileVideo, FileArchive, MoreHorizontal, Loader2, Trash2, Download, Eye } from "lucide-react"
+import { Upload, Search, Folder, File, FileImage, FileVideo, FileArchive, MoreHorizontal, Loader2, Trash2, Download, Eye, FileSpreadsheet } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog"
 import {
   useMediaFiles,
   uploadFile,
@@ -20,11 +21,24 @@ import {
 
 const folders = ["All Media", "Banners", "Products", "Videos", "Downloads", "Brand", "Screenshots", "Team", "Documents", "Templates"]
 
-const getTypeIcon = (contentType: string) => {
+const EXCEL_TYPES = new Set([
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "text/csv",
+])
+
+function isExcelFile(contentType: string, name: string): boolean {
+  if (EXCEL_TYPES.has(contentType)) return true
+  const ext = name.split(".").pop()?.toLowerCase() ?? ""
+  return ["xlsx", "xls", "xlsm", "xlsb", "csv"].includes(ext)
+}
+
+const getTypeIcon = (contentType: string, name?: string) => {
   if (contentType.startsWith("image/")) return <FileImage className="h-8 w-8 text-blue-500" />
   if (contentType.startsWith("video/")) return <FileVideo className="h-8 w-8 text-purple-500" />
   if (contentType.includes("zip") || contentType.includes("archive")) return <FileArchive className="h-8 w-8 text-amber-500" />
-  if (contentType.includes("pdf") || contentType.includes("document")) return <File className="h-8 w-8 text-red-500" />
+  if (contentType.includes("pdf")) return <File className="h-8 w-8 text-red-500" />
+  if (name && isExcelFile(contentType, name)) return <FileSpreadsheet className="h-8 w-8 text-emerald-600" />
   return <File className="h-8 w-8 text-muted-foreground" />
 }
 
@@ -40,6 +54,8 @@ export default function MediaPage() {
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewName, setPreviewName] = useState("")
+  const [excelPreviewUrl, setExcelPreviewUrl] = useState<string | null>(null)
+  const [excelPreviewName, setExcelPreviewName] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFolder, setSelectedFolder] = useState("General")
 
@@ -86,6 +102,17 @@ export default function MediaPage() {
     }
   }
 
+  const handlePreview = (file: { url?: string | null; name: string; contentType: string }) => {
+    if (!file.url) return
+    if (isExcelFile(file.contentType, file.name)) {
+      setExcelPreviewUrl(file.url)
+      setExcelPreviewName(file.name)
+    } else {
+      setPreviewUrl(file.url)
+      setPreviewName(file.name)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -108,7 +135,7 @@ export default function MediaPage() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,video/*,.pdf,.zip,.doc,.docx"
+              accept="image/*,video/*,.pdf,.zip,.doc,.docx,.xlsx,.xls,.csv"
               className="hidden"
               onChange={handleFileUpload}
             />
@@ -157,7 +184,7 @@ export default function MediaPage() {
               <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             )}
             <p className="text-sm text-muted-foreground">Drag & drop files here, or click to browse</p>
-            <p className="text-xs text-muted-foreground mt-1">Images, videos, documents up to 100MB</p>
+            <p className="text-xs text-muted-foreground mt-1">Images, videos, documents, Excel/CSV files up to 100MB</p>
           </div>
 
           {isLoading ? (
@@ -174,17 +201,19 @@ export default function MediaPage() {
                         fill
                         sizes="(max-width: 768px) 50vw, 25vw"
                         className="object-cover cursor-pointer"
-                        onClick={() => { setPreviewUrl(file.url!); setPreviewName(file.name) }}
+                        onClick={() => handlePreview(file)}
                       />
                     ) : (
-                      getTypeIcon(file.contentType)
+                      <div className="cursor-pointer" onClick={() => handlePreview(file)}>
+                        {getTypeIcon(file.contentType, file.name)}
+                      </div>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger className="absolute top-2 right-2 p-1 rounded-md bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setPreviewUrl(file.url ?? ''); setPreviewName(file.name) }}>
+                        <DropdownMenuItem onClick={() => handlePreview(file)}>
                           <Eye className="h-4 w-4 mr-2" /> Preview
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { if (file.url) window.open(file.url, '_blank') }}>
@@ -213,6 +242,7 @@ export default function MediaPage() {
         </div>
       </div>
 
+      {/* Image Preview */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
@@ -232,6 +262,14 @@ export default function MediaPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Excel Preview */}
+      <ExcelPreviewDialog
+        url={excelPreviewUrl ?? ""}
+        fileName={excelPreviewName}
+        open={!!excelPreviewUrl}
+        onOpenChange={(v) => { if (!v) { setExcelPreviewUrl(null); setExcelPreviewName("") } }}
+      />
     </div>
   )
 }
