@@ -31,6 +31,7 @@ import {
   ChevronRight,
   BookOpen,
   UserCircle,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -66,6 +67,7 @@ const navSections: NavSection[] = [
       { label: "Orders", href: "/admin/orders", icon: <ShoppingCart className="h-4 w-4" /> },
       { label: "Customers", href: "/admin/customers", icon: <Users className="h-4 w-4" /> },
       { label: "Downloads", href: "/admin/downloads", icon: <Download className="h-4 w-4" /> },
+      { label: "Reviews", href: "/admin/reviews", icon: <MessageSquare className="h-4 w-4" /> },
     ],
   },
   {
