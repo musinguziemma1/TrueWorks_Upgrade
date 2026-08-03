@@ -211,7 +211,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleView = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(product.fileType)) {
+    if (product.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType)) {
       setPreviewOpen(true);
     } else {
       router.push(href);
@@ -387,7 +387,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       <ShareModal product={product} open={shareOpen} onClose={() => setShareOpen(false)} />
 
-      {product.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(product.fileType) && (
+      {product.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType) && (
         <ExcelPreviewDialog
           url={product.downloadableFile}
           fileName={product.name}
