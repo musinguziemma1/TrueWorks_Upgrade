@@ -144,14 +144,28 @@ export const create = mutation({
   args: orderCreateArgs,
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const start = Date.now();
     const id = await insertOrder(ctx, args);
-    const { auditLog } = await import("./lib/audit");
+    const latencyMs = Date.now() - start;
+    const { auditLog, performanceLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "order.create",
       entityType: "order",
       entityId: id,
       summary: `Created order for ${args.customerEmail} — ${args.items.length} item(s)`,
+      latencyMs,
+      source: "mutation",
     });
+    if (latencyMs > 1000) {
+      await performanceLog(ctx, {
+        action: "order.create",
+        entityType: "order",
+        entityId: id,
+        summary: `Slow order creation: ${latencyMs}ms`,
+        latencyMs,
+        source: "mutation",
+      });
+    }
     return id;
   },
 });

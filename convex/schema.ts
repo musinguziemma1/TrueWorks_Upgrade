@@ -317,10 +317,29 @@ export default defineSchema({
     changes: v.optional(v.any()),
     ipAddress: v.optional(v.string()),
     createdAt: v.number(),
+    level: v.optional(v.union(
+      v.literal("info"),
+      v.literal("warning"),
+      v.literal("error"),
+      v.literal("critical"),
+    )),
+    source: v.optional(v.union(
+      v.literal("mutation"),
+      v.literal("query"),
+      v.literal("http"),
+      v.literal("webhook"),
+      v.literal("action"),
+      v.literal("scheduler"),
+    )),
+    latencyMs: v.optional(v.number()),
+    stackTrace: v.optional(v.string()),
+    metadata: v.optional(v.any()),
   })
     .index("by_actorId", ["actorId"])
     .index("by_entityType", ["entityType"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_createdAt", ["createdAt"])
+    .index("by_level", ["level"])
+    .index("by_action_level", ["action", "level"]),
 
   rateLimits: defineTable({
     key: v.string(), // `${action}:${identifier}`

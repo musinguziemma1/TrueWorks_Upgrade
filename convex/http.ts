@@ -1,5 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
+import { api } from "./_generated/api";
 import { Webhook } from "svix";
 import { internal } from "./_generated/api";
 import { initiatePayment, handleCallback } from "./pesapal";
@@ -16,10 +17,69 @@ import {
 
 const http = httpRouter();
 
+/**
+ * Wraps an httpAction with performance timing and error logging.
+ * Logs slow requests (>1s) and all errors to the audit trail.
+ */
+function withAuditTiming(wrappedAction: ReturnType<typeof httpAction>) {
+  return httpAction(async (ctx, req) => {
+    const start = Date.now();
+    const path = new URL(req.url).pathname;
+    let response: Response;
+    let error: Error | undefined;
+
+    try {
+      response = await (wrappedAction as any)(ctx, req);
+    } catch (e) {
+      error = e instanceof Error ? e : new Error(String(e));
+      response = new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const latencyMs = Date.now() - start;
+    const status = response.status;
+    const isError = status >= 400 || !!error;
+    const isSlow = latencyMs > 1000;
+
+    if (isError || isSlow) {
+      try {
+        const level = error ? "error" : status >= 500 ? "critical" : status >= 400 ? "warning" : "info";
+        await ctx.runMutation(api.auditLogs.log, {
+          action: `http.${req.method.toLowerCase()}`,
+          entityType: "http",
+          entityId: path,
+          summary: error
+            ? `${req.method} ${path} — ${error.message}`
+            : isSlow
+              ? `${req.method} ${path} — ${status} (${latencyMs}ms)`
+              : `${req.method} ${path} — ${status} error`,
+          level: level as any,
+          source: "http" as any,
+          latencyMs,
+          metadata: {
+            method: req.method,
+            path,
+            status,
+            errorMessage: error?.message,
+            userAgent: req.headers.get("user-agent")?.slice(0, 200),
+          },
+        });
+      } catch {
+        // Don't let audit logging failure break the request
+      }
+    }
+
+    return response;
+  });
+}
+
 http.route({
   path: "/clerk-webhook",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
+    const start = Date.now();
     const secret = process.env.CLERK_WEBHOOK_SECRET;
     if (!secret) {
       return new Response("Missing CLERK_WEBHOOK_SECRET", { status: 500 });
@@ -42,6 +102,18 @@ http.route({
         "svix-signature": svixSignature,
       }) as { type?: unknown; data?: unknown };
     } catch {
+      const latencyMs = Date.now() - start;
+      try {
+        await ctx.runMutation(api.auditLogs.log, {
+          action: "http.post",
+          entityType: "http",
+          entityId: "/clerk-webhook",
+          summary: "POST /clerk-webhook — Invalid signature",
+          level: "warning" as any,
+          source: "webhook" as any,
+          latencyMs,
+        });
+      } catch {}
       return new Response("Invalid signature", { status: 400 });
     }
 
@@ -110,6 +182,22 @@ http.route({
       });
     }
 
+    const latencyMs = Date.now() - start;
+    if (latencyMs > 1000) {
+      try {
+        await ctx.runMutation(api.auditLogs.log, {
+          action: "http.post",
+          entityType: "http",
+          entityId: "/clerk-webhook",
+          summary: `POST /clerk-webhook — ${type} (${latencyMs}ms)`,
+          level: "info" as any,
+          source: "webhook" as any,
+          latencyMs,
+          metadata: { clerkEvent: type },
+        });
+      } catch {}
+    }
+
     return new Response("ok", { status: 200 });
   }),
 });
@@ -117,67 +205,67 @@ http.route({
 http.route({
   path: "/pesapal/initiate",
   method: "POST",
-  handler: initiatePayment,
+  handler: withAuditTiming(initiatePayment),
 });
 
 http.route({
   path: "/pesapal-callback",
   method: "GET",
-  handler: handleCallback,
+  handler: withAuditTiming(handleCallback),
 });
 
 http.route({
   path: "/checkout",
   method: "POST",
-  handler: createCheckoutOrder,
+  handler: withAuditTiming(createCheckoutOrder),
 });
 
 http.route({
   path: "/email/order-confirmation",
   method: "POST",
-  handler: sendOrderConfirmation,
+  handler: withAuditTiming(sendOrderConfirmation),
 });
 
 http.route({
   path: "/email/download-ready",
   method: "POST",
-  handler: sendDownloadReady,
+  handler: withAuditTiming(sendDownloadReady),
 });
 
 http.route({
   path: "/email/payment-failed",
   method: "POST",
-  handler: sendPaymentFailed,
+  handler: withAuditTiming(sendPaymentFailed),
 });
 
 http.route({
   path: "/email/refund",
   method: "POST",
-  handler: sendRefundConfirmation,
+  handler: withAuditTiming(sendRefundConfirmation),
 });
 
 http.route({
   path: "/email/welcome",
   method: "POST",
-  handler: sendWelcomeEmail,
+  handler: withAuditTiming(sendWelcomeEmail),
 });
 
 http.route({
   path: "/email/newsletter",
   method: "POST",
-  handler: sendNewsletter,
+  handler: withAuditTiming(sendNewsletter),
 });
 
 http.route({
   path: "/stripe/create-payment-intent",
   method: "POST",
-  handler: createPaymentIntent,
+  handler: withAuditTiming(createPaymentIntent),
 });
 
 http.route({
   path: "/stripe/webhook",
   method: "POST",
-  handler: handleStripeWebhook,
+  handler: withAuditTiming(handleStripeWebhook),
 });
 
 export default http;

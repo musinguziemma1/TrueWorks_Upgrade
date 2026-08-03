@@ -290,6 +290,7 @@ export const bulkImport = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const start = Date.now();
     const now = Date.now();
     const results: { slug: string; success: boolean; error?: string }[] = [];
 
@@ -320,13 +321,26 @@ export const bulkImport = mutation({
       }
     }
 
-    const { auditLog } = await import("./lib/audit");
+    const latencyMs = Date.now() - start;
+    const { auditLog, performanceLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "product.bulk_import",
       entityType: "product",
       entityId: "bulk",
       summary: `Bulk imported ${args.products.length} products (${results.filter(r => r.success).length} succeeded)`,
+      latencyMs,
+      source: "mutation",
     });
+    if (latencyMs > 3000) {
+      await performanceLog(ctx, {
+        action: "product.bulk_import",
+        entityType: "product",
+        entityId: "bulk",
+        summary: `Slow bulk import: ${args.products.length} products in ${latencyMs}ms`,
+        latencyMs,
+        source: "mutation",
+      });
+    }
 
     return results;
   },
