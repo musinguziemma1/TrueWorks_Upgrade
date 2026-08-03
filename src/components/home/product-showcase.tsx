@@ -1,48 +1,15 @@
 "use client";
 
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { motion } from "framer-motion";
-
-const showcases = [
-  { name: "Hospital Executive Dashboard", description: "Bed occupancy, patient wait times, revenue per bed, department P&L.", gradient: "from-emerald-500 to-teal-600" },
-  { name: "Financial Modeling Suite", description: "Three-statement model with scenario analysis and investor charts.", gradient: "from-blue-500 to-indigo-600" },
-  { name: "NGO Grant Management", description: "Donor tracking, grant utilization, expenditure reports.", gradient: "from-rose-400 to-pink-500" },
-  { name: "School Fee System", description: "Student billing, arrears tracking, receipt generation.", gradient: "from-amber-400 to-orange-500" },
-  { name: "SME Cash Flow Planner", description: "Daily forecasting, expense categorization, working capital.", gradient: "from-cyan-400 to-blue-500" },
-];
-
-function ShowcaseCard({ item }: { item: (typeof showcases)[number] }) {
-  return (
-    <div className="w-[320px] shrink-0 overflow-hidden rounded-xl border border-border/70 bg-white shadow-card transition-shadow duration-300 hover:shadow-elevated sm:w-[380px]">
-      <div className={`relative h-52 bg-gradient-to-br p-5 ${item.gradient}`}>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/30" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-          <span className="ml-3 h-5 flex-1 rounded-md bg-white/15" />
-        </div>
-        <div className="mt-5 space-y-3">
-          <div className="flex gap-3">
-            <div className="h-14 flex-1 rounded-md bg-white/15" />
-            <div className="h-14 flex-1 rounded-md bg-white/15" />
-            <div className="h-14 flex-1 rounded-md bg-white/15" />
-          </div>
-          <div className="flex h-16 items-end gap-1.5 rounded-md bg-white/10 p-2">
-            {[45, 70, 55, 85, 60, 95, 75].map((h, j) => (
-              <span key={j} className="flex-1 rounded-sm bg-white/35" style={{ height: `${h}%` }} />
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="p-5">
-        <h3 className="font-heading text-lg font-semibold text-primary">{item.name}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{item.description}</p>
-      </div>
-    </div>
-  );
-}
+import Image from "next/image";
+import Link from "next/link";
 
 export default function ProductShowcase() {
-  const doubled = [...showcases, ...showcases];
+  const products = useQuery(api.products.list, { featured: true });
+  const items = products?.filter((p) => p.status === "published") ?? [];
+  const doubled = [...items, ...items];
 
   return (
     <section className="bg-white py-20 lg:py-24 overflow-hidden">
@@ -72,11 +39,43 @@ export default function ProductShowcase() {
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-white to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white to-transparent" />
 
-        <div className="marquee-container flex w-max gap-6 px-6 group-hover:[animation-play-state:paused] lg:px-8">
-          {doubled.map((item, i) => (
-            <ShowcaseCard key={`${item.name}-${i}`} item={item} />
-          ))}
-        </div>
+        {items.length > 0 ? (
+          <div className="marquee-container flex w-max gap-6 px-6 group-hover:[animation-play-state:paused] lg:px-8">
+            {doubled.map((item, i) => (
+              <Link
+                key={`${item._id}-${i}`}
+                href={`/store/${item.slug}`}
+                className="w-[320px] shrink-0 overflow-hidden rounded-xl border border-border/70 bg-white shadow-card transition-shadow duration-300 hover:shadow-elevated sm:w-[380px]"
+              >
+                <div className="relative h-52 overflow-hidden bg-muted">
+                  {item.thumbnail ? (
+                    <Image
+                      src={item.thumbnail}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="380px"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <span className="text-sm font-medium text-muted">{item.name}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-heading text-lg font-semibold text-primary">{item.name}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted line-clamp-2">
+                    {item.shortDescription}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center py-12 text-sm text-muted">
+            No featured products yet.
+          </div>
+        )}
       </div>
 
       <style jsx global>{`
