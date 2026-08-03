@@ -24,6 +24,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         url: `${SITE_URL}/resources/${resource.slug}`,
         images: resource.featuredImage ? [{ url: resource.featuredImage }] : undefined,
       },
+      twitter: {
+        card: "summary_large_image",
+        title: resource.title,
+        description: resource.description,
+        images: resource.featuredImage ? [resource.featuredImage] : undefined,
+      },
     };
   } catch {
     return { title: "Resource" };

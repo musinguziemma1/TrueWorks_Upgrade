@@ -45,12 +45,33 @@ export const metadata: Metadata = {
     title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description:
       "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, dashboards and business systems for Global organizations.",
+    url: "https://trueworksgroup.com",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "TrueWorks Limited - Business Operating Systems",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description:
       "Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

@@ -6,6 +6,31 @@ export const metadata: Metadata = {
   title: "Store - Premium Templates & Business Systems",
   description:
     "Browse professional-grade Excel templates, financial models and dashboards for healthcare, NGOs, schools, churches and growing businesses. Instant download after purchase.",
+  keywords: [
+    "Excel templates",
+    "business templates",
+    "financial models",
+    "KPI dashboards",
+    "hospital templates",
+    "NGO tools",
+    "downloadable templates",
+  ],
+  openGraph: {
+    title: "Store - Premium Templates & Business Systems | TrueWorks",
+    description:
+      "Professional-grade Excel templates, financial models and dashboards for healthcare, NGOs, schools, churches and growing businesses.",
+    url: "https://trueworksgroup.com/store",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TrueWorks Store" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Store - Premium Templates & Business Systems | TrueWorks",
+    description: "Professional-grade Excel templates, financial models and dashboards.",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: "https://trueworksgroup.com/store",
+  },
 };
 
 function StoreSkeleton() {

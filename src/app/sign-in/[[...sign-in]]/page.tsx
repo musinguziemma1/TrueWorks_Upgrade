@@ -1,7 +1,14 @@
 import { SignIn } from "@clerk/nextjs";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description: "Sign in to your TrueWorks account to access your downloads, orders and account settings.",
+  robots: { index: false, follow: false },
+};
 
 export default function Page() {
   return (

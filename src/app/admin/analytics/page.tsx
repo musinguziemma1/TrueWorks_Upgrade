@@ -17,7 +17,12 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts"
-import { MapChart } from "@/components/admin/map-chart"
+import dynamic from "next/dynamic"
+
+const MapChart = dynamic(() => import("@/components/admin/map-chart").then(m => ({ default: m.MapChart })), {
+  ssr: false,
+  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
+})
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 

@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL ?? "";
 const convexCloudUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? "";
 
-// Extract the Convex deployment hostname for image optimization
 function convexHostname(url: string): string | null {
   try {
     return new URL(url).hostname;
@@ -25,9 +24,32 @@ if (cloudHost) {
   remotePatterns.push({ protocol: "https", hostname: cloudHost });
 }
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-XSS-Protection", value: "1; mode=block" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+];
+
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false,
   images: {
     remotePatterns,
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
   async rewrites() {
     if (!convexSiteUrl) return [];
