@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Hero from "@/components/home/hero";
 import TrustedBy from "@/components/home/trusted-by";
-import FeaturedProducts from "@/components/home/featured-products";
-import ShopByIndustry from "@/components/home/shop-by-industry";
-import WhyTrueWorks from "@/components/home/why-trueworks";
-import ProductShowcase from "@/components/home/product-showcase";
-import Testimonials from "@/components/home/testimonials";
-import FreeResource from "@/components/home/free-resource";
-import FinalCTA from "@/components/home/final-cta";
+
+const FeaturedProducts = dynamic(() => import("@/components/home/featured-products"));
+const ShopByIndustry = dynamic(() => import("@/components/home/shop-by-industry"));
+const WhyTrueWorks = dynamic(() => import("@/components/home/why-trueworks"));
+const ProductShowcase = dynamic(() => import("@/components/home/product-showcase"));
+const Testimonials = dynamic(() => import("@/components/home/testimonials"));
+const FreeResource = dynamic(() => import("@/components/home/free-resource"));
+const FinalCTA = dynamic(() => import("@/components/home/final-cta"));
 
 export const metadata: Metadata = {
   title: "TrueWorks Limited - Business Operating Systems for Global organizations",

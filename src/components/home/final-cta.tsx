@@ -1,9 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimateOnScroll } from "./animate-on-scroll";
 
 const assurances = [
   { icon: ShieldCheck, label: "Secure payment" },
@@ -17,13 +15,7 @@ export default function FinalCTA() {
       <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
       <div className="absolute left-1/2 top-1/2 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-3xl" aria-hidden />
 
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.7 }}
-        className="relative mx-auto max-w-3xl px-6 text-center lg:px-8"
-      >
+      <AnimateOnScroll className="relative mx-auto max-w-3xl px-6 text-center lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
           Get Started Today
         </p>
@@ -53,7 +45,7 @@ export default function FinalCTA() {
             </span>
           ))}
         </div>
-      </motion.div>
+      </AnimateOnScroll>
     </section>
   );
 }

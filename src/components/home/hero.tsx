@@ -5,8 +5,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Download, TrendingUp, Star, ShieldCheck, Zap,
-  HeartHandshake, GraduationCap, Building2, LineChart, Activity,
-  Users, DollarSign, Church, School, Stethoscope, BarChart3,
+  HeartHandshake, GraduationCap, Building2, Activity,
+  Users, Stethoscope, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -134,6 +134,162 @@ const floatingShapes = [
 
 const barData = [42, 58, 50, 66, 61, 78, 72, 88];
 
+function HeroVisual({ slide }: { slide: typeof slides[number] }) {
+  if (slide.visual === "dashboard") {
+    return (
+      <div className="relative w-full max-w-[520px]">
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Hospital KPI Dashboard</p>
+                <p className="font-heading text-lg font-semibold text-primary">Executive Overview</p>
+              </div>
+              <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />Live
+              </span>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {slide.kpis.map((kpi) => (
+                <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
+                  <p className="text-[11px] text-muted">{kpi.label}</p>
+                  <div className="mt-0.5 flex items-baseline justify-between">
+                    <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
+                    <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Monthly Revenue</p>
+                <p className="text-[11px] font-semibold text-success">+18% vs last year</p>
+              </div>
+              <div className="mt-3 flex h-24 items-end gap-2">
+                {barData.map((h, i) => (
+                  <div key={i} className="relative flex-1 rounded-t-sm bg-primary/90" style={{ height: `${h}%` }}>
+                    {i === barData.length - 1 && <div className="absolute inset-x-0 top-0 h-full rounded-t-sm gradient-gold opacity-90" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -14, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+          className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
+            <TrendingUp className="h-4 w-4 text-primary-dark" />
+          </span>
+          <div>
+            <p className="text-[11px] text-white/60">Revenue this month</p>
+            <p className="text-sm font-semibold text-white">+18.2%</p>
+          </div>
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 12, 0] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+          className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
+            <Download className="h-4 w-4 text-accent-light" />
+          </span>
+          <div>
+            <p className="text-[11px] text-white/60">Delivery</p>
+            <p className="text-sm font-semibold text-white">Instant download</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full max-w-[520px]">
+      <motion.div
+        animate={{ y: [0, -10, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+              <slide.icon className="h-5 w-5 text-accent" />
+            </span>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
+                {slide.label}
+              </p>
+              <p className="font-heading text-lg font-semibold text-primary">Performance Overview</p>
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            {slide.kpis.map((kpi) => (
+              <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
+                <p className="text-[11px] text-muted">{kpi.label}</p>
+                <div className="mt-0.5 flex items-baseline justify-between">
+                  <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
+                  <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Growth Trend</p>
+              <p className="text-[11px] font-semibold text-success">+15% this quarter</p>
+            </div>
+            <div className="mt-3 flex h-24 items-end gap-2">
+              {barData.map((h, i) => (
+                <div key={i} className="relative flex-1 rounded-t-sm" style={{ height: `${h}%` }}>
+                  <div
+                    className={cn(
+                      "absolute inset-x-0 top-0 h-full rounded-t-sm opacity-90",
+                      slide.accent === "emerald" && "bg-emerald-500",
+                      slide.accent === "rose" && "bg-rose-500",
+                      slide.accent === "violet" && "bg-violet-500",
+                      slide.accent === "blue" && "bg-blue-500",
+                    )}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+      <motion.div
+        animate={{ y: [0, -14, 0] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+        className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
+          <Activity className="h-4 w-4 text-primary-dark" />
+        </span>
+        <div>
+          <p className="text-[11px] text-white/60">Real-time</p>
+          <p className="text-sm font-semibold text-white">Auto-updates</p>
+        </div>
+      </motion.div>
+      <motion.div
+        animate={{ y: [0, 12, 0] }}
+        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+        className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
+          <Users className="h-4 w-4 text-accent-light" />
+        </span>
+        <div>
+          <p className="text-[11px] text-white/60">Trusted by</p>
+          <p className="text-sm font-semibold text-white">1,000+ orgs</p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Hero() {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -152,162 +308,6 @@ export default function Hero() {
   }, []);
 
   const slide = slides[current];
-
-  const Visual = () => {
-    if (slide.visual === "dashboard") {
-      return (
-        <div className="relative w-full max-w-[520px]">
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Hospital KPI Dashboard</p>
-                  <p className="font-heading text-lg font-semibold text-primary">Executive Overview</p>
-                </div>
-                <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />Live
-                </span>
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                {slide.kpis.map((kpi) => (
-                  <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
-                    <p className="text-[11px] text-muted">{kpi.label}</p>
-                    <div className="mt-0.5 flex items-baseline justify-between">
-                      <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
-                      <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Monthly Revenue</p>
-                  <p className="text-[11px] font-semibold text-success">+18% vs last year</p>
-                </div>
-                <div className="mt-3 flex h-24 items-end gap-2">
-                  {barData.map((h, i) => (
-                    <div key={i} className="relative flex-1 rounded-t-sm bg-primary/90" style={{ height: `${h}%` }}>
-                      {i === barData.length - 1 && <div className="absolute inset-x-0 top-0 h-full rounded-t-sm gradient-gold opacity-90" />}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-          <motion.div
-            animate={{ y: [0, -14, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-            className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
-              <TrendingUp className="h-4 w-4 text-primary-dark" />
-            </span>
-            <div>
-              <p className="text-[11px] text-white/60">Revenue this month</p>
-              <p className="text-sm font-semibold text-white">+18.2%</p>
-            </div>
-          </motion.div>
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
-            className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-              <Download className="h-4 w-4 text-accent-light" />
-            </span>
-            <div>
-              <p className="text-[11px] text-white/60">Delivery</p>
-              <p className="text-sm font-semibold text-white">Instant download</p>
-            </div>
-          </motion.div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="relative w-full max-w-[520px]">
-        <motion.div
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-                <slide.icon className="h-5 w-5 text-accent" />
-              </span>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
-                  {slide.label}
-                </p>
-                <p className="font-heading text-lg font-semibold text-primary">Performance Overview</p>
-              </div>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {slide.kpis.map((kpi) => (
-                <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
-                  <p className="text-[11px] text-muted">{kpi.label}</p>
-                  <div className="mt-0.5 flex items-baseline justify-between">
-                    <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
-                    <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Growth Trend</p>
-                <p className="text-[11px] font-semibold text-success">+15% this quarter</p>
-              </div>
-              <div className="mt-3 flex h-24 items-end gap-2">
-                {barData.map((h, i) => (
-                  <div key={i} className="relative flex-1 rounded-t-sm" style={{ height: `${h}%` }}>
-                    <div
-                      className={cn(
-                        "absolute inset-x-0 top-0 h-full rounded-t-sm opacity-90",
-                        slide.accent === "emerald" && "bg-emerald-500",
-                        slide.accent === "rose" && "bg-rose-500",
-                        slide.accent === "violet" && "bg-violet-500",
-                        slide.accent === "blue" && "bg-blue-500",
-                      )}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -14, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-          className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
-            <Activity className="h-4 w-4 text-primary-dark" />
-          </span>
-          <div>
-            <p className="text-[11px] text-white/60">Real-time</p>
-            <p className="text-sm font-semibold text-white">Auto-updates</p>
-          </div>
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
-          className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-            <Users className="h-4 w-4 text-accent-light" />
-          </span>
-          <div>
-            <p className="text-[11px] text-white/60">Trusted by</p>
-            <p className="text-sm font-semibold text-white">1,000+ orgs</p>
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
 
   return (
     <section className="gradient-brand relative overflow-hidden">
@@ -444,7 +444,7 @@ export default function Hero() {
               className="relative hidden lg:block"
               aria-hidden
             >
-              <Visual />
+              <HeroVisual slide={slide} />
             </motion.div>
           </motion.div>
         </AnimatePresence>
