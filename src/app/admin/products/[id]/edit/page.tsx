@@ -77,7 +77,7 @@ export default function EditProductPage() {
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const fileTypes = ["Excel", "CSV", "XLSX", "XLS"]
+  const fileTypes = ["PDF", "ZIP", "MP4", "AI", "PSD", "Figma", "HTML", "JS", "Excel", "CSV", "XLSX", "XLS"]
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {

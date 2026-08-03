@@ -69,7 +69,7 @@ export default function NewProductPage() {
   const dbCategories = useCategories()
   const categories = (dbCategories ?? []).map((c) => c.name)
   const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
-  const fileTypes = ["Excel", "CSV", "XLSX", "XLS"]
+  const fileTypes = ["PDF", "ZIP", "MP4", "AI", "PSD", "Figma", "HTML", "JS", "Excel", "CSV", "XLSX", "XLS"]
 
   const addFaq = () => setFaqs([...faqs, { question: "", answer: "" }])
   const removeFaq = (i: number) => setFaqs(faqs.filter((_, idx) => idx !== i))
