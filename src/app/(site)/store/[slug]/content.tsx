@@ -301,7 +301,7 @@ export default function ProductDetail() {
                     </span>
                   )}
                 </div>
-                {p.downloadableFile && /xlsx|xls|xlsm|xlsb|csv/i.test(p.fileType) && (
+                {p.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(p.fileType) && (
                   <div className="mt-4">
                     <ExcelPreview url={p.downloadableFile} fileName={p.name} />
                   </div>

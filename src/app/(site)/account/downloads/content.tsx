@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Download, ExternalLink, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function fmtDate(ts: number) {
   return new Date(ts).toLocaleDateString("en-GB", {
@@ -18,6 +21,8 @@ function fmtDate(ts: number) {
 
 export default function DownloadsContent() {
   const downloads = useQuery(api.downloads.listMine);
+  const recordDownload = useMutation(api.downloads.recordDownload);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   if (downloads === undefined) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -32,37 +37,69 @@ export default function DownloadsContent() {
     );
   }
 
+  const handleDownload = async (downloadId: string, downloadUrl: string) => {
+    setDownloadingId(downloadId);
+    try {
+      await recordDownload({
+        id: downloadId as never,
+        browser: navigator.userAgent,
+      });
+      window.open(downloadUrl, "_blank");
+      toast.success("Download started");
+    } catch (err: any) {
+      toast.error(err.message ?? "Download failed");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {downloads.map((d) => (
-        <Card key={d._id}>
-          <CardHeader>
-            <CardTitle className="text-base">{d.productName}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <StatusBadge status={d.status} />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Downloads</span>
-              <span>{d.remainingDownloads} left</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Expires</span>
-              <span>{fmtDate(d.expiresAt)}</span>
-            </div>
-            {d.productSlug && (
-              <Link
-                href={`/store/${d.productSlug}`}
-                className="inline-block text-sm text-accent hover:underline"
-              >
-                View product →
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+      {downloads.map((d) => {
+        const canDownload = d.status === "active" && d.remainingDownloads > 0 && d.expiresAt > Date.now();
+        return (
+          <Card key={d._id}>
+            <CardHeader>
+              <CardTitle className="text-base">{d.productName}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <StatusBadge status={d.status} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Downloads</span>
+                <span>{d.remainingDownloads} left</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Expires</span>
+                <span>{fmtDate(d.expiresAt)}</span>
+              </div>
+              <div className="pt-2">
+                {canDownload ? (
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => d.downloadUrl && handleDownload(d._id, d.downloadUrl)}
+                    disabled={downloadingId === d._id || !d.downloadUrl}
+                  >
+                    {downloadingId === d._id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
+                    Download File
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="w-full" disabled>
+                    {d.status === "expired" ? "Expired" : d.remainingDownloads <= 0 ? "No downloads left" : "Unavailable"}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
