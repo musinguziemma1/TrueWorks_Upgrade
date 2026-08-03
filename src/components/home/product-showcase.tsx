@@ -5,11 +5,43 @@ import { api } from "@convex/_generated/api";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { convexClient } from "@/lib/convex";
 
 export default function ProductShowcase() {
+  if (!convexClient) return null;
+  return <ProductShowcaseInner />;
+}
+
+function ProductShowcaseInner() {
   const products = useQuery(api.products.list, { featured: true });
   const items = products?.filter((p) => p.status === "published") ?? [];
   const doubled = [...items, ...items];
+
+  if (products === undefined) {
+    return (
+      <section className="bg-white py-20 lg:py-24 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">Preview</p>
+            <h2 className="mt-3 font-heading text-3xl font-semibold text-primary md:text-4xl">
+              See What You&apos;re Getting
+            </h2>
+          </div>
+          <div className="flex gap-6 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-[320px] shrink-0 animate-pulse sm:w-[380px]">
+                <div className="h-52 rounded-t-xl bg-muted" />
+                <div className="space-y-2 rounded-b-xl border border-t-0 border-border/70 p-5">
+                  <div className="h-5 w-3/4 rounded bg-muted" />
+                  <div className="h-4 w-full rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-white py-20 lg:py-24 overflow-hidden">
