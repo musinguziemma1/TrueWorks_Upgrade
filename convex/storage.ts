@@ -95,6 +95,9 @@ export const backfillFileUrls = mutation({
 export const getFileUrl = action({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY: Require authentication to access file URLs
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
     return await ctx.storage.getUrl(args.storageId as Id<"_storage">);
   },
 });

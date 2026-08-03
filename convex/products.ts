@@ -53,7 +53,14 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const product = await ctx.db.get(args.id);
+    if (!product) return null;
+    // SECURITY: Non-admins can only see published products
+    if (product.status !== "published") {
+      const isAdmin = await requireAdminSilent(ctx);
+      if (!isAdmin) return null;
+    }
+    return product;
   },
 });
 
@@ -64,7 +71,14 @@ export const getBySlug = query({
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .collect();
-    return results[0] ?? null;
+    const product = results[0] ?? null;
+    if (!product) return null;
+    // SECURITY: Non-admins can only see published products
+    if (product.status !== "published") {
+      const isAdmin = await requireAdminSilent(ctx);
+      if (!isAdmin) return null;
+    }
+    return product;
   },
 });
 

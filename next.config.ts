@@ -30,6 +30,21 @@ const securityHeaders = [
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://challenges.cloudflare.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' https://img.clerk.com https://images.clerk.dev https://images.unsplash.com https://lh3.googleusercontent.com data: blob:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.convex.cloud https://*.convex.site https://api.clerk.com https://api.stripe.com https://ip-api.com",
+      "frame-src https://js.stripe.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  },
 ];
 
 const nextConfig: NextConfig = {

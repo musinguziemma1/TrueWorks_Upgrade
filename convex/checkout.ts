@@ -27,7 +27,7 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     let city = "";
     if (ip && ip !== "unknown") {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city`);
+        const geoRes = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,regionName,city`);
         const geo = await geoRes.json();
         if (geo.status === "success") {
           country = geo.country || "";
@@ -42,6 +42,9 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "No items provided" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
+    if (items.length > 50) {
+      return new Response(JSON.stringify({ error: "Too many items (max 50)" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
     if (!customerEmail || !customerName) {
       return new Response(JSON.stringify({ error: "Customer information required" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
@@ -50,6 +53,11 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     const orderItems = [];
 
     for (const item of items) {
+      // SECURITY: Validate quantity
+      if (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
+        return new Response(JSON.stringify({ error: "Invalid item quantity (must be 1-100)" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+
       const product = await ctx.runQuery(api.products.getBySlug, { slug: item.slug });
       if (!product) {
         return new Response(JSON.stringify({ error: `Product not found: ${item.slug}` }), { status: 404, headers: { "Content-Type": "application/json" } });
@@ -164,7 +172,7 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       discountAmount,
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Checkout failed";
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "Content-Type": "application/json" } });
+    // SECURITY: Never leak internal error details
+    return new Response(JSON.stringify({ error: "Checkout failed" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });

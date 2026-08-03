@@ -32,8 +32,9 @@ function withAuditTiming(wrappedAction: ReturnType<typeof httpAction>) {
       response = await (wrappedAction as any)(ctx, req);
     } catch (e) {
       error = e instanceof Error ? e : new Error(String(e));
+      // SECURITY: Never leak internal error messages to clients
       response = new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: "Internal server error" }),
         { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -82,7 +83,7 @@ http.route({
     const start = Date.now();
     const secret = process.env.CLERK_WEBHOOK_SECRET;
     if (!secret) {
-      return new Response("Missing CLERK_WEBHOOK_SECRET", { status: 500 });
+      return new Response("Internal error", { status: 500 });
     }
 
     const svixId = req.headers.get("svix-id");

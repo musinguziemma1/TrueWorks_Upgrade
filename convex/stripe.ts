@@ -71,19 +71,20 @@ async function verifyStripeSignature(
   sigHeader: string,
   secret: string
 ): Promise<Record<string, unknown>> {
-  const parts = sigHeader.split(",").reduce(
-    (acc, part) => {
-      const [key, val] = part.split("=");
-      if (key && val) acc[key] = val;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
+  // Parse all v1 signatures (Stripe may have multiple for key rotation)
+  const v1Signatures: string[] = [];
+  let timestamp = "";
 
-  const timestamp = parts["t"];
-  const expectedSig = parts["v1"];
+  for (const part of sigHeader.split(",")) {
+    const eqIdx = part.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx);
+    const val = part.slice(eqIdx + 1);
+    if (key === "t") timestamp = val;
+    if (key === "v1") v1Signatures.push(val);
+  }
 
-  if (!timestamp || !expectedSig) {
+  if (!timestamp || v1Signatures.length === 0) {
     throw new Error("Invalid stripe-signature format");
   }
 
@@ -95,17 +96,27 @@ async function verifyStripeSignature(
   const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
   const computedBytes = new Uint8Array(signatureBuffer);
-  const expectedBytes = new Uint8Array(expectedSig.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)));
 
-  if (computedBytes.length !== expectedBytes.length) {
-    throw new Error("Invalid Stripe webhook signature");
+  // Try to verify against any of the v1 signatures
+  let valid = false;
+  for (const expectedSig of v1Signatures) {
+    const matches = expectedSig.match(/.{1,2}/g);
+    if (!matches) continue;
+    const expectedBytes = new Uint8Array(matches.map((b) => parseInt(b, 16)));
+
+    if (computedBytes.length !== expectedBytes.length) continue;
+
+    let diff = 0;
+    for (let i = 0; i < computedBytes.length; i++) {
+      diff |= computedBytes[i]! ^ expectedBytes[i]!;
+    }
+    if (diff === 0) {
+      valid = true;
+      break;
+    }
   }
 
-  let diff = 0;
-  for (let i = 0; i < computedBytes.length; i++) {
-    diff |= computedBytes[i]! ^ expectedBytes[i]!;
-  }
-  if (diff !== 0) {
+  if (!valid) {
     throw new Error("Invalid Stripe webhook signature");
   }
 
@@ -120,30 +131,50 @@ async function verifyStripeSignature(
 
 export const createPaymentIntent = httpAction(async (ctx, req) => {
   if (!STRIPE_SECRET_KEY) {
-    return new Response(JSON.stringify({ error: "Stripe not configured" }), {
+    return new Response(JSON.stringify({ error: "Payment service unavailable" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
 
   const body = await req.json();
-  const { orderId, amount, currency, customerEmail, customerName } = body;
+  const { orderId, currency, customerEmail, customerName } = body;
 
-  if (!orderId || !amount || !customerEmail) {
+  if (!orderId || !customerEmail) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
+  // SECURITY: Look up the order server-side to get the real amount.
+  // Never trust client-supplied amounts.
+  const order = await ctx.runQuery(api.orders.getByIdInternal, { id: orderId });
+  if (!order) {
+    return new Response(JSON.stringify({ error: "Order not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (order.paymentStatus === "completed") {
+    return new Response(JSON.stringify({ error: "Order already paid" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Use the order's total (in cents) — ignore any client-supplied amount
+  const amountInCents = Math.round(order.total * 100);
+
   try {
     const params: Record<string, string> = {
-      amount: String(Math.round(amount)),
+      amount: String(amountInCents),
       currency: currency || "usd",
       "metadata[orderId]": orderId,
       "metadata[customerEmail]": customerEmail,
-      "metadata[customerName]": customerName || "",
-      description: `TrueWorks Order ${orderId}`,
+      "metadata[customerName]": customerName || order.customerName || "",
+      description: `TrueWorks Order ${order.orderNumber}`,
       "receipt_email": customerEmail,
     };
 
@@ -154,11 +185,11 @@ export const createPaymentIntent = httpAction(async (ctx, req) => {
       paymentId: pi.id,
       provider: "stripe",
       method: "Card",
-      amount,
+      amount: amountInCents / 100,
       currency: currency || "usd",
       status: "pending",
       customerEmail,
-      customerName: customerName || "",
+      customerName: customerName || order.customerName || "",
       metadata: { clientSecret: pi.client_secret },
     });
 
@@ -171,8 +202,8 @@ export const createPaymentIntent = httpAction(async (ctx, req) => {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Payment intent creation failed";
-    return new Response(JSON.stringify({ error: message }), {
+    // SECURITY: Never leak internal error details
+    return new Response(JSON.stringify({ error: "Payment creation failed" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
@@ -181,22 +212,22 @@ export const createPaymentIntent = httpAction(async (ctx, req) => {
 
 export const handleStripeWebhook = httpAction(async (ctx, req) => {
   if (!STRIPE_WEBHOOK_SECRET) {
-    return new Response("Missing STRIPE_WEBHOOK_SECRET", { status: 500 });
+    return new Response("Internal error", { status: 500 });
   }
 
   const payload = await req.text();
   const sig = req.headers.get("stripe-signature");
 
   if (!sig) {
-    return new Response("Missing stripe-signature header", { status: 400 });
+    return new Response("Missing signature", { status: 400 });
   }
 
   let event: Record<string, unknown>;
   try {
     event = await verifyStripeSignature(payload, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Webhook verification failed";
-    return new Response(`Webhook Error: ${message}`, { status: 400 });
+    // SECURITY: Don't leak signature verification details
+    return new Response("Invalid signature", { status: 400 });
   }
 
   const eventType = event.type as string;
@@ -211,6 +242,25 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
   if (eventType === "payment_intent.succeeded") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
+      // SECURITY: Verify the payment amount matches the order total
+      const order = await ctx.runQuery(api.orders.getById, { id: orderId });
+      if (!order) {
+        return new Response("Order not found", { status: 404 });
+      }
+
+      const paidAmount = (pi.amount as number) / 100;
+      const expectedAmount = order.total;
+      if (Math.abs(paidAmount - expectedAmount) > 0.01) {
+        // Amount mismatch — possible tampering. Do NOT complete the order.
+        await ctx.runMutation(internal.notifications.createPublic, {
+          type: "order",
+          title: "Payment Amount Mismatch",
+          message: `Stripe payment for order ${orderId}: expected $${expectedAmount}, got $${paidAmount}. Order NOT completed.`,
+          link: "/admin/orders",
+        });
+        return new Response("Amount mismatch", { status: 400 });
+      }
+
       const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
         paymentId: pi.id as string,
       });
@@ -229,44 +279,41 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
           paymentId: pi.id as string,
         });
 
-        const order = await ctx.runQuery(api.orders.getById, { id: orderId });
-        if (order) {
-          for (const item of order.items) {
-            const product = await ctx.runQuery(api.products.getById, {
-              id: item.productId,
-            });
-            if (product?.downloadableFile) {
-              const expiryDays = product.downloadExpiry ?? 30;
-              await ctx.runMutation(internal.downloads.create, {
-                orderId,
-                productId: item.productId,
-                email: order.customerEmail,
-                downloadUrl: product.downloadableFile,
-                downloadCount: 0,
-                remainingDownloads: product.downloadLimit ?? 10,
-                expiresAt: Date.now() + expiryDays * 24 * 60 * 60 * 1000,
-                status: "active",
-              });
-            }
-          }
-
-          await ctx.runMutation(internal.orders.updateFromPayment, {
-            orderId,
-            paymentStatus: "completed",
-            orderStatus: "completed",
-            paymentId: pi.id as string,
+        for (const item of order.items) {
+          const product = await ctx.runQuery(api.products.getById, {
+            id: item.productId,
           });
-
-          await sendPaymentEmail(order, order.items);
+          if (product?.downloadableFile) {
+            const expiryDays = product.downloadExpiry ?? 30;
+            await ctx.runMutation(internal.downloads.create, {
+              orderId,
+              productId: item.productId,
+              email: order.customerEmail,
+              downloadUrl: product.downloadableFile,
+              downloadCount: 0,
+              remainingDownloads: product.downloadLimit ?? 10,
+              expiresAt: Date.now() + expiryDays * 24 * 60 * 60 * 1000,
+              status: "active",
+            });
+          }
         }
 
-        await ctx.runMutation(internal.notifications.createPublic, {
-          type: "order",
-          title: "Payment Received",
-          message: `Stripe payment of ${(pi.amount as number) / 100} ${(pi.currency as string)?.toUpperCase()} completed for order ${orderId}`,
-          link: "/admin/orders",
+        await ctx.runMutation(internal.orders.updateFromPayment, {
+          orderId,
+          paymentStatus: "completed",
+          orderStatus: "completed",
+          paymentId: pi.id as string,
         });
+
+        await sendPaymentEmail(order, order.items);
       }
+
+      await ctx.runMutation(internal.notifications.createPublic, {
+        type: "order",
+        title: "Payment Received",
+        message: `Stripe payment of ${paidAmount} ${(pi.currency as string)?.toUpperCase()} completed for order ${orderId}`,
+        link: "/admin/orders",
+      });
     }
   } else if (eventType === "payment_intent.payment_failed") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;

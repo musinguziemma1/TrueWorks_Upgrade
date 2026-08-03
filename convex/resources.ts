@@ -68,7 +68,14 @@ export const listPublished = query({
 export const getById = query({
   args: { id: v.id("resources") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const resource = await ctx.db.get(args.id);
+    if (!resource) return null;
+    // SECURITY: Non-admins can only see published resources
+    if (resource.status !== "published") {
+      const isAdmin = await requireAdminSilent(ctx);
+      if (!isAdmin) return null;
+    }
+    return resource;
   },
 });
 
@@ -79,7 +86,14 @@ export const getBySlug = query({
       .query("resources")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .collect();
-    return results[0] ?? null;
+    const resource = results[0] ?? null;
+    if (!resource) return null;
+    // SECURITY: Non-admins can only see published resources
+    if (resource.status !== "published") {
+      const isAdmin = await requireAdminSilent(ctx);
+      if (!isAdmin) return null;
+    }
+    return resource;
   },
 });
 

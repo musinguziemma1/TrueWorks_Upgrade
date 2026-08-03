@@ -119,6 +119,7 @@ export const isAdmin = query({
 export const getByClerkId = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return null;
     const results = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -453,16 +454,40 @@ export const seedAdmin = mutation({
 
     const foundUser = existing[0] ?? existingByEmail[0];
     if (foundUser) {
-      // User already exists — update tokenIdentifier and return
-      const now = Date.now();
+      // SECURITY: Only allow token update if:
+      // 1. The caller's email matches the found user's email (self-linking), OR
+      // 2. The caller is already an admin/superadmin
+      const callerEmail = (identity.email ?? "").toLowerCase();
+      const isSelfLink = foundUser.email.toLowerCase() === callerEmail;
+
+      let isCallerAdmin = false;
+      if (!isSelfLink) {
+        // Check if the CALLER (not the target) is already an admin
+        const callerUser = await ctx.db
+          .query("users")
+          .withIndex("by_tokenIdentifier", (q) =>
+            q.eq("tokenIdentifier", identity.tokenIdentifier)
+          )
+          .first();
+        isCallerAdmin = !!(callerUser && ROLE_HIERARCHY[callerUser.role] >= ROLE_HIERARCHY.admin);
+      }
+
+      if (!isSelfLink && !isCallerAdmin) {
+        throw new Error("Unauthorized: Cannot modify another user's account");
+      }
+
+      // Only allow role escalation to superadmin if caller is superadmin
       const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
+      const newRole = isSuperAdminEmail && isCallerAdmin ? "superadmin" : foundUser.role;
+
+      const now = Date.now();
       await ctx.db.patch(foundUser._id, {
         tokenIdentifier: identity.tokenIdentifier,
         clerkId: args.clerkId,
         email: args.email,
         name: args.name ?? foundUser.name,
         avatar: args.avatar ?? foundUser.avatar,
-        role: isSuperAdminEmail ? "superadmin" : foundUser.role,
+        role: newRole,
         updatedAt: now,
       });
       return foundUser._id;

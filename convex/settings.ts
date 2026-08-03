@@ -19,6 +19,7 @@ export function sanitizeCss(css: string): string {
 export const get = query({
   args: { key: v.string() },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return null;
     const results = await ctx.db
       .query("settings")
       .withIndex("by_key", (q) => q.eq("key", args.key))

@@ -20,15 +20,21 @@ async function getPesapalToken(): Promise<string> {
       consumer_secret: PESAPAL_CONSUMER_SECRET,
     }),
   });
+  if (!response.ok) {
+    throw new Error("Failed to authenticate with Pesapal");
+  }
   const data = await response.json();
+  if (typeof data.token !== "string" || !data.token) {
+    throw new Error("Invalid Pesapal token response");
+  }
   return data.token;
 }
 
 export const initiatePayment = httpAction(async (ctx, request) => {
   const body = await request.json();
-  const { orderId, amount, currency, method, customerEmail, customerName, description } = body;
+  const { orderId, currency, method, customerEmail, customerName, description } = body;
 
-  if (!orderId || !amount || !customerEmail) {
+  if (!orderId || !customerEmail) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
   }
 
@@ -39,13 +45,20 @@ export const initiatePayment = httpAction(async (ctx, request) => {
       return new Response(JSON.stringify({ error: "Order not found" }), { status: 404 });
     }
 
+    if (order.paymentStatus === "completed") {
+      return new Response(JSON.stringify({ error: "Order already paid" }), { status: 400 });
+    }
+
+    // SECURITY: Use the order's server-side total — ignore client-supplied amount
+    const serverAmount = order.total;
+
     const callbackUrl = `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/pesapal-callback`;
     const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/order-confirmation?order=${order.orderNumber}`;
 
     const pesapalRequest = {
       id: order.orderNumber,
       currency: currency || "USD",
-      amount: amount,
+      amount: serverAmount,
       description: description || `TrueWorks Order ${order.orderNumber}`,
       callback_url: callbackUrl,
       redirect_mode: "TOP",
@@ -80,7 +93,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
         paymentId: data.order_tracking_id,
         provider: "pesapal",
         method: method || "card",
-        amount: amount,
+        amount: serverAmount,
         currency: currency || "USD",
         status: "pending",
         customerEmail: customerEmail,
@@ -94,9 +107,11 @@ export const initiatePayment = httpAction(async (ctx, request) => {
       }), { status: 200 });
     }
 
-    return new Response(JSON.stringify({ error: "Failed to initiate payment", details: data }), { status: 500 });
+    // SECURITY: Don't leak Pesapal API details to client
+    return new Response(JSON.stringify({ error: "Failed to initiate payment" }), { status: 500 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Payment initiation failed", details: String(error) }), { status: 500 });
+    // SECURITY: Don't leak internal error details
+    return new Response(JSON.stringify({ error: "Payment initiation failed" }), { status: 500 });
   }
 });
 

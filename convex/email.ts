@@ -7,6 +7,18 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com
 const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
 
 /**
+ * Constant-time string comparison to prevent timing attacks.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/**
  * All /email/* endpoints are server-to-server only. Callers must send the
  * shared secret in the x-email-secret header. Without this, anyone on the
  * internet could send branded email through our Resend account.
@@ -19,8 +31,8 @@ function requireEmailAuth(request: Request): Response | null {
       headers: { "Content-Type": "application/json" },
     });
   }
-  const provided = request.headers.get("x-email-secret");
-  if (provided !== EMAIL_API_SECRET) {
+  const provided = request.headers.get("x-email-secret") ?? "";
+  if (!timingSafeEqual(provided, EMAIL_API_SECRET)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

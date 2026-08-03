@@ -55,11 +55,11 @@ export const getById = query({
   },
 });
 
-// Internal: called by orderEmails action — no auth check since this is only
-// invoked from within Convex's own actions/mutations.
+// Internal: called by orderEmails action — requires admin auth.
 export const getByIdInternal = query({
   args: { id: v.id("orders") },
   handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return null;
     return await ctx.db.get(args.id);
   },
 });
