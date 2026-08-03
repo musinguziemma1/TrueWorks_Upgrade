@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import {
   createProduct,
   uploadFile,
+  useCategories,
   ProductStatus,
 } from "@/lib/admin-queries"
 
@@ -65,9 +66,9 @@ export default function NewProductPage() {
 
   const create = createProduct.useMutation()
   const upload = uploadFile.useAction()
-
-  const categories = ["Templates", "Dashboards", "Bundles", "Components", "Marketing", "Tools", "Software", "E-books"]
-  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR"]
+  const dbCategories = useCategories()
+  const categories = (dbCategories ?? []).map((c) => c.name)
+  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
   const fileTypes = ["PDF", "ZIP", "MP4", "AI", "PSD", "Figma", "HTML", "JS"]
 
   const addFaq = () => setFaqs([...faqs, { question: "", answer: "" }])

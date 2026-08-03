@@ -21,6 +21,7 @@ import {
   updateProduct,
   deleteProduct,
   uploadFile,
+  useCategories,
   ProductStatus,
 } from "@/lib/admin-queries"
 
@@ -35,6 +36,9 @@ export default function EditProductPage() {
   const update = updateProduct.useMutation()
   const remove = deleteProduct.useMutation()
   const upload = uploadFile.useAction()
+  const dbCategories = useCategories()
+  const categories = (dbCategories ?? []).map((c) => c.name)
+  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
 
   const [deleting, setDeleting] = useState(false)
 
@@ -73,8 +77,6 @@ export default function EditProductPage() {
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const categories = ["Templates", "Dashboards", "Bundles", "Components", "Marketing", "Tools", "Software", "E-books"]
-  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR"]
   const fileTypes = ["PDF", "ZIP", "MP4", "AI", "PSD", "Figma", "HTML", "JS"]
 
   // eslint-disable-next-line react-hooks/set-state-in-effect

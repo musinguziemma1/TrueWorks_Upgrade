@@ -57,7 +57,7 @@ export default function CategoriesPage() {
   const totalPages = Math.ceil(filtered.length / perPage)
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
 
-  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Finance", "CRM", "Education", "SaaS"]
+  const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
 
   const openNewDialog = () => {
     setEditCategory(null)

@@ -4,6 +4,19 @@ import type { PaginationOptions } from "convex/server";
 import { Id } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent } from "./users";
 
+async function syncCategoryProductCount(ctx: any, categoryName: string) {
+  const cats = await ctx.db
+    .query("categories")
+    .collect();
+  const category = cats.find((c: any) => c.name === categoryName);
+  if (!category) return;
+  const count = await ctx.db
+    .query("products")
+    .collect()
+    .then((ps: any[]) => ps.filter((p: any) => p.category === categoryName).length);
+  await ctx.db.patch(category._id, { productCount: count });
+}
+
 export const list = query({
   args: {
     category: v.optional(v.string()),
@@ -143,6 +156,7 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await syncCategoryProductCount(ctx, args.category);
     return id;
   },
 });
@@ -179,8 +193,13 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const { id, ...updates } = args;
+    const oldProduct = await ctx.db.get(id);
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
+    if (updates.category && oldProduct && updates.category !== oldProduct.category) {
+      await syncCategoryProductCount(ctx, oldProduct.category);
+      await syncCategoryProductCount(ctx, updates.category);
+    }
   },
 });
 
@@ -188,7 +207,11 @@ export const remove = mutation({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const product = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
+    if (product) {
+      await syncCategoryProductCount(ctx, product.category);
+    }
   },
 });
 
