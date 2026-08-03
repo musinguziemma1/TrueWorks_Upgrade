@@ -353,6 +353,36 @@ export default function ProductDetail() {
                 <TabsTrigger value="reviews">Reviews ({p.reviewCount})</TabsTrigger>
               </TabsList>
               <TabsContent value="description" className="max-w-3xl">
+                {p.demoVideo && (
+                  <div className="mb-6">
+                    {p.demoVideo.includes("youtube.com") || p.demoVideo.includes("youtu.be") ? (
+                      <div className="relative aspect-video w-full overflow-hidden rounded-xl">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${p.demoVideo.includes("youtu.be") ? p.demoVideo.split("/").pop()?.split("?")[0] : new URL(p.demoVideo).searchParams.get("v") ?? p.demoVideo.split("/").pop()?.split("?")[0]}`}
+                          className="absolute inset-0 h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : p.demoVideo.includes("vimeo.com") ? (
+                      <div className="relative aspect-video w-full overflow-hidden rounded-xl">
+                        <iframe
+                          src={`https://player.vimeo.com/video/${p.demoVideo.split("/").pop()?.split("?")[0]}`}
+                          className="absolute inset-0 h-full w-full"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <video
+                        src={p.demoVideo}
+                        controls
+                        className="w-full rounded-xl"
+                        preload="metadata"
+                      />
+                    )}
+                  </div>
+                )}
                 <p className="leading-relaxed text-muted">{p.description}</p>
                 {p.changelog && (
                   <div className="mt-6">
