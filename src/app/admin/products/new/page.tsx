@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import {
   createProduct,
   uploadFile,
@@ -250,7 +251,11 @@ export default function NewProductPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Full Description</Label>
-                    <Textarea placeholder="Detailed product description with features and benefits..." className="min-h-[200px]" value={description} onChange={(e) => setDescription(e.target.value)} />
+                    <RichTextEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="Detailed product description with features and benefits..."
+                    />
                   </div>
                 </CardContent>
               </Card>

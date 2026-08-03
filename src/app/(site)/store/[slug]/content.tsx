@@ -383,7 +383,10 @@ export default function ProductDetail() {
                     )}
                   </div>
                 )}
-                <p className="leading-relaxed text-muted">{p.description}</p>
+                <div
+                  className="prose prose-sm max-w-none leading-relaxed text-muted [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-primary [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-primary [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-primary [&_p]:mb-3 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_a]:text-primary [&_a]:underline"
+                  dangerouslySetInnerHTML={{ __html: p.description }}
+                />
                 {p.changelog && (
                   <div className="mt-6">
                     <h3 className="text-sm font-semibold text-primary">Changelog</h3>
