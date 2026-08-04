@@ -1,9 +1,9 @@
 import { Variants } from 'framer-motion';
 
 // Smooth easing functions for premium feel
-export const easeInOutQuart = [0.25, 0.46, 0.45, 0.94];
-export const easeOutExpo = [0.16, 1, 0.3, 1];
-export const easeInOutExpo = [0.87, 0, 0.13, 1];
+export const easeInOutQuart: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
+export const easeOutExpo: [number, number, number, number] = [0.16, 1, 0.3, 1];
+export const easeInOutExpo: [number, number, number, number] = [0.87, 0, 0.13, 1];
 
 // Text animations
 export const textSlideUp: Variants = {
@@ -177,7 +177,7 @@ export const floatingParticle = (delay: number, duration: number) => ({
   transition: {
     duration,
     repeat: Infinity,
-    ease: 'easeInOut',
+    ease: 'easeInOut' as const,
     delay
   }
 });
