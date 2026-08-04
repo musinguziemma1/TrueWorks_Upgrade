@@ -47,7 +47,7 @@ export default function HeroIndicators({
           {/* Label */}
           <span 
             className={`
-              text-sm font-medium transition-all duration-300
+              font-body text-sm font-medium transition-all duration-300
               ${index === currentSlide 
                 ? 'text-white' 
                 : 'text-white/60 group-hover:text-white/80'

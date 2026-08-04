@@ -32,14 +32,14 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         className="mb-8"
         variants={textFadeIn}
       >
-        <span className="text-[#D4A64A] text-sm font-semibold tracking-wider uppercase">
+        <span className="font-body text-[#D4A64A] text-sm font-semibold tracking-wider uppercase">
           Enterprise Business Operating Systems
         </span>
       </motion.div>
 
       {/* Main heading */}
       <motion.h1 
-        className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-6"
+        className="font-heading text-5xl lg:text-7xl font-bold text-white leading-tight mb-6"
         variants={textSlideUp}
       >
         <span className="block">{slide.title}</span>
@@ -48,7 +48,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
 
       {/* Description */}
       <motion.p 
-        className="text-xl text-white/80 leading-relaxed mb-12 max-w-2xl"
+        className="font-body text-xl text-white/80 leading-relaxed mb-12 max-w-2xl"
         variants={textFadeIn}
       >
         {slide.description}
@@ -94,11 +94,11 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                   <IconComponent className="w-8 h-8 text-[#081728]" />
                 </motion.div>
                 
-                <h3 className="text-white font-semibold text-lg mb-2">
+                <h3 className="font-heading text-white font-semibold text-lg mb-2">
                   {feature.name}
                 </h3>
                 
-                <p className="text-white/60 text-sm leading-relaxed">
+                <p className="font-body text-white/60 text-sm leading-relaxed">
                   {feature.description}
                 </p>
                 

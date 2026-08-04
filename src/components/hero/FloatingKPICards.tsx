@@ -44,14 +44,14 @@ export default function FloatingKPICards({ kpis, isVisible }: FloatingKPICardsPr
         style={{ translateZ: 0 }} // Force hardware acceleration
       >
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-white/70 text-sm font-medium">{kpis[0]?.label}</h4>
+          <h4 className="font-body text-white/70 text-sm font-medium">{kpis[0]?.label}</h4>
           <div className={`flex items-center gap-1 ${getTrendColor(kpis[0]?.trend || 'neutral')}`}>
             {getTrendIcon(kpis[0]?.trend || 'neutral')}
             <span className="text-xs font-semibold">{kpis[0]?.change}</span>
           </div>
         </div>
         <motion.div 
-          className="text-2xl font-bold text-white"
+          className="font-heading text-2xl font-bold text-white"
           variants={counterAnimation}
           initial="hidden"
           animate={isVisible ? "visible" : "hidden"}
@@ -73,14 +73,14 @@ export default function FloatingKPICards({ kpis, isVisible }: FloatingKPICardsPr
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-white/70 text-sm font-medium">{kpis[1]?.label}</h4>
+          <h4 className="font-body text-white/70 text-sm font-medium">{kpis[1]?.label}</h4>
           <div className={`flex items-center gap-1 ${getTrendColor(kpis[1]?.trend || 'neutral')}`}>
             {getTrendIcon(kpis[1]?.trend || 'neutral')}
             <span className="text-xs font-semibold">{kpis[1]?.change}</span>
           </div>
         </div>
         <motion.div 
-          className="text-2xl font-bold text-white"
+          className="font-heading text-2xl font-bold text-white"
           variants={counterAnimation}
           initial="hidden"
           animate={isVisible ? "visible" : "hidden"}
@@ -102,14 +102,14 @@ export default function FloatingKPICards({ kpis, isVisible }: FloatingKPICardsPr
         transition={{ delay: 0.4 }}
       >
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-white/70 text-sm font-medium">{kpis[2]?.label}</h4>
+          <h4 className="font-body text-white/70 text-sm font-medium">{kpis[2]?.label}</h4>
           <div className={`flex items-center gap-1 ${getTrendColor(kpis[2]?.trend || 'neutral')}`}>
             {getTrendIcon(kpis[2]?.trend || 'neutral')}
             <span className="text-xs font-semibold">{kpis[2]?.change}</span>
           </div>
         </div>
         <motion.div 
-          className="text-2xl font-bold text-white"
+          className="font-heading text-2xl font-bold text-white"
           variants={counterAnimation}
           initial="hidden"
           animate={isVisible ? "visible" : "hidden"}
@@ -131,14 +131,14 @@ export default function FloatingKPICards({ kpis, isVisible }: FloatingKPICardsPr
         transition={{ delay: 0.6 }}
       >
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-white/70 text-xs font-medium">{kpis[3]?.label}</h4>
+          <h4 className="font-body text-white/70 text-xs font-medium">{kpis[3]?.label}</h4>
           <div className={`flex items-center gap-1 ${getTrendColor(kpis[3]?.trend || 'neutral')}`}>
             {getTrendIcon(kpis[3]?.trend || 'neutral')}
             <span className="text-xs font-semibold">{kpis[3]?.change}</span>
           </div>
         </div>
         <motion.div 
-          className="text-xl font-bold text-white"
+          className="font-heading text-xl font-bold text-white"
           variants={counterAnimation}
           initial="hidden"
           animate={isVisible ? "visible" : "hidden"}
