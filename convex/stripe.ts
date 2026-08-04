@@ -130,6 +130,22 @@ async function verifyStripeSignature(
 }
 
 export const createPaymentIntent = httpAction(async (ctx, req) => {
+  // Rate limit: max 5 payment initiation attempts per IP per 10 minutes
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+  try {
+    await ctx.runMutation(internal.rateLimit.check, {
+      action: "payment:initiate",
+      identifier: `stripe:${ip}`,
+      limit: 5,
+      windowMs: 600_000,
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: "Too many attempts. Please try again later." }), { status: 429, headers: { "Content-Type": "application/json" } });
+  }
+
   if (!STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: "Payment service unavailable" }), {
       status: 500,

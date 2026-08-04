@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { auditLog } from "./lib/audit";
 
 const ROLE_HIERARCHY: Record<string, number> = {
   superadmin: 5,
@@ -76,7 +77,6 @@ export const revoke = mutation({
     if (invitation.status !== "pending") throw new Error("Can only revoke pending invitations");
 
     await ctx.db.patch(args.invitationId, { status: "revoked" });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "invitation.revoke",
       entityType: "invitation",
@@ -136,7 +136,6 @@ export const resend = mutation({
       invitationId: args.invitationId,
     });
 
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "invitation.resend",
       entityType: "invitation",

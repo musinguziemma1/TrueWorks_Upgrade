@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
+import { auditLog } from "./lib/audit";
 
 export const list = query({
   args: {     activeOnly: v.optional(v.boolean()) },
@@ -70,7 +71,6 @@ export const remove = mutation({
     await requireAdmin(ctx);
     const sub = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "subscriber.remove",
       entityType: "subscriber",

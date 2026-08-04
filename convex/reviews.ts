@@ -2,6 +2,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
+import { auditLog } from "./lib/audit";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
@@ -115,7 +116,6 @@ export const approve = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "approved" });
     await recalculateProductRating(ctx, review.productId);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "review.approve",
       entityType: "review",
@@ -133,7 +133,6 @@ export const reject = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "rejected" });
     await recalculateProductRating(ctx, review.productId);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "review.reject",
       entityType: "review",
@@ -150,7 +149,6 @@ export const toggleFeatured = mutation({
     const review = await ctx.db.get(args.id);
     if (review) {
       await ctx.db.patch(args.id, { featured: !review.featured });
-      const { auditLog } = await import("./lib/audit");
       await auditLog(ctx, {
         action: "review.toggle_featured",
         entityType: "review",
@@ -169,7 +167,6 @@ export const remove = mutation({
     if (!review) throw new Error("Review not found");
     await ctx.db.delete(args.id);
     await recalculateProductRating(ctx, review.productId);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "review.delete",
       entityType: "review",

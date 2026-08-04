@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const create = mutation({
   args: {
@@ -22,7 +23,6 @@ export const create = mutation({
       url: args.url,
       createdAt: Date.now(),
     });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "media.upload",
       entityType: "mediaFile",

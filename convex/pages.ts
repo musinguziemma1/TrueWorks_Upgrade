@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const list = query({
   args: { type: v.optional(v.union(v.literal("page"), v.literal("post"), v.literal("resource"))) },
@@ -44,7 +45,6 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "page.create",
       entityType: "page",
@@ -74,7 +74,6 @@ export const update = mutation({
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     const old = await ctx.db.get(id);
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "page.update",
       entityType: "page",
@@ -91,7 +90,6 @@ export const remove = mutation({
     await requireAdmin(ctx);
     const page = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "page.delete",
       entityType: "page",

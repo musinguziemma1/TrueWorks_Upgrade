@@ -34,7 +34,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.dev https://*.clerk.com https://cdn.clerk.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
+      "script-src 'self' https://js.stripe.com https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.dev https://*.clerk.com https://cdn.clerk.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.clerk.accounts.dev https://*.clerk.dev https://*.clerk.com",
       "img-src 'self' https://img.clerk.com https://images.clerk.dev https://images.unsplash.com https://lh3.googleusercontent.com https://*.clerk.accounts.dev https://*.clerk.dev https://*.clerk.com https://cdn.clerk.com data: blob:",
       "font-src 'self' https://fonts.gstatic.com",

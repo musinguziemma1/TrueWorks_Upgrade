@@ -19,6 +19,7 @@ import type * as coupons from "../coupons.js";
 import type * as customers from "../customers.js";
 import type * as downloads from "../downloads.js";
 import type * as email from "../email.js";
+import type * as gdpr from "../gdpr.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_audit from "../lib/audit.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   customers: typeof customers;
   downloads: typeof downloads;
   email: typeof email;
+  gdpr: typeof gdpr;
   http: typeof http;
   invitations: typeof invitations;
   "lib/audit": typeof lib_audit;

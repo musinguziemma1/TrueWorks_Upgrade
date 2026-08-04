@@ -4,6 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
+import { auditLog, performanceLog } from "./lib/audit";
 
 export const list = query({
   args: {
@@ -179,7 +180,6 @@ export const create = mutation({
     const start = Date.now();
     const id = await insertOrder(ctx, args);
     const latencyMs = Date.now() - start;
-    const { auditLog, performanceLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "order.create",
       entityType: "order",
@@ -239,7 +239,6 @@ export const updateStatus = mutation({
       });
     }
 
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "order.status_update",
       entityType: "order",
@@ -256,7 +255,6 @@ export const remove = mutation({
     await requireAdmin(ctx);
     const order = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "order.delete",
       entityType: "order",

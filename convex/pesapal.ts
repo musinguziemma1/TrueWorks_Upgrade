@@ -31,6 +31,22 @@ async function getPesapalToken(): Promise<string> {
 }
 
 export const initiatePayment = httpAction(async (ctx, request) => {
+  // Rate limit: max 5 payment initiation attempts per IP per 10 minutes
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  try {
+    await ctx.runMutation(internal.rateLimit.check, {
+      action: "payment:initiate",
+      identifier: ip,
+      limit: 5,
+      windowMs: 600_000,
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: "Too many attempts. Please try again later." }), { status: 429, headers: { "Content-Type": "application/json" } });
+  }
+
   const body = await request.json();
   const { orderId, currency, method, customerEmail, customerName, description } = body;
 

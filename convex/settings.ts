@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 // Strips anything that could break out of a <style> tag or execute script
 export function sanitizeCss(css: string): string {
@@ -77,7 +78,6 @@ export const set = mutation({
       .collect();
     if (existing.length > 0) {
       await ctx.db.patch(existing[0]._id, { value: args.value, updatedAt: Date.now() });
-      const { auditLog } = await import("./lib/audit");
       await auditLog(ctx, {
         action: "settings.update",
         entityType: "settings",
@@ -92,7 +92,6 @@ export const set = mutation({
       value: args.value,
       updatedAt: Date.now(),
     });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "settings.create",
       entityType: "settings",
@@ -123,7 +122,6 @@ export const setMultiple = mutation({
       }
       keys.push(key);
     }
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "settings.bulk_update",
       entityType: "settings",
@@ -143,7 +141,6 @@ export const remove = mutation({
       .collect();
     if (existing.length > 0) {
       await ctx.db.delete(existing[0]._id);
-      const { auditLog } = await import("./lib/audit");
       await auditLog(ctx, {
         action: "settings.delete",
         entityType: "settings",

@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getCurrentUser } from "./users";
+import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const listMine = query({
   args: {},
@@ -68,7 +69,6 @@ export const adminList = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requireAdminSilent } = await import("./users");
     if (!(await requireAdminSilent(ctx))) return [];
     const base = ctx.db.query("returns");
     const q = args.status
@@ -92,7 +92,6 @@ export const adminUpdateStatus = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requireAdmin } = await import("./users");
     await requireAdmin(ctx);
     const ret = await ctx.db.get(args.id);
     if (!ret) throw new Error("Return not found");
@@ -101,7 +100,6 @@ export const adminUpdateStatus = mutation({
       adminNotes: args.adminNotes,
       updatedAt: Date.now(),
     });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "return.status_update",
       entityType: "return",

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { PaginationOptions } from "convex/server";
 import { Id } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog, performanceLog } from "./lib/audit";
 
 async function syncCategoryProductCount(ctx: any, categoryName: string) {
   const cats = await ctx.db
@@ -26,12 +27,17 @@ export const list = query({
     featured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const isAdmin = await requireAdminSilent(ctx);
+
+    // SECURITY: Non-admins can only see published products
+    const status = isAdmin ? args.status : "published";
+
     const q = args.category
       ? ctx.db.query("products").withIndex("by_category", (q) => q.eq("category", args.category!))
       : args.industry
       ? ctx.db.query("products").withIndex("by_industry", (q) => q.eq("industry", args.industry!))
-      : args.status
-      ? ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", args.status as "draft" | "published" | "archived"))
+      : status
+      ? ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", status as "draft" | "published" | "archived"))
       : args.featured !== undefined
       ? ctx.db.query("products").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
       : ctx.db.query("products");
@@ -336,7 +342,6 @@ export const bulkImport = mutation({
     }
 
     const latencyMs = Date.now() - start;
-    const { auditLog, performanceLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "product.bulk_import",
       entityType: "product",

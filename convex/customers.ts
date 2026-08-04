@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const list = query({
   args: {
@@ -73,7 +74,6 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "customer.create",
       entityType: "customer",
@@ -102,7 +102,6 @@ export const update = mutation({
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     const old = await ctx.db.get(id);
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "customer.update",
       entityType: "customer",
@@ -153,7 +152,6 @@ export const remove = mutation({
     await requireAdmin(ctx);
     const customer = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "customer.delete",
       entityType: "customer",

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 const ALLOWED_TYPES = new Set([
   // Images
@@ -123,7 +124,6 @@ export const deleteFile = mutation({
       await ctx.storage.delete(file.storageId as Id<"_storage">);
     }
     await ctx.db.delete(args.id);
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "media.delete",
       entityType: "mediaFile",

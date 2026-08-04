@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
+import { auditLog } from "./lib/audit";
 
 export const listMine = query({
   args: {},
@@ -90,7 +91,6 @@ export const revoke = mutation({
     await requireAdmin(ctx);
     const dl = await ctx.db.get(args.id);
     await ctx.db.patch(args.id, { status: "disabled", revoked: true });
-    const { auditLog } = await import("./lib/audit");
     await auditLog(ctx, {
       action: "download.revoke",
       entityType: "download",
@@ -107,7 +107,6 @@ export const resetLimit = mutation({
     const download = await ctx.db.get(args.id);
     if (download) {
       await ctx.db.patch(args.id, { remainingDownloads: 10 });
-      const { auditLog } = await import("./lib/audit");
       await auditLog(ctx, {
         action: "download.reset_limit",
         entityType: "download",
