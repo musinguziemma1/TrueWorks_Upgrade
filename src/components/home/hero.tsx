@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Download, TrendingUp, Star, ShieldCheck, Zap,
   HeartHandshake, GraduationCap, Building2, Activity,
-  Users, Stethoscope, BarChart3,
+  Users, Stethoscope, BarChart3, Target, Gauge, CheckCircle2, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,19 +20,29 @@ const slides = [
   {
     id: "all",
     label: "Business Operating Systems",
+    tagline: "Built for real people. Backed by experience. Focused on results.",
     title: (
       <>
-        Building <em className="text-gradient-gold not-italic">Better</em>
-        <br /> Organizations
+        Smarter Systems.
+        <br />
+        <span className="text-white/90">Stronger Decisions.</span>
+        <br />
+        <span className="text-gradient-gold">Better Results.</span>
       </>
     ),
     description:
-      "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across the Globe.",
+      "TrueWorks builds practical business operating systems that bring clarity to your numbers and confidence to your decisions.",
     kpis: [
-      { label: "Bed Occupancy", value: "78%", delta: "+4.2%" },
-{ label: "Revenue / Bed", value: "$2,400", delta: "+11%" },
-  { label: "Patients / Day", value: "142", delta: "+9" },
-  { label: "Avg. Bill", value: "$85", delta: "+6%" },
+      { label: "Total Revenue", value: "UGX 1.25B", delta: "+12.4%", trend: "up" },
+      { label: "Net Profit", value: "UGX 215M", delta: "+18.7%", trend: "up" },
+      { label: "Cash Balance", value: "UGX 320M", delta: "+8.2%", trend: "up" },
+      { label: "Growth", value: "+15.3%", delta: "vs Last Year", trend: "neutral" },
+    ],
+    valueProps: [
+      { icon: Target, label: "Financial Clarity", desc: "Real-time insights that drive results" },
+      { icon: Gauge, label: "Operational Control", desc: "Track what matters and improve what doesn't" },
+      { icon: BarChart3, label: "Smart Planning", desc: "Plan ahead with data you can trust" },
+      { icon: CheckCircle2, label: "Built For Growth", desc: "Scalable systems for every stage of your journey" },
     ],
     icon: BarChart3,
     accent: "accent",
@@ -41,19 +51,29 @@ const slides = [
   {
     id: "healthcare",
     label: "Healthcare Solutions",
+    tagline: "Trusted by forward-thinking organizations to drive clarity, efficiency and growth.",
     title: (
       <>
-        Smarter <em className="text-gradient-gold not-italic">Hospital</em>
-        <br /> Operations
+        Better Systems.
+        <br />
+        <span className="text-white/90">Better Decisions.</span>
+        <br />
+        <span className="text-gradient-gold">Better Results.</span>
       </>
     ),
     description:
-      "From patient billing to KPI dashboards, equip your healthcare facility with tools that improve patient outcomes, streamline administration, and drive revenue growth.",
+      "TrueWorks transforms the way organizations plan, manage, and grow with powerful, intelligent business operating systems.",
     kpis: [
-      { label: "Beds Tracked", value: "500+", delta: "Per facility" },
-      { label: "Avg Savings", value: "18%", delta: "reduction" },
-      { label: "Departments", value: "12", delta: "per hospital" },
-      { label: "Uptime", value: "99.9%", delta: "reliable" },
+      { label: "Revenue", value: "UGX 1.25B", delta: "+12.1%", trend: "up" },
+      { label: "Net Profit", value: "UGX 215M", delta: "+38.7%", trend: "up" },
+      { label: "Cash Balance", value: "UGX 320M", delta: "+9.2%", trend: "up" },
+      { label: "Growth", value: "+15.3%", delta: "vs Last Year", trend: "neutral" },
+    ],
+    valueProps: [
+      { icon: BarChart3, label: "Plan", desc: "with Confidence" },
+      { icon: TrendingUp, label: "Track", desc: "in Real Time" },
+      { icon: Activity, label: "Analyze", desc: "with Clarity" },
+      { icon: Target, label: "Act", desc: "with Impact" },
     ],
     icon: Stethoscope,
     accent: "emerald",
@@ -62,19 +82,29 @@ const slides = [
   {
     id: "ngo",
     label: "Nonprofit & NGO Tools",
+    tagline: "Trusted by forward-thinking organizations to drive clarity, efficiency and growth.",
     title: (
       <>
-        Amplify Your <em className="text-gradient-gold not-italic">Impact</em>
-        <br /> With Data
+        Smarter Systems.
+        <br />
+        <span className="text-white/90">Stronger Decisions.</span>
+        <br />
+        <span className="text-gradient-gold">Sustainable Growth.</span>
       </>
     ),
     description:
-      "Track grants, manage donor commitments, and produce field-ready reports. Built for NGOs and nonprofits that need clarity, accountability, and scalability.",
+      "TrueWorks helps organizations plan, track, and manage every part of their operations with intelligent, integrated business systems.",
     kpis: [
-      { label: "Grants Tracked", value: "200+", delta: "per org" },
-      { label: "Donors", value: "50+", delta: "per grant" },
-      { label: "Report Time", value: "-60%", delta: "faster" },
-      { label: "Compliance", value: "98%", delta: "donor-ready" },
+      { label: "Revenue", value: "UGX 1.25B", delta: "+21%", trend: "up" },
+      { label: "Net Profit", value: "UGX 215M", delta: "+38.7%", trend: "up" },
+      { label: "Cash Balance", value: "UGX 320M", delta: "+9.2%", trend: "up" },
+      { label: "Growth", value: "+15.3%", delta: "vs Last Year", trend: "neutral" },
+    ],
+    valueProps: [
+      { icon: Target, label: "Plan", desc: "with Confidence" },
+      { icon: TrendingUp, label: "Track", desc: "in Real Time" },
+      { icon: Activity, label: "Analyze", desc: "with Clarity" },
+      { icon: CheckCircle2, label: "Act", desc: "with Impact" },
     ],
     icon: HeartHandshake,
     accent: "rose",
@@ -83,19 +113,29 @@ const slides = [
   {
     id: "education",
     label: "Schools & Churches",
+    tagline: "Built for real people. Backed by experience. Focused on results.",
     title: (
       <>
-        Manage <em className="text-gradient-gold not-italic">Faithfully</em>
-        <br /> &amp; Efficiently
+        Better Systems.
+        <br />
+        <span className="text-white/90">Better Decisions.</span>
+        <br />
+        <span className="text-gradient-gold">Better Results.</span>
       </>
     ),
     description:
-      "Fee management, student performance tracking, tithe and offering records, membership databases - purpose-built tools for educational and religious institutions.",
+      "TrueWorks transforms the way organizations plan, manage, and grow with powerful, intelligent business operating systems.",
     kpis: [
-      { label: "Students", value: "2,000+", delta: "per school" },
-      { label: "Members", value: "5,000+", delta: "per church" },
-      { label: "Fee Collection", value: "96%", delta: "rate" },
-      { label: "Reports", value: "Auto", delta: "termly" },
+      { label: "Revenue", value: "UGX 1.25B", delta: "+12.4%", trend: "up" },
+      { label: "Net Profit", value: "UGX 215M", delta: "+18.7%", trend: "up" },
+      { label: "Cash Balance", value: "UGX 320M", delta: "+8.2%", trend: "up" },
+      { label: "Growth", value: "+15.3%", delta: "vs Last Year", trend: "neutral" },
+    ],
+    valueProps: [
+      { icon: BarChart3, label: "Plan", desc: "with Confidence" },
+      { icon: TrendingUp, label: "Track", desc: "in Real Time" },
+      { icon: Activity, label: "Analyze", desc: "with Clarity" },
+      { icon: Target, label: "Act", desc: "with Impact" },
     ],
     icon: GraduationCap,
     accent: "violet",
@@ -104,19 +144,29 @@ const slides = [
   {
     id: "business",
     label: "SME & Startup Finance",
+    tagline: "Trusted by forward-thinking organizations to drive clarity, efficiency and growth.",
     title: (
       <>
-        Grow With <em className="text-gradient-gold not-italic">Confidence</em>
-        <br /> &amp; Clarity
+        Smarter Systems.
+        <br />
+        <span className="text-white/90">Stronger Decisions.</span>
+        <br />
+        <span className="text-gradient-gold">Sustainable Growth.</span>
       </>
     ),
     description:
-      "Cash flow forecasting, financial modeling, HR trackers, and inventory systems. Everything a growing business needs to operate with discipline and scale sustainably.",
+      "TrueWorks helps organizations plan, track, and manage every part of their operations with intelligent, integrated business systems.",
     kpis: [
-      { label: "Cash Flow", value: "12-mo", delta: "forecast" },
-      { label: "Models", value: "3-stmt", delta: "linked" },
-      { label: "Employees", value: "500+", delta: "per org" },
-      { label: "ROI", value: "3.2x", delta: "average" },
+      { label: "Revenue", value: "UGX 1.25B", delta: "+21%", trend: "up" },
+      { label: "Net Profit", value: "UGX 215M", delta: "+38.7%", trend: "up" },
+      { label: "Cash Balance", value: "UGX 320M", delta: "+9.2%", trend: "up" },
+      { label: "Growth", value: "+15.3%", delta: "vs Last Year", trend: "neutral" },
+    ],
+    valueProps: [
+      { icon: Target, label: "Plan", desc: "with Confidence" },
+      { icon: TrendingUp, label: "Track", desc: "in Real Time" },
+      { icon: Activity, label: "Analyze", desc: "with Clarity" },
+      { icon: CheckCircle2, label: "Act", desc: "with Impact" },
     ],
     icon: Building2,
     accent: "blue",
@@ -133,157 +183,307 @@ const floatingShapes = [
 ];
 
 const barData = [42, 58, 50, 66, 61, 78, 72, 88];
+const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"];
 
 function HeroVisual({ slide }: { slide: typeof slides[number] }) {
   if (slide.visual === "dashboard") {
     return (
-      <div className="relative w-full max-w-[520px]">
+      <div className="relative w-full max-w-[600px]">
+        {/* Main Dashboard Card - Laptop Mockup */}
         <motion.div
-          animate={{ y: [0, -10, 0] }}
+          animate={{ y: [0, -8, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="relative"
         >
-          <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Hospital KPI Dashboard</p>
-                <p className="font-heading text-lg font-semibold text-primary">Executive Overview</p>
-              </div>
-              <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />Live
-              </span>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {slide.kpis.map((kpi) => (
-                <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
-                  <p className="text-[11px] text-muted">{kpi.label}</p>
-                  <div className="mt-0.5 flex items-baseline justify-between">
-                    <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
-                    <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
+          {/* Laptop frame */}
+          <div className="relative rounded-t-2xl border border-white/10 bg-gradient-to-b from-gray-900 to-gray-800 p-1 shadow-2xl">
+            {/* Screen bezel */}
+            <div className="rounded-t-xl border-2 border-gray-700 bg-[#0a1628] p-4">
+              {/* Top bar with TW logo */}
+              <div className="mb-4 flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#C9A227] to-[#a88520]">
+                    <span className="font-heading text-xs font-bold text-[#0B2545]">TW</span>
                   </div>
+                  <span className="text-xs font-semibold text-white/90">TrueWorks</span>
                 </div>
-              ))}
-            </div>
-            <div className="mt-5">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Monthly Revenue</p>
-                <p className="text-[11px] font-semibold text-success">+18% vs last year</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-white/40">Year: 2026</span>
+                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-400" />
+                    Live
+                  </span>
+                </div>
               </div>
-              <div className="mt-3 flex h-24 items-end gap-2">
-                {barData.map((h, i) => (
-                  <div key={i} className="relative flex-1 rounded-t-sm bg-primary/90" style={{ height: `${h}%` }}>
-                    {i === barData.length - 1 && <div className="absolute inset-x-0 top-0 h-full rounded-t-sm gradient-gold opacity-90" />}
-                  </div>
+
+              {/* Executive Overview KPIs */}
+              <div className="mb-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">Executive Overview</p>
+              </div>
+              
+              <div className="mb-4 grid grid-cols-4 gap-2">
+                {slide.kpis.map((kpi, i) => (
+                  <motion.div
+                    key={kpi.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="relative overflow-hidden rounded-lg border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent p-2.5"
+                  >
+                    <p className="text-[9px] font-medium text-white/50">{kpi.label}</p>
+                    <div className="mt-1 flex items-baseline justify-between">
+                      <span className="font-heading text-xs font-bold text-white">{kpi.value}</span>
+                      <span className={cn(
+                        "text-[8px] font-semibold",
+                        kpi.trend === "up" ? "text-emerald-400" : "text-white/40"
+                      )}>
+                        {kpi.delta}
+                      </span>
+                    </div>
+                    {/* Accent line */}
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#C9A227] to-transparent opacity-60" />
+                  </motion.div>
                 ))}
               </div>
+
+              {/* Revenue Trend Chart */}
+              <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-white/50">Revenue Trend</p>
+                  <p className="text-[9px] font-semibold text-emerald-400">↑ Revenue    ↑ Net Profit</p>
+                </div>
+                <div className="flex h-16 items-end gap-1">
+                  {barData.map((height, i) => (
+                    <div key={i} className="relative flex-1">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${height}%` }}
+                        transition={{ delay: 0.5 + i * 0.05, duration: 0.4 }}
+                        className={cn(
+                          "rounded-t-sm",
+                          i === barData.length - 1
+                            ? "bg-gradient-to-t from-[#C9A227] to-[#e8c050]"
+                            : "bg-gradient-to-t from-[#4A6FA5] to-[#5a7fb5]"
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 flex justify-between px-0.5">
+                  {monthLabels.map((month, i) => (
+                    <span key={month} className="text-[7px] text-white/30">{month}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Department Performance */}
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1 rounded-lg border border-white/5 bg-white/[0.02] p-2">
+                  <p className="text-[8px] font-medium text-white/50">Department Performance</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="relative h-10 w-10">
+                      <svg className="h-10 w-10 -rotate-90 transform">
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="16"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          fill="none"
+                          className="text-white/5"
+                        />
+                        <motion.circle
+                          cx="20"
+                          cy="20"
+                          r="16"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          fill="none"
+                          strokeDasharray={100.5}
+                          initial={{ strokeDashoffset: 100.5 }}
+                          animate={{ strokeDashoffset: 24 }}
+                          transition={{ delay: 1, duration: 1.5 }}
+                          className="text-[#C9A227]"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-white">76%</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-0.5">
+                      {["Operations", "Finance", "Marketing", "HR"].map((dept, i) => (
+                        <div key={dept} className="flex items-center justify-between text-[8px]">
+                          <span className="text-white/60">{dept}</span>
+                          <span className="font-semibold text-white/80">{92 - i * 10}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 rounded-lg border border-white/5 bg-white/[0.02] p-2">
+                  <p className="text-[8px] font-medium text-white/50">Top Expenses</p>
+                  <div className="mt-2 space-y-1.5">
+                    {[
+                      { name: "Salaries & Wages", pct: 45 },
+                      { name: "Supplies & Operations", pct: 30 },
+                      { name: "Utilities", pct: 15 },
+                      { name: "Other", pct: 10 },
+                    ].map((expense) => (
+                      <div key={expense.name} className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[8px]">
+                          <span className="text-white/60">{expense.name}</span>
+                          <span className="font-semibold text-white/80">{expense.pct}%</span>
+                        </div>
+                        <div className="h-1 overflow-hidden rounded-full bg-white/5">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${expense.pct}%` }}
+                            transition={{ delay: 1.2, duration: 0.8 }}
+                            className="h-full bg-gradient-to-r from-[#4A6FA5] to-[#5a7fb5]"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
+            
+            {/* Laptop base */}
+            <div className="h-3 rounded-b-2xl bg-gradient-to-b from-gray-700 to-gray-800" />
+            <div className="mx-auto h-1 w-32 rounded-b-lg bg-gray-600" />
           </div>
         </motion.div>
+
+        {/* Floating stat cards */}
         <motion.div
-          animate={{ y: [0, -14, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-          className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+          animate={{ y: [0, -12, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          className="absolute -right-4 top-8 flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a1628]/95 px-3 py-2 shadow-2xl backdrop-blur-sm"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
-            <TrendingUp className="h-4 w-4 text-primary-dark" />
-          </span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#C9A227] to-[#a88520]">
+            <TrendingUp className="h-4 w-4 text-[#0B2545]" />
+          </div>
           <div>
-            <p className="text-[11px] text-white/60">Revenue this month</p>
-            <p className="text-sm font-semibold text-white">+18.2%</p>
+            <p className="text-[9px] font-medium text-white/50">Growth</p>
+            <p className="text-xs font-bold text-white">+15.3%</p>
           </div>
         </motion.div>
+
         <motion.div
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
-          className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute -bottom-4 -left-4 flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a1628]/95 px-3 py-2 shadow-2xl backdrop-blur-sm"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-            <Download className="h-4 w-4 text-accent-light" />
-          </span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          </div>
           <div>
-            <p className="text-[11px] text-white/60">Delivery</p>
-            <p className="text-sm font-semibold text-white">Instant download</p>
+            <p className="text-[9px] font-medium text-white/50">Delivery</p>
+            <p className="text-xs font-bold text-white">Instant</p>
           </div>
         </motion.div>
       </div>
     );
   }
 
+  // Similar dashboard for other slides
   return (
-    <div className="relative w-full max-w-[520px]">
+    <div className="relative w-full max-w-[600px]">
       <motion.div
-        animate={{ y: [0, -10, 0] }}
+        animate={{ y: [0, -8, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        className="relative"
       >
-        <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-              <slide.icon className="h-5 w-5 text-accent" />
-            </span>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
-                {slide.label}
-              </p>
-              <p className="font-heading text-lg font-semibold text-primary">Performance Overview</p>
-            </div>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {slide.kpis.map((kpi) => (
-              <div key={kpi.label} className="rounded-lg border border-border/60 bg-surface px-4 py-3">
-                <p className="text-[11px] text-muted">{kpi.label}</p>
-                <div className="mt-0.5 flex items-baseline justify-between">
-                  <span className="font-heading text-base font-bold text-primary">{kpi.value}</span>
-                  <span className="text-[10px] font-semibold text-success">{kpi.delta}</span>
+        {/* Laptop frame */}
+        <div className="relative rounded-t-2xl border border-white/10 bg-gradient-to-b from-gray-900 to-gray-800 p-1 shadow-2xl">
+          <div className="rounded-t-xl border-2 border-gray-700 bg-[#0a1628] p-4">
+            <div className="mb-4 flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#C9A227] to-[#a88520]">
+                  <span className="font-heading text-xs font-bold text-[#0B2545]">TW</span>
                 </div>
+                <span className="text-xs font-semibold text-white/90">TrueWorks</span>
               </div>
-            ))}
-          </div>
-          <div className="mt-5">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Growth Trend</p>
-              <p className="text-[11px] font-semibold text-success">+15% this quarter</p>
+              <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-400" />
+                Live
+              </span>
             </div>
-            <div className="mt-3 flex h-24 items-end gap-2">
-              {barData.map((h, i) => (
-                <div key={i} className="relative flex-1 rounded-t-sm" style={{ height: `${h}%` }}>
-                  <div
-                    className={cn(
-                      "absolute inset-x-0 top-0 h-full rounded-t-sm opacity-90",
-                      slide.accent === "emerald" && "bg-emerald-500",
-                      slide.accent === "rose" && "bg-rose-500",
-                      slide.accent === "violet" && "bg-violet-500",
-                      slide.accent === "blue" && "bg-blue-500",
-                    )}
-                  />
-                </div>
+
+            <div className="mb-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">{slide.label}</p>
+            </div>
+            
+            <div className="mb-4 grid grid-cols-4 gap-2">
+              {slide.kpis.map((kpi, i) => (
+                <motion.div
+                  key={kpi.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative overflow-hidden rounded-lg border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent p-2.5"
+                >
+                  <p className="text-[9px] font-medium text-white/50">{kpi.label}</p>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="font-heading text-xs font-bold text-white">{kpi.value}</span>
+                    <span className={cn(
+                      "text-[8px] font-semibold",
+                      kpi.trend === "up" ? "text-emerald-400" : "text-white/40"
+                    )}>
+                      {kpi.delta}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#C9A227] to-transparent opacity-60" />
+                </motion.div>
               ))}
             </div>
+
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-white/50">Performance Trend</p>
+                <p className="text-[9px] font-semibold text-emerald-400">↑ Revenue</p>
+              </div>
+              <div className="flex h-16 items-end gap-1">
+                {barData.map((height, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${height}%` }}
+                    transition={{ delay: 0.5 + i * 0.05, duration: 0.4 }}
+                    className={cn(
+                      "flex-1 rounded-t-sm",
+                      i === barData.length - 1
+                        ? "bg-gradient-to-t from-[#C9A227] to-[#e8c050]"
+                        : slide.accent === "emerald" ? "bg-gradient-to-t from-emerald-600 to-emerald-500"
+                        : slide.accent === "rose" ? "bg-gradient-to-t from-rose-600 to-rose-500"
+                        : slide.accent === "violet" ? "bg-gradient-to-t from-violet-600 to-violet-500"
+                        : "bg-gradient-to-t from-blue-600 to-blue-500"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
+          
+          <div className="h-3 rounded-b-2xl bg-gradient-to-b from-gray-700 to-gray-800" />
+          <div className="mx-auto h-1 w-32 rounded-b-lg bg-gray-600" />
         </div>
       </motion.div>
+
       <motion.div
-        animate={{ y: [0, -14, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-        className="absolute -right-6 -top-8 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
+        animate={{ y: [0, -12, 0] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        className="absolute -right-4 top-8 flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a1628]/95 px-3 py-2 shadow-2xl backdrop-blur-sm"
       >
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-gold">
-          <Activity className="h-4 w-4 text-primary-dark" />
-        </span>
-        <div>
-          <p className="text-[11px] text-white/60">Real-time</p>
-          <p className="text-sm font-semibold text-white">Auto-updates</p>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#C9A227] to-[#a88520]">
+          <Activity className="h-4 w-4 text-[#0B2545]" />
         </div>
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, 12, 0] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
-        className="absolute -bottom-8 -left-6 flex items-center gap-3 rounded-xl border border-white/10 glass-dark px-4 py-3 shadow-elevated"
-      >
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-          <Users className="h-4 w-4 text-accent-light" />
-        </span>
         <div>
-          <p className="text-[11px] text-white/60">Trusted by</p>
-          <p className="text-sm font-semibold text-white">1,000+ orgs</p>
+          <p className="text-[9px] font-medium text-white/50">Real-time</p>
+          <p className="text-xs font-bold text-white">Updates</p>
         </div>
       </motion.div>
     </div>
@@ -303,15 +503,15 @@ export default function Hero() {
     const timer = setInterval(() => {
       setDirection(1);
       setCurrent((prev) => (prev + 1) % slides.length);
-    }, 10000);
+    }, 12000);
     return () => clearInterval(timer);
   }, []);
 
   const slide = slides[current];
 
   return (
-    <section className="gradient-brand relative overflow-hidden">
-      <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+    <section className="gradient-brand relative min-h-[90vh] overflow-hidden">
+      <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
 
       {/* Looped background animations */}
       {floatingShapes.map((shape, i) => (
@@ -338,10 +538,10 @@ export default function Hero() {
         />
       ))}
 
-      <div className="absolute -top-32 right-[-8%] h-[480px] w-[480px] rounded-full bg-accent/[0.07] blur-3xl" aria-hidden />
-      <div className="absolute bottom-[-20%] left-[-6%] h-[420px] w-[420px] rounded-full bg-secondary/10 blur-3xl" aria-hidden />
+      <div className="absolute -top-32 right-[-8%] h-[580px] w-[580px] rounded-full bg-accent/[0.08] blur-3xl" aria-hidden />
+      <div className="absolute bottom-[-20%] left-[-6%] h-[520px] w-[520px] rounded-full bg-secondary/10 blur-3xl" aria-hidden />
 
-      <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 lg:px-8 lg:pb-28 lg:pt-24">
+      <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-20 lg:px-8 lg:pb-32 lg:pt-28">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={slide.id}
@@ -349,8 +549,8 @@ export default function Hero() {
             initial={{ opacity: 0, x: direction > 0 ? 80 : -80 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction > 0 ? -80 : 80 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="grid items-center gap-14 lg:grid-cols-2 lg:gap-12"
+            transition={{ duration: 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
+            className="grid items-center gap-16 lg:grid-cols-2 lg:gap-14"
           >
             {/* Copy */}
             <div className="text-center lg:text-left">
@@ -358,17 +558,17 @@ export default function Hero() {
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-accent-light"
+                className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-accent"
               >
-                <span className="hidden h-px w-8 bg-accent sm:inline-block" aria-hidden />
-                {slide.label}
+                <Users className="h-3.5 w-3.5" />
+                {slide.tagline}
               </motion.p>
 
               <motion.h1
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                className="mt-5 font-heading text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-[4rem]"
+                className="mt-6 font-heading text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl"
               >
                 {slide.title}
               </motion.h1>
@@ -377,7 +577,7 @@ export default function Hero() {
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg lg:mx-0"
+                className="mx-auto mt-7 max-w-xl text-lg leading-relaxed text-white/75 lg:mx-0 lg:text-xl"
               >
                 {slide.description}
               </motion.p>
@@ -386,53 +586,51 @@ export default function Hero() {
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
+                className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start"
               >
                 <Link href="/store" className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="h-auto w-full gradient-gold px-7 py-3.5 text-sm font-semibold text-primary-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:brightness-105 sm:w-auto"
+                    className="h-14 w-full gradient-gold px-8 text-base font-bold text-primary-dark shadow-2xl shadow-accent/30 transition-all hover:scale-105 hover:shadow-accent/40 sm:w-auto"
                   >
-                    Browse the Store
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    EXPLORE SOLUTIONS
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/#free-template" className="w-full sm:w-auto">
+                <Link href="/#demo" className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="lg"
-                    className="h-auto w-full border-white/25 bg-transparent px-7 py-3.5 text-sm font-semibold text-white hover:bg-white/10 hover:text-white sm:w-auto"
+                    className="h-14 w-full border-2 border-white/30 bg-transparent px-8 text-base font-bold text-white hover:bg-white/10 hover:text-white sm:w-auto"
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    Get a Free Template
+                    <Play className="mr-2 h-5 w-5" />
+                    WATCH VIDEO
                   </Button>
                 </Link>
               </motion.div>
 
+              {/* Value Props Grid */}
               <motion.div
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-white/60 lg:justify-start"
+                className="mt-14 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4"
               >
-                <span className="flex items-center gap-2">
-                  <span className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="h-3.5 w-3.5 fill-accent text-accent" />
-                    ))}
-                  </span>
-                  4.8 average rating
-                </span>
-                <span className="hidden h-4 w-px bg-white/20 sm:block" aria-hidden />
-                <span className="flex items-center gap-1.5">
-                  <Zap className="h-4 w-4 text-accent" />
-                  Instant download
-                </span>
-                <span className="hidden h-4 w-px bg-white/20 sm:block" aria-hidden />
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-accent" />
-                  7-day guarantee
-                </span>
+                {slide.valueProps.map((prop, i) => (
+                  <motion.div
+                    key={prop.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 + i * 0.1 }}
+                    className="flex flex-col items-center text-center lg:items-start lg:text-left"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 backdrop-blur-sm">
+                      <prop.icon className="h-6 w-6 text-accent" />
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-white">{prop.label}</p>
+                    <p className="mt-0.5 text-xs text-white/60">{prop.desc}</p>
+                  </motion.div>
+                ))}
               </motion.div>
             </div>
 
@@ -450,37 +648,76 @@ export default function Hero() {
         </AnimatePresence>
 
         {/* Slide navigation dots */}
-        <div className="mt-10 flex items-center justify-center gap-2">
+        <div className="mt-14 flex items-center justify-center gap-2.5">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => goTo(i)}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-500",
-                i === current ? "w-8 bg-accent" : "w-1.5 bg-white/30 hover:bg-white/50"
+                "h-2 rounded-full transition-all duration-500",
+                i === current ? "w-10 bg-accent" : "w-2 bg-white/30 hover:bg-white/50"
               )}
               aria-label={`Go to slide ${i + 1}`}
             />
           ))}
         </div>
 
-        {/* Stats strip */}
-        <motion.dl
-          initial={{ opacity: 0, y: 24 }}
+        {/* Industry Icons Strip - Inspired by reference */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.7 }}
-          className="mt-16 grid grid-cols-2 gap-8 border-t border-white/10 pt-10 sm:grid-cols-4 lg:mt-20"
+          transition={{ duration: 0.8, delay: 1 }}
+          className="mt-20 border-t border-white/10 pt-12"
+        >
+          <div className="mb-8 flex items-center justify-center gap-3 text-white/60">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+              <ShieldCheck className="h-5 w-5 text-accent" />
+            </div>
+            <p className="text-sm font-semibold">
+              Trusted by forward-thinking organizations to drive clarity, efficiency and growth.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-8 sm:grid-cols-6">
+            {[
+              { icon: Stethoscope, label: "HEALTHCARE" },
+              { icon: GraduationCap, label: "EDUCATION" },
+              { icon: HeartHandshake, label: "NGOs" },
+              { icon: Building2, label: "MANUFACTURING" },
+              { icon: Activity, label: "FINANCIAL SERVICES" },
+              { icon: Users, label: "AND MORE" },
+            ].map((industry) => (
+              <motion.div
+                key={industry.label}
+                whileHover={{ y: -4 }}
+                className="flex flex-col items-center gap-2.5 text-center"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm transition-colors hover:border-accent/50 hover:bg-white/[0.06]">
+                  <industry.icon className="h-6 w-6 text-white/70" />
+                </div>
+                <p className="text-[10px] font-semibold tracking-wider text-white/50">{industry.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Stats - More prominent like references */}
+        <motion.dl
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.2 }}
+          className="mt-20 grid grid-cols-2 gap-10 border-t border-white/10 pt-12 sm:grid-cols-4"
         >
           {[
-            { value: "500+", label: "Premium templates" },
-            { value: "1,000+", label: "Organizations served" },
-            { value: "8", label: "Industry verticals" },
-            { value: "7-day", label: "Money-back guarantee" },
+            { value: "300+", label: "Organizations" },
+            { value: "50+", label: "Smart Solutions" },
+            { value: "10K+", label: "Users" },
+            { value: "1 Goal", label: "Your Success" },
           ].map((stat) => (
-            <div key={stat.label} className="text-center sm:text-left">
+            <div key={stat.label} className="text-center">
               <dt className="sr-only">{stat.label}</dt>
-              <dd className="font-heading text-3xl font-semibold text-white">{stat.value}</dd>
-              <dd className="mt-1 text-sm text-white/55">{stat.label}</dd>
+              <dd className="font-heading text-4xl font-bold text-white lg:text-5xl">{stat.value}</dd>
+              <dd className="mt-2 text-sm font-medium text-white/60">{stat.label}</dd>
             </div>
           ))}
         </motion.dl>
