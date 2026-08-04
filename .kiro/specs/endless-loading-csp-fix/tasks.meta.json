@@ -1,0 +1,115 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "font-src directive: \"font-src 'self' https://fonts.gstatic.com\"\nMissing domains: https://fonts.clerk.com, https://*.clerk.accounts.dev, https://*.clerk.dev, https://*.clerk.com",
+      "lastRunTimestamp": 1785852511299
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852302403
+      },
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852347287
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785855962579
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852302996
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785855969709
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856460076
+      }
+    ],
+    "3.1 Implement the fix": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852303302
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856468235
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856602808
+      }
+    ],
+    "3.2 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852303613
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856610233
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856655772
+      }
+    ],
+    "3.3 Verify preservation tests still pass": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852304078
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856663121
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856722440
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "78f21b35-8b4c-4a1b-a068-4beef40769a1",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785852304348
+      },
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856730185
+      }
+    ],
+    "3. Fix for missing Clerk font domains in CSP font-src directive": [
+      {
+        "executionId": "47f54b67-fa34-4601-8fb8-a11000853a89",
+        "chatSessionId": "sess_7a4d80b2-2b8d-4cb3-af06-2bbe773f2064",
+        "timestamp": 1785856722662
+      }
+    ]
+  }
+}

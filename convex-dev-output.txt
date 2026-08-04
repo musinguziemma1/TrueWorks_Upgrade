@@ -1,0 +1,17 @@
+﻿node.exe : Ôûî Developing against deployment:
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Ôûî Developing against deployment::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Ôûî [Development] emmanuel-musinguzi:trueworks-upgrade:dev/emmanuel-musinguzi (dev) (dashboard: 
+https://dashboard.convex.dev/t/emmanuel-musinguzi/trueworks-upgrade/laudable-ptarmigan-104)
+Ôûî ÔööÔöÇ https://laudable-ptarmigan-104.convex.cloud
+- Preparing Convex functions...
+
+[36mA minor update is available for Convex[39m [2m(1.42.3 ÔåÆ 1.43.0)[22m
+[2mChangelog:[22m [4mhttps://github.com/get-convex/convex-js/blob/main/CHANGELOG.md#changelog[24m
+[32mÔêÜ[39m 15:47:26 Convex functions ready! (4.98s)
+- Preparing to watch files...
+
