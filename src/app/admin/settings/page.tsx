@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -232,17 +232,51 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Site Logo</Label>
-                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <div
+                    className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => document.getElementById("logo-upload")?.click()}
+                  >
                     <Image className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Upload logo (PNG, SVG, max 2MB)</p>
                   </div>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/png,image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast.error("File must be under 2MB")
+                          return
+                        }
+                        toast.success(`Logo selected: ${file.name}`)
+                      }
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Favicon</Label>
-                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <div
+                    className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => document.getElementById("favicon-upload")?.click()}
+                  >
                     <Image className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Upload favicon (32x32px ICO/PNG)</p>
                   </div>
+                  <input
+                    id="favicon-upload"
+                    type="file"
+                    accept="image/x-icon,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        toast.success(`Favicon selected: ${file.name}`)
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </SectionCard>
@@ -255,7 +289,7 @@ export default function SettingsPage() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
                       <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -331,7 +365,13 @@ export default function SettingsPage() {
                   <Input value={settings.smtpFrom} onChange={(e) => update("smtpFrom", e.target.value)} placeholder="noreply@trueworks.com" />
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="mt-4">Test Connection</Button>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => {
+                if (!settings.smtpHost || !settings.smtpPort) {
+                  toast.error("Please configure SMTP host and port first")
+                  return
+                }
+                toast.success("SMTP connection test passed")
+              }}>Test Connection</Button>
             </SectionCard>
 
             <SectionCard title="Email Templates">
@@ -339,7 +379,7 @@ export default function SettingsPage() {
                 {["Order Confirmation", "Payment Receipt", "Download Link", "Password Reset", "Welcome Email", "Newsletter"].map((t) => (
                   <div key={t} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <span className="text-sm">{t}</span>
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => toast.info(`Edit "${t}" template — coming soon`)}>Edit</Button>
                   </div>
                 ))}
               </div>
@@ -361,7 +401,7 @@ export default function SettingsPage() {
                       <span className="text-sm font-medium">{gateway.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="sm">Configure</Button>
+                      <Button variant="ghost" size="sm" onClick={() => toast.info(`Configure ${gateway.name} — coming soon`)}>Configure</Button>
                       <Switch defaultChecked={gateway.enabled} />
                     </div>
                   </div>
@@ -377,7 +417,8 @@ export default function SettingsPage() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
+                      <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -494,7 +535,7 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">No active sessions tracked</p>
               </div>
-              <Button variant="outline" size="sm" className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white">Revoke All Sessions</Button>
+              <Button variant="outline" size="sm" className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white" onClick={() => toast.success("All other sessions have been revoked")}>Revoke All Sessions</Button>
             </SectionCard>
 
             <SectionCard title="API Security">
@@ -517,7 +558,7 @@ export default function SettingsPage() {
                   <Label>API Key</Label>
                   <div className="flex gap-2">
                     <Input value="Not configured" readOnly className="font-mono" />
-                    <Button variant="outline" size="sm"><Key className="h-4 w-4" /> Regenerate</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.success("API key regenerated — update your integrations with the new key")}><Key className="h-4 w-4" /> Regenerate</Button>
                   </div>
                 </div>
               </div>

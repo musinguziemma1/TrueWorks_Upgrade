@@ -417,4 +417,20 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_status", ["status"]),
+
+  campaigns: defineTable({
+    name: v.string(),
+    subject: v.string(),
+    content: v.string(),
+    status: v.union(v.literal("draft"), v.literal("scheduled"), v.literal("sent")),
+    scheduledAt: v.optional(v.number()),
+    sentAt: v.optional(v.number()),
+    sentCount: v.number(),
+    openCount: v.number(),
+    clickCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"]),
 });
