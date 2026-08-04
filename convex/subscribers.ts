@@ -46,9 +46,17 @@ export const create = mutation({
 export const unsubscribe = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    const email = args.email.toLowerCase().trim();
+    if (!email || !email.includes("@")) {
+      throw new Error("Invalid email address");
+    }
+
+    // Rate limit: max 5 unsubscribe attempts per email per hour
+    await checkRateLimit(ctx, "unsubscribe", email, 5, 3_600_000);
+
     const results = await ctx.db
       .query("subscribers")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .collect();
     if (results.length > 0) {
       await ctx.db.patch(results[0]._id, { active: false });

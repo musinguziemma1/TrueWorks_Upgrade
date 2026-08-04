@@ -63,31 +63,37 @@ export const upsert = internalMutation({
   },
 });
 
+async function ensureDayRow(ctx: any, date: string) {
+  const existing = await ctx.db
+    .query("analytics")
+    .withIndex("by_date", (q: any) => q.eq("date", date))
+    .first();
+  if (existing) return existing._id;
+  return await ctx.db.insert("analytics", {
+    date,
+    revenue: 0,
+    orders: 0,
+    downloads: 0,
+    visitors: 0,
+    pageViews: 0,
+    createdAt: Date.now(),
+  });
+}
+
 export const incrementVisitors = mutation({
   args: { date: v.string(), sessionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    // Rate limit: 5 visitor increments per session per day
     if (args.sessionId) {
-      await checkRateLimit(ctx, `visitors:${args.date}`, args.sessionId, 5, 86_400_000);
+      try {
+        await checkRateLimit(ctx, `visitors:${args.date}`, args.sessionId, 5, 86_400_000);
+      } catch {
+        return;
+      }
     }
-    const existing = await ctx.db
-      .query("analytics")
-      .withIndex("by_date", (q) => q.eq("date", args.date))
-      .collect();
-    if (existing.length > 0) {
-      await ctx.db.patch(existing[0]._id, {
-        visitors: existing[0].visitors + 1,
-      });
-    } else {
-      await ctx.db.insert("analytics", {
-        date: args.date,
-        revenue: 0,
-        orders: 0,
-        downloads: 0,
-        visitors: 1,
-        pageViews: 1,
-        createdAt: Date.now(),
-      });
+    const rowId = await ensureDayRow(ctx, args.date);
+    const existing = await ctx.db.get(rowId);
+    if (existing && "visitors" in existing) {
+      await ctx.db.patch(rowId, { visitors: (existing.visitors ?? 0) + 1 });
     }
   },
 });
@@ -95,28 +101,17 @@ export const incrementVisitors = mutation({
 export const incrementPageViews = mutation({
   args: { date: v.string(), sessionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    // Rate limit: 120 pageview increments per session per hour
     if (args.sessionId) {
-      await checkRateLimit(ctx, "pageviews", args.sessionId, 120, 3_600_000);
+      try {
+        await checkRateLimit(ctx, "pageviews", args.sessionId, 120, 3_600_000);
+      } catch {
+        return;
+      }
     }
-    const existing = await ctx.db
-      .query("analytics")
-      .withIndex("by_date", (q) => q.eq("date", args.date))
-      .collect();
-    if (existing.length > 0) {
-      await ctx.db.patch(existing[0]._id, {
-        pageViews: existing[0].pageViews + 1,
-      });
-    } else {
-      await ctx.db.insert("analytics", {
-        date: args.date,
-        revenue: 0,
-        orders: 0,
-        downloads: 0,
-        visitors: 0,
-        pageViews: 1,
-        createdAt: Date.now(),
-      });
+    const rowId = await ensureDayRow(ctx, args.date);
+    const existing = await ctx.db.get(rowId);
+    if (existing && "pageViews" in existing) {
+      await ctx.db.patch(rowId, { pageViews: (existing.pageViews ?? 0) + 1 });
     }
   },
 });

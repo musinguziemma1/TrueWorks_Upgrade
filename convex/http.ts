@@ -81,7 +81,11 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     const start = Date.now();
-    const secret = process.env.CLERK_WEBHOOK_SECRET;
+    const secret = [
+      process.env.CLERK_WEBHOOK_SIGNING_SECRET,
+      process.env.CLERK_WEBHOOK_SECRET,
+    ].find((value): value is string => Boolean(value?.trim()));
+
     if (!secret) {
       return new Response("Internal error", { status: 500 });
     }

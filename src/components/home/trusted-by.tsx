@@ -1,5 +1,20 @@
+"use client";
+
 import { Stethoscope, Heart, Church, GraduationCap, Briefcase, Landmark } from "lucide-react";
-import { AnimateOnScroll } from "./animate-on-scroll";
+import { motion } from "framer-motion";
+
+function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const sectors = [
   { name: "Hospitals & Clinics", icon: Stethoscope },
@@ -14,12 +29,12 @@ export default function TrustedBy() {
   return (
     <section className="border-b border-border bg-white py-14">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <AnimateOnScroll>
+        <FadeIn>
           <p className="text-center text-xs font-semibold uppercase tracking-[0.22em] text-muted">
             Trusted by professionals across the Globe
           </p>
-        </AnimateOnScroll>
-        <AnimateOnScroll delay={150}>
+        </FadeIn>
+        <FadeIn delay={0.15}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
             {sectors.map((sector) => (
               <div
@@ -31,7 +46,7 @@ export default function TrustedBy() {
               </div>
             ))}
           </div>
-        </AnimateOnScroll>
+        </FadeIn>
       </div>
     </section>
   );

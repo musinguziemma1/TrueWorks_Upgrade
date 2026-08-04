@@ -18,8 +18,6 @@ const ALLOWED_TYPES = new Set([
   "application/zip", "application/x-zip-compressed",
   // Video
   "video/mp4", "video/webstream",
-  // Fallback for browsers that don't detect Excel MIME types
-  "application/octet-stream",
 ]);
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB

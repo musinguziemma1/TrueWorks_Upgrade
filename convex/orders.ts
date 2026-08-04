@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -61,6 +61,38 @@ export const getByIdInternal = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return null;
     return await ctx.db.get(args.id);
+  },
+});
+
+/**
+ * Internal query for payment callbacks (Pesapal, Stripe).
+ * No auth required — called from HTTP actions that have no user context.
+ */
+export const getOrderForPayment = internalQuery({
+  args: { id: v.id("orders") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+/**
+ * Internal mutation to update order status from payment callbacks.
+ * No auth required — called from HTTP actions.
+ */
+export const updateOrderFromPaymentById = internalMutation({
+  args: {
+    id: v.id("orders"),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded"))),
+    orderStatus: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled"))),
+    paymentId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    if (args.paymentStatus) patch.paymentStatus = args.paymentStatus;
+    if (args.orderStatus) patch.orderStatus = args.orderStatus;
+    if (args.paymentId) patch.paymentId = args.paymentId;
+    await ctx.db.patch(args.id, patch);
+    return args.id;
   },
 });
 

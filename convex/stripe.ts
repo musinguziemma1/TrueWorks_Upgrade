@@ -243,7 +243,7 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
       // SECURITY: Verify the payment amount matches the order total
-      const order = await ctx.runQuery(api.orders.getById, { id: orderId });
+      const order = await ctx.runQuery(internal.orders.getOrderForPayment, { id: orderId });
       if (!order) {
         return new Response("Order not found", { status: 404 });
       }

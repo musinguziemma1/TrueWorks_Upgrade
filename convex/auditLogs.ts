@@ -1,10 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 /**
  * Log an audit event. This is the primary entry point for all audit logging.
  * Auto-resolves the actor from the auth context.
+ * Rate-limited to prevent log flooding from unauthenticated callers (webhooks, HTTP actions).
  */
 export const log = mutation({
   args: {
@@ -34,19 +36,32 @@ export const log = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", identity.tokenIdentifier)
-      )
-      .first();
+    // Rate limit unauthenticated callers to prevent log flooding
+    if (!identity) {
+      await checkRateLimit(ctx, "auditLog:anonymous", args.entityId, 30, 60_000);
+    }
+
+    let actorId = undefined;
+    let actorEmail = "unknown";
+    let actorName = undefined;
+
+    if (identity) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_tokenIdentifier", (q) =>
+          q.eq("tokenIdentifier", identity.tokenIdentifier)
+        )
+        .first();
+      actorId = user?._id;
+      actorEmail = user?.email ?? identity.email ?? "unknown";
+      actorName = user?.name;
+    }
 
     return await ctx.db.insert("auditLogs", {
-      actorId: user?._id,
-      actorEmail: user?.email ?? identity.email ?? "unknown",
-      actorName: user?.name,
+      actorId,
+      actorEmail,
+      actorName,
       action: args.action,
       entityType: args.entityType,
       entityId: args.entityId,

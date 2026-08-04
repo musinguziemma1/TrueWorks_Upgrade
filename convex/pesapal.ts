@@ -40,7 +40,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
 
   try {
     const token = await getPesapalToken();
-    const order = await ctx.runQuery(api.orders.getById, { id: orderId as Id<"orders"> });
+    const order = await ctx.runQuery(internal.orders.getOrderForPayment, { id: orderId as Id<"orders"> });
     if (!order) {
       return new Response(JSON.stringify({ error: "Order not found" }), { status: 404 });
     }
@@ -171,9 +171,9 @@ export const handleCallback = httpAction(async (ctx, request) => {
       });
 
       if (status === "completed") {
-        const order = await ctx.runQuery(api.orders.getById, { id: payment.orderId });
+        const order = await ctx.runQuery(internal.orders.getOrderForPayment, { id: payment.orderId });
         if (order) {
-          await ctx.runMutation(api.orders.updateStatus, {
+          await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
             id: order._id,
             paymentStatus: "completed",
             orderStatus: "processing",
@@ -205,7 +205,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
           }
 
           if (downloadLinks.length > 0) {
-            await ctx.runMutation(api.orders.updateStatus, {
+            await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
               id: order._id,
               orderStatus: "completed",
             });

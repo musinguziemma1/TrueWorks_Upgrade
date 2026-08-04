@@ -6,6 +6,16 @@ import AdminSidebar from "@/components/layout/admin-sidebar"
 import AdminHeader from "@/components/layout/admin-header"
 import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context"
 
+const ADMIN_EMAILS = ["musinguzie612@gmail.com"]
+
+function isAllowedAdmin(email: string | null | undefined): boolean {
+  return !!email && ADMIN_EMAILS.includes(email.toLowerCase())
+}
+
+function isAllowedRole(role: string | null | undefined): boolean {
+  return role === "superadmin" || role === "admin" || role === "owner" || role === "editor" || role === "viewer"
+}
+
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
   const { userId, sessionClaims, getToken } = await auth()
   if (!userId) redirect("/sign-in")
@@ -14,7 +24,11 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     (sessionClaims?.metadata as { role?: string } | undefined)?.role ??
     (sessionClaims as { publicMetadata?: { role?: string } } | undefined)?.publicMetadata?.role
 
-  const validRoles = ["superadmin", "owner", "admin", "editor", "viewer"]
+  const claimsEmail =
+    (sessionClaims as { email?: string } | undefined)?.email ??
+    (sessionClaims as { emailAddresses?: Array<{ emailAddress: string }> } | undefined)?.emailAddresses?.[0]?.emailAddress ??
+    null
+
   let convexRole: string | null = null
   let convexStatus: string | null = null
   let token: string | null = null
@@ -40,7 +54,9 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     redirect("/?error=suspended")
   }
 
-  if (claimsRole !== "superadmin" && claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "superadmin" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor" && token) {
+  const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAllowedAdmin(claimsEmail)
+
+  if (!hasAdminAccess && token) {
     try {
       const cu = await currentUser()
       if (cu) {
@@ -61,7 +77,8 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     }
   }
 
-  if (claimsRole !== "superadmin" && claimsRole !== "admin" && claimsRole !== "owner" && claimsRole !== "editor" && convexRole !== "superadmin" && convexRole !== "admin" && convexRole !== "owner" && convexRole !== "editor") redirect("/")
+  const finalAdminCheck = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAllowedAdmin(claimsEmail)
+  if (!finalAdminCheck) redirect("/")
 
   return (
     <AdminSidebarProvider>

@@ -4,8 +4,22 @@ import { useState } from "react";
 import { Download, CheckCircle2, AlertCircle, BarChart3, TrendingUp, Users, Banknote, Loader2 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { AnimateOnScroll } from "./animate-on-scroll";
+
+function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const kpiItems = [
   { icon: BarChart3, label: "Bed Occupancy", value: "78%" },
@@ -52,7 +66,7 @@ export default function FreeResource() {
           <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden />
 
           <div className="relative grid items-center gap-12 p-8 sm:p-12 lg:grid-cols-2 lg:p-16">
-            <AnimateOnScroll>
+            <FadeIn>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
                 Free Resource
               </p>
@@ -116,10 +130,10 @@ export default function FreeResource() {
                   No spam. Unsubscribe anytime.
                 </p>
               </form>
-            </AnimateOnScroll>
+            </FadeIn>
 
             {/* Preview card */}
-            <AnimateOnScroll delay={150} className="w-full">
+            <FadeIn delay={0.15} className="w-full">
               <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-elevated">
                 <div className="mb-5 flex items-center justify-between">
                   <span className="font-heading text-sm font-semibold text-primary">
@@ -150,7 +164,7 @@ export default function FreeResource() {
                   </div>
                 </div>
               </div>
-            </AnimateOnScroll>
+            </FadeIn>
           </div>
         </div>
       </div>

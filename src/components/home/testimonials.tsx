@@ -1,7 +1,23 @@
+"use client";
+
 import { Quote } from "lucide-react";
+import { motion } from "framer-motion";
 import { Stars } from "@/components/product/stars";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AnimateOnScroll } from "./animate-on-scroll";
+
+function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const testimonials = [
   {
@@ -42,7 +58,7 @@ export default function Testimonials() {
   return (
     <section className="bg-surface py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <AnimateOnScroll className="mb-12 text-center">
+        <FadeIn className="mb-12 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
             Testimonials
           </p>
@@ -52,11 +68,11 @@ export default function Testimonials() {
           <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted">
             Hear from the professionals using TrueWorks every day.
           </p>
-        </AnimateOnScroll>
+        </FadeIn>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {testimonials.map((t, i) => (
-            <AnimateOnScroll key={t.name} delay={i * 80}>
+            <FadeIn key={t.name} delay={i * 0.08}>
               <figure className="flex h-full flex-col rounded-xl border border-border/70 bg-white p-7 shadow-card">
                 <div className="flex items-center justify-between">
                   <Stars rating={t.rating} starClassName="h-4 w-4" />
@@ -79,7 +95,7 @@ export default function Testimonials() {
                   </div>
                 </figcaption>
               </figure>
-            </AnimateOnScroll>
+            </FadeIn>
           ))}
         </div>
       </div>
