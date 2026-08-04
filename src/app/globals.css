@@ -148,6 +148,19 @@
     background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.14) 1px, transparent 0);
     background-size: 36px 36px;
   }
+  
+  /* Enterprise hero utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+  }
+  
+  .bg-gradient-conic {
+    background: conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops));
+  }
 }
 
 :root {
