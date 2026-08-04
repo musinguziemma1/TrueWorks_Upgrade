@@ -10,6 +10,7 @@
 
 import type * as analytics from "../analytics.js";
 import type * as auditLogs from "../auditLogs.js";
+import type * as campaigns from "../campaigns.js";
 import type * as carts from "../carts.js";
 import type * as categories from "../categories.js";
 import type * as checkout from "../checkout.js";
@@ -51,6 +52,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auditLogs: typeof auditLogs;
+  campaigns: typeof campaigns;
   carts: typeof carts;
   categories: typeof categories;
   checkout: typeof checkout;
