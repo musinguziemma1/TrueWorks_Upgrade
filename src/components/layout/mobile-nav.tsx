@@ -113,35 +113,53 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <ul className="space-y-1">
-            {navLinks.map((link) => (
+            {navLinks.map((link, i) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={onClose}
-                  aria-current={isActive(link.href) ? "page" : undefined}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors",
-                    isActive(link.href)
-                      ? "bg-surface text-primary"
-                      : "text-foreground/75 hover:bg-surface hover:text-primary"
-                  )}
+                <motion.div
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.08 + i * 0.05, duration: 0.3, ease: "easeOut" }}
                 >
-                  {link.label}
-                  {isActive(link.href) && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
-                </Link>
+                  <Link
+                    href={link.href}
+                    onClick={onClose}
+                    aria-current={isActive(link.href) ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center justify-between overflow-hidden rounded-lg px-4 py-3 text-base font-medium transition-colors",
+                      isActive(link.href)
+                        ? "bg-gradient-to-r from-accent/15 to-accent/5 text-primary ring-1 ring-accent/20"
+                        : "text-foreground/75 hover:bg-surface hover:text-primary"
+                    )}
+                  >
+                    <span className="relative flex items-center gap-3">
+                      {isActive(link.href) && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                      )}
+                      {link.label}
+                    </span>
+                    {!isActive(link.href) && (
+                      <ArrowRight className="h-4 w-4 text-muted transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent" />
+                    )}
+                  </Link>
+                </motion.div>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="space-y-3 px-5 pb-5">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.3, ease: "easeOut" }}
+          className="space-y-3 px-5 pb-5"
+        >
           <Link
             href="/store"
             onClick={onClose}
-            className="flex items-center justify-center gap-2 rounded-lg gradient-gold px-5 py-3 text-sm font-semibold text-primary-dark transition-all hover:brightness-105"
+            className="group flex items-center justify-center gap-2 rounded-lg gradient-gold px-5 py-3 text-sm font-semibold text-primary-dark transition-all hover:brightness-105"
           >
             Browse Store
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
             href="/contact"
@@ -158,14 +176,14 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                   <Link
                     href="/sign-in"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/sign-up"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white"
+                    className="flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
                   >
                     Create account
                   </Link>
@@ -175,7 +193,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                   <Link
                     href="/account"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary"
+                    className="flex items-center justify-center rounded-lg border border-primary/20 px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
                   >
                     My Account
                   </Link>
@@ -190,7 +208,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
               )}
             </div>
           )}
-        </div>
+        </motion.div>
 
         <div className="border-t border-border px-5 pb-8 pt-5">
           <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-muted">

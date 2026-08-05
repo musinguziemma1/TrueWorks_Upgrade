@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { useRouter, usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard, Search } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { convexClient } from "@/lib/convex";
@@ -31,6 +31,70 @@ function AdminMenuLink() {
   );
 }
 
+function SearchBar() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/store?q=${encodeURIComponent(q)}` : "/store");
+    setOpen(false);
+    setQuery("");
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="hidden h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-primary lg:flex"
+        aria-label="Search templates"
+      >
+        <Search className="h-5 w-5" />
+      </button>
+    );
+  }
+
+  return (
+    <motion.form
+      initial={{ width: 0, opacity: 0 }}
+      animate={{ width: "16rem", opacity: 1 }}
+      exit={{ width: 0, opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      onSubmit={submit}
+      className="relative hidden items-center lg:flex"
+    >
+      <Search className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted" />
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search templates..."
+        className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-9 text-sm text-foreground outline-none transition-colors focus:border-accent/50 focus:bg-white"
+      />
+      {query && (
+        <button
+          type="button"
+          onMouseDown={() => {
+            setOpen(false);
+            setQuery("");
+          }}
+          className="absolute right-2 flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold text-muted transition-colors hover:bg-surface hover:text-primary"
+          aria-label="Close search"
+        >
+          ✕
+        </button>
+      )}
+    </motion.form>
+  );
+}
+
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,7 +104,7 @@ export default function Header() {
   const settings = useSettings();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -54,9 +118,7 @@ export default function Header() {
       {/* Utility bar */}
       <div className="hidden bg-primary-dark text-white/70 md:block">
         <div className="mx-auto flex h-9 max-w-7xl items-center justify-between px-6 text-xs lg:px-8">
-          <p className="tracking-wide">
-            {settings.siteTagline}
-          </p>
+          <p className="tracking-wide">{settings.siteTagline}</p>
           <div className="flex items-center gap-6">
             <a
               href="mailto:hello@trueworksgroup.com"
@@ -79,52 +141,80 @@ export default function Header() {
       {/* Main header */}
       <header
         className={cn(
-          "sticky top-0 z-50 border-b bg-white/95 backdrop-blur-xl transition-shadow duration-300",
-          scrolled ? "border-border shadow-card" : "border-transparent"
+          "sticky top-0 z-50 border-b bg-white/95 backdrop-blur-xl transition-all duration-300",
+          scrolled ? "border-border/70 shadow-card" : "border-transparent"
         )}
       >
+        {/* Top gold accent line */}
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-accent via-accent-light to-accent transition-opacity duration-300",
+            scrolled ? "opacity-100" : "opacity-70"
+          )}
+          aria-hidden
+        />
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between lg:h-[72px]">
+          <div
+            className={cn(
+              "flex items-center justify-between transition-all duration-300",
+              scrolled ? "h-16" : "h-16 lg:h-[72px]"
+            )}
+          >
             {/* Logo */}
             <Link href="/" className="flex shrink-0 items-center" aria-label="TrueWorks home">
-              <Logo variant="horizontal" width={150} height={38} />
+              <Logo variant="horizontal" width={scrolled ? 140 : 150} height={scrolled ? 36 : 38} />
             </Link>
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={isActive(link.href) ? "page" : undefined}
-                  className={cn(
-                    "relative rounded-md px-4 py-2 text-sm font-medium transition-colors",
-                    isActive(link.href)
-                      ? "text-primary"
-                      : "text-muted hover:bg-surface hover:text-primary"
-                  )}
-                >
-                  {link.label}
-                  <span
+              {navLinks.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
-                      "absolute inset-x-4 -bottom-[13px] h-0.5 rounded-full bg-accent transition-all duration-300 lg:-bottom-[17px]",
-                      isActive(link.href) ? "opacity-100" : "opacity-0"
+                      "group relative flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      active ? "text-primary" : "text-muted hover:text-primary"
                     )}
-                  />
-                </Link>
-              ))}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active-pill"
+                        className="absolute inset-0 rounded-lg bg-gradient-to-b from-accent/15 to-accent/5 ring-1 ring-accent/20"
+                        transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                      />
+                    )}
+                    <span className="relative">{link.label}</span>
+                    {!active && (
+                      <span className="absolute inset-x-4 -bottom-[2px] h-0.5 origin-left scale-x-0 rounded-full bg-accent transition-transform duration-300 group-hover:scale-x-100" />
+                    )}
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active-underline"
+                        className="absolute inset-x-4 -bottom-[2px] h-0.5 rounded-full bg-accent"
+                        transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
+              <SearchBar />
+
               <Link
                 href="/cart"
-                className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-primary"
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-all hover:bg-surface hover:text-primary hover:ring-1 hover:ring-accent/30"
                 aria-label={`Cart, ${totalItems} items`}
               >
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-primary-dark">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full gradient-gold px-1 text-[10px] font-bold text-primary-dark shadow-sm">
                     {totalItems > 99 ? "99+" : totalItems}
                   </span>
                 )}
@@ -133,24 +223,26 @@ export default function Header() {
               {isLoaded && !isSignedIn && (
                 <Link
                   href="/sign-in"
-                  className="hidden items-center rounded-lg border border-primary/20 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white sm:inline-flex"
+                  className="hidden items-center rounded-lg border border-primary/15 px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:border-accent/40 hover:bg-surface sm:inline-flex"
                 >
                   Sign in
                 </Link>
               )}
 
               {isLoaded && isSignedIn && (
-                <UserButton>
-                  <UserButton.MenuItems>
-                    <UserButton.Link label="My Account" labelIcon={<User className="h-4 w-4" />} href="/account" />
-                    {convexClient && <AdminMenuLink />}
-                  </UserButton.MenuItems>
-                </UserButton>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface">
+                  <UserButton>
+                    <UserButton.MenuItems>
+                      <UserButton.Link label="My Account" labelIcon={<User className="h-4 w-4" />} href="/account" />
+                      {convexClient && <AdminMenuLink />}
+                    </UserButton.MenuItems>
+                  </UserButton>
+                </div>
               )}
 
               <Link
                 href="/store"
-                className="hidden items-center rounded-lg gradient-gold px-5 py-2.5 text-sm font-semibold text-primary-dark shadow-sm transition-all hover:brightness-105 hover:shadow-md sm:inline-flex"
+                className="group hidden items-center gap-1.5 rounded-lg gradient-gold px-5 py-2.5 text-sm font-semibold text-primary-dark shadow-sm transition-all hover:shadow-md hover:ring-2 hover:ring-accent/40 hover:ring-offset-2 hover:ring-offset-white hover:brightness-105 sm:inline-flex"
               >
                 Browse Store
               </Link>

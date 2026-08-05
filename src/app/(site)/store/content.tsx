@@ -31,8 +31,9 @@ export default function StoreContent() {
 function StoreContentInner() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
+  const qParam = searchParams.get("q");
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(qParam || "");
   const [activeCategory, setActiveCategory] = useState(categoryParam || "All");
   const [sort, setSort] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,6 +49,15 @@ function StoreContentInner() {
     setLastCategoryParam(categoryParam);
     if (categoryParam) {
       setActiveCategory(categoryParam);
+      setCurrentPage(1);
+    }
+  }
+
+  const [lastQParam, setLastQParam] = useState(qParam);
+  if (qParam !== lastQParam) {
+    setLastQParam(qParam);
+    if (qParam) {
+      setSearch(qParam);
       setCurrentPage(1);
     }
   }
