@@ -1,14 +1,12 @@
 "use client"
 
-import { memo, useState } from "react"
+import { memo, useEffect, useState } from "react"
 import {
   ComposableMap,
   Geographies,
   Geography,
 } from "react-simple-maps"
-import { getCountryId } from "@/lib/country-codes"
-
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+const GEO_URL = "/countries-110m.json"
 
 export interface GeoMapData {
   country: string
@@ -17,42 +15,24 @@ export interface GeoMapData {
   regions?: { name: string; count: number }[]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Topology = Record<string, any>
+
 const ATLAS_NAME_OVERRIDES: Record<string, string> = {
   "United States": "United States of America",
   "USA": "United States of America",
-  "US": "United States of America",
   "UK": "United Kingdom",
   "England": "United Kingdom",
   "DRC": "Democratic Republic of the Congo",
-  "Dem. Rep. Congo": "Democratic Republic of the Congo",
   "Congo": "Republic of the Congo",
-  "Rep. Congo": "Republic of the Congo",
   "Ivory Coast": "Côte d'Ivoire",
-  "Cote d'Ivoire": "Côte d'Ivoire",
   "Burma": "Myanmar",
-  "South Korea": "South Korea",
-  "North Korea": "North Korea",
   "East Timor": "Timor-Leste",
-  "Czech Republic": "Czech Republic",
   "Swaziland": "Eswatini",
   "Macedonia": "North Macedonia",
   "Palestine": "Palestine",
   "West Bank": "Palestine",
   "Gaza Strip": "Palestine",
-  "Vatican City": "Vatican City",
-  "Brunei": "Brunei Darussalam",
-  "Russia": "Russia",
-  "Bosnia and Herzegovina": "Bosnia and Herzegovina",
-  "Trinidad and Tobago": "Trinidad and Tobago",
-  "Solomon Islands": "Solomon Islands",
-  "Marshall Islands": "Marshall Islands",
-  "Saint Kitts and Nevis": "Saint Kitts and Nevis",
-  "Saint Lucia": "Saint Lucia",
-  "Saint Vincent and the Grenadines": "Saint Vincent and the Grenadines",
-  "São Tomé and Príncipe": "São Tomé and Príncipe",
-  "Eq. Guinea": "Equatorial Guinea",
-  "W. Sahara": "Western Sahara",
-  "Falkland Islands": "Falkland Islands",
 }
 
 function normalizeCountryName(name: string): string {
@@ -74,6 +54,8 @@ interface MapChartProps {
 }
 
 function MapChartInner({ data }: MapChartProps) {
+  const [topology, setTopology] = useState<Topology | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [tooltip, setTooltip] = useState<{
     name: string
     orders: number
@@ -81,6 +63,16 @@ function MapChartInner({ data }: MapChartProps) {
     x: number
     y: number
   } | null>(null)
+
+  useEffect(() => {
+    fetch(GEO_URL)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((json) => setTopology(json as Topology))
+      .catch((e) => setError(String(e)))
+  }, [])
 
   const dataMap = new Map(data.map((d) => [normalizeCountryName(d.country), d]))
   const maxOrders = Math.max(...data.map((d) => d.orders), 1)
@@ -91,19 +83,34 @@ function MapChartInner({ data }: MapChartProps) {
     return `$${v.toLocaleString()}`
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Globe className="h-10 w-10 text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-destructive">Failed to load map data</p>
+        <p className="text-xs text-muted-foreground/70 mt-1">{error}</p>
+      </div>
+    )
+  }
+
+  if (!topology) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A227]" />
+      </div>
+    )
+  }
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" style={{ aspectRatio: "800 / 450" }}>
       <ComposableMap
-        width={800}
-        height={450}
         projectionConfig={{
           rotate: [-10, 0, 0],
           scale: 147,
         }}
-        className="w-full h-auto"
         viewBox="0 0 800 450"
       >
-        <Geographies geography={GEO_URL}>
+        <Geographies geography={topology}>
           {({ geographies }: { geographies: any[] }) =>
             geographies.map((geo: any) => {
               const geoName =
@@ -182,6 +189,27 @@ function MapChartInner({ data }: MapChartProps) {
         <span>More</span>
       </div>
     </div>
+  )
+}
+
+function Globe(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+      <path d="M2 12h20" />
+    </svg>
   )
 }
 
