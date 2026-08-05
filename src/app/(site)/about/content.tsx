@@ -1,9 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Target, Eye, Heart, Building2, Users, Globe, Award, Quote } from "lucide-react";
+import { Target, Eye, Heart, Building2, Users, Globe, Award, Quote, Check, X, ArrowRight, Mail, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CountUp } from "@/components/ui/count-up";
+import { Button } from "@/components/ui/button";
+import { SocialIcon } from "@/components/layout/social-icons";
 
 const milestones = [
   { year: "2018", title: "Founded", description: "TrueWorks Limited was established in Kampala, Uganda with a vision to transform business operations through technology." },
@@ -48,10 +52,10 @@ const team = [
 ];
 
 const stats = [
-  { value: "500+", label: "Templates", icon: Building2 },
-  { value: "1,000+", label: "Customers", icon: Users },
-  { value: "50+", label: "Industries", icon: Globe },
-  { value: "99%", label: "Satisfaction", icon: Award },
+  { value: 500, suffix: "+", label: "Templates", icon: Building2 },
+  { value: 1000, suffix: "+", label: "Customers", icon: Users },
+  { value: 50, suffix: "+", label: "Industries", icon: Globe },
+  { value: 99, suffix: "%", label: "Satisfaction", icon: Award },
 ];
 
 function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -75,6 +79,7 @@ export default function AboutContent() {
       <section className="gradient-brand relative overflow-hidden">
         <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-accent/[0.08] blur-3xl" aria-hidden />
+        <div className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-accent/[0.05] blur-3xl" aria-hidden />
         <div className="relative mx-auto max-w-3xl px-6 py-20 text-center lg:py-28">
           <FadeIn>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
@@ -137,11 +142,12 @@ export default function AboutContent() {
           <div className="grid gap-6 md:grid-cols-3">
             {values.map((item, i) => (
               <FadeIn key={item.title} delay={i * 0.1}>
-                <div className="h-full rounded-xl border border-border/70 bg-white p-8 shadow-card transition-shadow duration-300 hover:shadow-elevated">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-                    <item.icon className="h-5 w-5 text-accent" />
+                <div className="group relative h-full overflow-hidden rounded-2xl border border-border/70 bg-white p-8 shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-accent/30 hover:shadow-elevated">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-[#B8932E] opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-light shadow-soft transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                    <item.icon className="h-6 w-6 text-accent" />
                   </span>
-                  <h2 className="mt-5 font-heading text-xl font-semibold text-primary">
+                  <h2 className="mt-6 font-heading text-xl font-semibold text-primary">
                     {item.title}
                   </h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted">{item.description}</p>
@@ -170,8 +176,8 @@ export default function AboutContent() {
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {brandValues.map((v, i) => (
               <FadeIn key={v.title} delay={i * 0.08}>
-                <div className="h-full rounded-xl border border-border/70 bg-surface p-7 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-elevated">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary font-heading text-lg font-bold text-accent">
+                <div className="group h-full rounded-2xl border border-border/70 bg-surface p-7 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-elevated">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light font-heading text-lg font-bold text-accent shadow-soft transition-transform duration-300 group-hover:scale-110">
                     {v.title[0]}
                   </span>
                   <h3 className="mt-4 font-heading text-lg font-semibold text-primary">
@@ -199,13 +205,18 @@ export default function AboutContent() {
 
           <div className="mt-12 grid gap-10 lg:grid-cols-2">
             <FadeIn>
-              <div className="rounded-xl border border-border/70 bg-white p-8 shadow-card">
-                <h3 className="font-heading text-xl font-semibold text-primary">TrueWorks Is</h3>
-                <ul className="mt-5 space-y-3">
+              <div className="h-full rounded-2xl border border-border/70 bg-white p-8 shadow-card">
+                <h3 className="flex items-center gap-2.5 font-heading text-xl font-semibold text-primary">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary">
+                    <Check className="h-3.5 w-3.5 text-accent" />
+                  </span>
+                  TrueWorks Is
+                </h3>
+                <ul className="mt-6 space-y-3.5">
                   {["Professional", "Efficient", "Accessible", "Trustworthy", "Global"].map((trait) => (
-                    <li key={trait} className="flex items-center gap-3 text-sm text-muted">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
-                        <span className="text-xs font-bold text-accent">+</span>
+                    <li key={trait} className="flex items-center gap-3 rounded-lg bg-surface/60 px-3.5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+                        <Check className="h-3.5 w-3.5 text-accent" />
                       </span>
                       {trait}
                     </li>
@@ -214,22 +225,27 @@ export default function AboutContent() {
               </div>
             </FadeIn>
             <FadeIn delay={0.1}>
-              <div className="rounded-xl border border-border/70 bg-white p-8 shadow-card">
-                <h3 className="font-heading text-xl font-semibold text-primary">TrueWorks Is Never</h3>
-                <ul className="mt-5 space-y-3">
+              <div className="h-full rounded-2xl border border-border/70 bg-white p-8 shadow-card">
+                <h3 className="flex items-center gap-2.5 font-heading text-xl font-semibold text-primary">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-error/10">
+                    <X className="h-3.5 w-3.5 text-error" />
+                  </span>
+                  TrueWorks Is Never
+                </h3>
+                <ul className="mt-6 space-y-3.5">
                   {[
                     { label: "Corporate / Stuffy", desc: "We are professional, not pretentious." },
                     { label: "Complicated / Confusing", desc: "We make complexity simple." },
                     { label: "Exclusive / Elitist", desc: "We design for every organization." },
                     { label: "Inaccessible / Irrelevant", desc: "Our solutions meet you where you are." },
                   ].map((trait) => (
-                    <li key={trait.label} className="flex items-start gap-3 text-sm text-muted">
+                    <li key={trait.label} className="flex items-start gap-3 rounded-lg bg-error/[0.03] px-3.5 py-2.5 transition-colors hover:bg-error/5">
                       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-error/10">
-                        <span className="text-xs font-bold text-error">x</span>
+                        <X className="h-3.5 w-3.5 text-error" />
                       </span>
                       <span>
                         <span className="font-medium text-foreground">{trait.label}</span>
-                        <span className="ml-2 text-muted">{trait.desc}</span>
+                        <span className="ml-2 text-sm text-muted">{trait.desc}</span>
                       </span>
                     </li>
                   ))}
@@ -239,14 +255,15 @@ export default function AboutContent() {
           </div>
 
           <FadeIn delay={0.2}>
-            <div className="mx-auto mt-10 max-w-3xl rounded-xl border border-border/70 bg-white p-8 text-center shadow-card">
+            <div className="relative mx-auto mt-10 max-w-3xl overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-white to-accent/[0.06] p-8 text-center shadow-card sm:p-10">
+              <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" aria-hidden />
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
                 Our Voice
               </p>
-              <p className="mt-3 font-heading text-xl font-semibold text-primary">
+              <p className="mt-3 font-heading text-2xl font-semibold text-primary">
                 Clear, Confident, Direct, Human
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted">
                 We speak in plain English, without jargon. We use simple, purposeful language
                 that&apos;s modest but ambitious. Every word we write is helpful and actionable.
               </p>
@@ -276,6 +293,11 @@ export default function AboutContent() {
                     &ldquo;{founder.quote}&rdquo;
                   </blockquote>
                   <figcaption className="mt-8 flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="bg-primary font-heading font-semibold text-accent">
+                        {founder.initials}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <p className="text-base font-semibold text-primary">{founder.name}</p>
                       <p className="text-sm text-muted">{founder.role}</p>
@@ -304,7 +326,7 @@ export default function AboutContent() {
           </FadeIn>
 
           <div className="relative mx-auto mt-16 max-w-3xl">
-            <div className="absolute bottom-0 left-[15px] top-0 w-px bg-border md:left-1/2" aria-hidden />
+            <div className="absolute bottom-0 left-[15px] top-0 w-px bg-gradient-to-b from-accent/50 via-border to-border/30 md:left-1/2" aria-hidden />
             {milestones.map((m, i) => {
               const isLeft = i % 2 === 0;
               return (
@@ -312,17 +334,20 @@ export default function AboutContent() {
                   <div className="relative mb-12 last:mb-0">
                     <div className={`flex items-start gap-6 md:gap-0 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"}`}>
                       <div className={`flex-1 ${isLeft ? "md:pr-14 md:text-right" : "md:pl-14 md:text-left"}`}>
-                        <span className="inline-block rounded-full bg-accent/10 px-3 py-1 text-xs font-bold tracking-wider text-accent-dark">
-                          {m.year}
-                        </span>
-                        <h3 className="mt-2.5 font-heading text-xl font-semibold text-primary">
-                          {m.title}
-                        </h3>
-                        <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.description}</p>
+                        <div className={`group rounded-2xl border border-border/70 bg-white p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-elevated ${isLeft ? "md:text-right" : "md:text-left"}`}>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-bold tracking-wider text-accent-dark">
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                            {m.year}
+                          </span>
+                          <h3 className="mt-2.5 font-heading text-xl font-semibold text-primary">
+                            {m.title}
+                          </h3>
+                          <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.description}</p>
+                        </div>
                       </div>
                       <div className="relative z-10 shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-accent bg-white shadow-soft">
-                          <span className="h-2 w-2 rounded-full bg-accent" />
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-accent bg-white shadow-[0_0_0_4px_rgba(212,166,74,0.15)]">
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
                         </span>
                       </div>
                       <div className="hidden flex-1 md:block" />
@@ -338,6 +363,7 @@ export default function AboutContent() {
       {/* Stats */}
       <section className="gradient-brand relative overflow-hidden py-20">
         <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" aria-hidden />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
           <FadeIn className="text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
@@ -350,9 +376,13 @@ export default function AboutContent() {
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((s, i) => (
               <FadeIn key={s.label} delay={i * 0.1}>
-                <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.05] p-8 text-center backdrop-blur-sm">
-                  <s.icon className="mb-4 h-7 w-7 text-accent" />
-                  <span className="font-heading text-4xl font-semibold text-white">{s.value}</span>
+                <div className="group flex h-full flex-col items-center rounded-2xl border border-white/10 bg-white/[0.05] p-8 text-center backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:bg-white/[0.08]">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 ring-1 ring-accent/25 transition-transform duration-300 group-hover:scale-110">
+                    <s.icon className="h-6 w-6 text-accent" />
+                  </span>
+                  <span className="mt-5 font-heading text-4xl font-semibold tracking-tight text-white">
+                    <CountUp end={s.value} suffix={s.suffix} />
+                  </span>
                   <span className="mt-1.5 text-sm text-white/55">{s.label}</span>
                 </div>
               </FadeIn>
@@ -379,21 +409,78 @@ export default function AboutContent() {
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {team.map((member, i) => (
               <FadeIn key={member.name} delay={i * 0.08}>
-                <div className="flex h-full flex-col items-center rounded-xl border border-border/70 bg-white p-8 text-center shadow-card">
-                  <Avatar className="h-20 w-20">
-                    <AvatarFallback className="bg-primary font-heading text-xl font-semibold text-accent">
-                      {member.initials}
-                    </AvatarFallback>
-                  </Avatar>
+                <div className="group flex h-full flex-col items-center rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-accent/30 hover:shadow-elevated">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20 ring-4 ring-accent/15 transition-all duration-300 group-hover:ring-accent/30">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-light font-heading text-xl font-semibold text-accent">
+                        {member.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-primary">
+                      <Mail className="h-3 w-3 text-accent" />
+                    </span>
+                  </div>
                   <h3 className="mt-5 font-heading text-lg font-semibold text-primary">
                     {member.name}
                   </h3>
                   <p className="mt-1 text-sm text-muted">{member.role}</p>
+                  <div className="mt-4 flex items-center gap-2 border-t border-border/60 pt-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-muted transition-colors hover:bg-primary hover:text-accent">
+                      <SocialIcon iconKey="linkedin" className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-muted transition-colors hover:bg-primary hover:text-accent">
+                      <MessageCircle className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
                 </div>
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
 
+      {/* Closing CTA */}
+      <section className="bg-white pb-20 lg:pb-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <FadeIn>
+            <div className="gradient-brand relative overflow-hidden rounded-3xl px-8 py-16 text-center sm:px-16 lg:py-20">
+              <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+              <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+              <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
+              <div className="relative mx-auto max-w-2xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+                  Let&apos;s Build Together
+                </p>
+                <h2 className="mt-4 font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                  Join Us in Building Better Organizations
+                </h2>
+                <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/70">
+                  Explore our templates, download a free resource, or reach out and
+                  let&apos;s talk about the systems your organization runs on.
+                </p>
+                <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                  <Link href="/store">
+                    <Button
+                      size="lg"
+                      className="gradient-gold h-auto px-8 py-4 text-sm font-semibold text-primary-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:brightness-105"
+                    >
+                      Browse Templates
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/contact">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="h-auto border-white/25 bg-white/5 px-8 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:border-accent/50 hover:bg-white/10"
+                    >
+                      Contact Us
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
     </>
