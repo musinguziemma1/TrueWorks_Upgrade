@@ -16,11 +16,11 @@ const duplicated = [...sectors, ...sectors];
 
 function MarqueeItem({ name, icon: Icon }: { name: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="group flex items-center gap-2.5 shrink-0 px-6 py-3">
-      <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 backdrop-blur-md border border-primary/20 shadow-[0_0_12px_rgba(212,166,74,0.15)] transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_20px_rgba(212,166,74,0.35)] group-hover:border-primary/40">
-        <Icon className="h-4.5 w-4.5 text-primary transition-all duration-300 group-hover:text-primary/90 group-hover:scale-110" />
+    <div className="group mx-3 flex shrink-0 items-center gap-3 rounded-full border border-border/80 bg-gradient-to-b from-white to-surface px-6 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_24px_rgba(212,166,74,0.18)]">
+      <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20">
+        <Icon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
       </div>
-      <span className="text-sm font-semibold tracking-wide text-muted/80 whitespace-nowrap transition-colors duration-300 group-hover:text-foreground">
+      <span className="whitespace-nowrap text-sm font-semibold tracking-wide text-muted transition-colors duration-300 group-hover:text-foreground">
         {name}
       </span>
     </div>
@@ -29,29 +29,30 @@ function MarqueeItem({ name, icon: Icon }: { name: string; icon: React.Component
 
 export default function TrustedBy() {
   return (
-    <section className="relative border-b border-border bg-white py-14 overflow-hidden">
+    <section className="relative overflow-hidden border-b border-border bg-white py-16">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <motion.p
-          className="text-center text-xs font-semibold uppercase tracking-[0.22em] text-muted"
+        <motion.div
+          className="text-center"
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          Trusted by professionals across the Globe
-        </motion.p>
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Trusted by professionals across the Globe
+          </span>
+        </motion.div>
       </div>
 
-      <div className="relative mt-8">
-        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+      <div className="relative mt-10">
+        <div className="absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-white to-transparent sm:w-40" />
+        <div className="absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white to-transparent sm:w-40" />
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[520px] h-[100px] rounded-full bg-gradient-to-r from-primary/[0.06] via-primary/[0.12] to-primary/[0.06] blur-2xl" />
-          <div className="absolute w-[340px] h-[70px] rounded-full bg-gradient-to-r from-primary/[0.04] via-primary/[0.08] to-primary/[0.04] blur-xl" />
-        </div>
-
-        <div className="relative overflow-hidden py-2" style={{ WebkitMaskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)", maskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)" }}>
+        <div className="group/marquee relative overflow-hidden py-3">
           <motion.div
             className="flex w-max"
             animate={{ x: ["0%", "-50%"] }}
@@ -70,7 +71,6 @@ export default function TrustedBy() {
           </motion.div>
         </div>
       </div>
-
     </section>
   );
 }
