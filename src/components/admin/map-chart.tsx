@@ -94,6 +94,8 @@ function MapChartInner({ data }: MapChartProps) {
   return (
     <div className="relative w-full">
       <ComposableMap
+        width={800}
+        height={450}
         projectionConfig={{
           rotate: [-10, 0, 0],
           scale: 147,
