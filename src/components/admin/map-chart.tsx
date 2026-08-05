@@ -17,6 +17,48 @@ export interface GeoMapData {
   regions?: { name: string; count: number }[]
 }
 
+const ATLAS_NAME_OVERRIDES: Record<string, string> = {
+  "United States": "United States of America",
+  "USA": "United States of America",
+  "US": "United States of America",
+  "UK": "United Kingdom",
+  "England": "United Kingdom",
+  "DRC": "Democratic Republic of the Congo",
+  "Dem. Rep. Congo": "Democratic Republic of the Congo",
+  "Congo": "Republic of the Congo",
+  "Rep. Congo": "Republic of the Congo",
+  "Ivory Coast": "Côte d'Ivoire",
+  "Cote d'Ivoire": "Côte d'Ivoire",
+  "Burma": "Myanmar",
+  "South Korea": "South Korea",
+  "North Korea": "North Korea",
+  "East Timor": "Timor-Leste",
+  "Czech Republic": "Czech Republic",
+  "Swaziland": "Eswatini",
+  "Macedonia": "North Macedonia",
+  "Palestine": "Palestine",
+  "West Bank": "Palestine",
+  "Gaza Strip": "Palestine",
+  "Vatican City": "Vatican City",
+  "Brunei": "Brunei Darussalam",
+  "Russia": "Russia",
+  "Bosnia and Herzegovina": "Bosnia and Herzegovina",
+  "Trinidad and Tobago": "Trinidad and Tobago",
+  "Solomon Islands": "Solomon Islands",
+  "Marshall Islands": "Marshall Islands",
+  "Saint Kitts and Nevis": "Saint Kitts and Nevis",
+  "Saint Lucia": "Saint Lucia",
+  "Saint Vincent and the Grenadines": "Saint Vincent and the Grenadines",
+  "São Tomé and Príncipe": "São Tomé and Príncipe",
+  "Eq. Guinea": "Equatorial Guinea",
+  "W. Sahara": "Western Sahara",
+  "Falkland Islands": "Falkland Islands",
+}
+
+function normalizeCountryName(name: string): string {
+  return ATLAS_NAME_OVERRIDES[name] ?? name
+}
+
 function getColorScale(value: number, max: number): string {
   if (max === 0) return "#E5E7EB"
   const ratio = value / max
@@ -40,7 +82,7 @@ function MapChartInner({ data }: MapChartProps) {
     y: number
   } | null>(null)
 
-  const dataMap = new Map(data.map((d) => [d.country, d]))
+  const dataMap = new Map(data.map((d) => [normalizeCountryName(d.country), d]))
   const maxOrders = Math.max(...data.map((d) => d.orders), 1)
 
   const formatRevenue = (v: number) => {
@@ -65,7 +107,6 @@ function MapChartInner({ data }: MapChartProps) {
               const geoName =
                 (geo.properties as { name?: string })?.name ?? ""
               const match = dataMap.get(geoName)
-              const id = getCountryId(geoName)
               const fill = match
                 ? getColorScale(match.orders, maxOrders)
                 : "#E5E7EB"

@@ -445,53 +445,51 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales</CardTitle></CardHeader>
-          <CardContent>
-            {geoChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Globe className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">No geographic data yet.</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Orders with IP data will show regional breakdowns here.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <MapChart data={geoChartData} />
-                <div className="space-y-2 pt-2 border-t">
-                  {geoChartData.map((g) => (
-                    <div key={g.country}>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Map className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{g.country}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-muted-foreground">
-                          <span>{g.orders} order{g.orders !== 1 ? "s" : ""}</span>
-                          <span className="font-medium text-foreground">{formatPrice(g.revenue)}</span>
-                        </div>
-                      </div>
-                      {g.regions && g.regions.length > 0 && (
-                        <div className="ml-6 mt-1 space-y-0.5">
-                          {g.regions.slice(0, 3).map((r) => (
-                            <div key={r.name} className="text-xs text-muted-foreground/70">
-                              {r.name}: {r.count} order{r.count !== 1 ? "s" : ""}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales</CardTitle></CardHeader>
+            <CardContent>
+              {geoChartData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Globe className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">No geographic data yet.</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Orders with IP data will show regional breakdowns here.</p>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="space-y-4">
+                  <MapChart data={geoChartData} />
+                  <div className="space-y-2 pt-2 border-t">
+                    {geoChartData.map((g) => (
+                      <div key={g.country}>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Map className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>{g.country}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-muted-foreground">
+                            <span>{g.orders} order{g.orders !== 1 ? "s" : ""}</span>
+                            <span className="font-medium text-foreground">{formatPrice(g.revenue)}</span>
+                          </div>
+                        </div>
+                        {g.regions && g.regions.length > 0 && (
+                          <div className="ml-6 mt-1 space-y-0.5">
+                            {g.regions.slice(0, 3).map((r) => (
+                              <div key={r.name} className="text-xs text-muted-foreground/70">
+                                {r.name}: {r.count} order{r.count !== 1 ? "s" : ""}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
             <CardContent>
               {(ltvSegments ?? []).length === 0 || ltvTotal === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No customer LTV data yet.</p>
@@ -517,6 +515,7 @@ export default function AnalyticsPage() {
           </Card>
         </div>
       </div>
+    </div>
   )
 }
 
