@@ -230,7 +230,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     <>
       <article
         className={cn(
-          "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated",
+          "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated hover:border-accent/30",
           className
         )}
       >
@@ -268,6 +268,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
                   Featured
                 </Badge>
               )}
+              {!product.reviewCount && product.createdAt > Date.now() - 30 * 24 * 60 * 60 * 1000 && (
+                <Badge className="bg-emerald-500 text-white border-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 w-fit">
+                  New
+                </Badge>
+              )}
               {discount && (
                 <Badge className="bg-red-500 text-white border-0 text-[10px] font-bold px-2 py-0.5 w-fit flex items-center gap-1">
                   <BadgePercent className="h-3 w-3" />
@@ -280,6 +285,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
             <span className="absolute right-4 top-4 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm border border-white/10">
               {product.category.split(" ")[0]}
             </span>
+
+            {/* Shine sweep on hover */}
+            <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
             {/* Quick action overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />

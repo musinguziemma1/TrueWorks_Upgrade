@@ -53,22 +53,24 @@ export default function TrustedBy() {
         <div className="absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white to-transparent sm:w-40" />
 
         <div className="group/marquee relative overflow-hidden py-3">
-          <motion.div
-            className="flex w-max"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{
-              x: {
-                repeat: Infinity,
-                repeatType: "loop",
-                duration: 28,
-                ease: "linear",
-              },
-            }}
-          >
+          <div className="trusted-marquee flex w-max group-hover/marquee:[animation-play-state:paused]">
             {duplicated.map((sector, i) => (
               <MarqueeItem key={`${sector.name}-${i}`} name={sector.name} icon={sector.icon} />
             ))}
-          </motion.div>
+          </div>
+          <style jsx global>{`
+            .trusted-marquee {
+              animation: trusted-marquee-scroll 32s linear infinite;
+            }
+            @keyframes trusted-marquee-scroll {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+          `}</style>
         </div>
       </div>
     </section>

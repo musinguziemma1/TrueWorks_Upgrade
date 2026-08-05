@@ -1,7 +1,8 @@
 "use client";
 
-import { Quote } from "lucide-react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { Quote, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Stars } from "@/components/product/stars";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -54,7 +55,30 @@ const testimonials = [
   },
 ];
 
+const slideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
+};
+
 export default function Testimonials() {
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [paused, setPaused] = useState(false);
+
+  const go = useCallback((dir: number) => {
+    setDirection(dir);
+    setIndex((prev) => (prev + dir + testimonials.length) % testimonials.length);
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => go(1), 6000);
+    return () => clearInterval(t);
+  }, [go, paused]);
+
+  const t = testimonials[index];
+
   return (
     <section className="bg-surface py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -70,34 +94,110 @@ export default function Testimonials() {
           </p>
         </FadeIn>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {testimonials.map((t, i) => (
-            <FadeIn key={t.name} delay={i * 0.08}>
-              <figure className="flex h-full flex-col rounded-xl border border-border/70 bg-white p-7 shadow-card">
-                <div className="flex items-center justify-between">
-                  <Stars rating={t.rating} starClassName="h-4 w-4" />
-                  <Quote className="h-5 w-5 text-accent/40" aria-hidden />
-                </div>
-                <blockquote className="mt-4 flex-1 font-heading text-[17px] leading-relaxed text-foreground/90">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-6 flex items-center gap-3.5 border-t border-border/60 pt-5">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary font-heading text-sm font-semibold text-accent">
-                      {t.name.split(" ").map((n) => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-semibold text-primary">{t.name}</p>
-                    <p className="text-xs text-muted">
-                      {t.title} · {t.organization}
-                    </p>
+        <FadeIn
+          delay={0.1}
+          className="relative mx-auto max-w-3xl"
+        >
+          <div
+            className="relative overflow-hidden rounded-2xl border border-border/70 bg-white shadow-card"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            {/* Glow accent */}
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+
+            <div className="relative min-h-[320px] p-8 sm:p-12">
+              <AnimatePresence mode="wait" custom={direction} initial={false}>
+                <motion.div
+                  key={index}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                  className="flex h-full flex-col"
+                >
+                  <div className="flex items-center justify-between">
+                    <Stars rating={t.rating} starClassName="h-4.5 w-4.5" />
+                    <div className="relative">
+                      <Quote className="h-9 w-9 text-accent/20" aria-hidden />
+                    </div>
                   </div>
-                </figcaption>
-              </figure>
-            </FadeIn>
-          ))}
-        </div>
+
+                  <blockquote className="mt-5 flex-1 font-heading text-lg leading-relaxed text-foreground/90 sm:text-xl">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+
+                  <figcaption className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-6">
+                    <div className="flex items-center gap-3.5">
+                      <Avatar>
+                        <AvatarFallback className="bg-primary font-heading text-sm font-semibold text-accent">
+                          {t.name.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                          {t.name}
+                          <BadgeCheck className="h-4 w-4 text-accent" aria-label="Verified buyer" />
+                        </p>
+                        <p className="text-xs text-muted">
+                          {t.title} · {t.organization}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent-dark">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+                      </span>
+                      Verified
+                    </span>
+                  </figcaption>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="mt-7 flex items-center justify-between">
+            {/* Dots */}
+            <div className="flex items-center gap-2">
+              {testimonials.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setDirection(i > index ? 1 : -1);
+                    setIndex(i);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === index ? "w-8 bg-accent" : "w-2 bg-border hover:bg-muted"
+                  }`}
+                  aria-label={`Go to testimonial ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Arrows */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => go(-1)}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-elevated"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => go(1)}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-elevated"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );

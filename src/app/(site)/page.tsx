@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Hero from "@/components/home/hero";
 import TrustedBy from "@/components/home/trusted-by";
+import StatsBand from "@/components/home/stats-band";
 
 const FeaturedProducts = dynamic(() => import("@/components/home/featured-products"));
 const ShopByIndustry = dynamic(() => import("@/components/home/shop-by-industry"));
@@ -69,6 +70,7 @@ export default function HomePage() {
       />
       <Hero />
       <TrustedBy />
+      <StatsBand />
       <FeaturedProducts />
       <ShopByIndustry />
       <WhyTrueWorks />

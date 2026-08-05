@@ -1,0 +1,73 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useInView } from "framer-motion";
+import { Download, Building2, Users, FileSpreadsheet } from "lucide-react";
+
+function CountUp({ end, suffix = "", decimals = 0 }: { end: number; suffix?: string; decimals?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const duration = 1800;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(end * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, end]);
+
+  const format = value.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+
+  return (
+    <span ref={ref}>
+      {format}
+      {suffix}
+    </span>
+  );
+}
+
+const stats = [
+  { icon: Download, end: 2400, suffix: "+", label: "Templates Downloaded" },
+  { icon: Building2, end: 500, suffix: "+", label: "Organizations Served" },
+  { icon: Users, end: 8, suffix: "+", label: "Global Sectors Covered" },
+  { icon: FileSpreadsheet, end: 40, suffix: "+", label: "Ready-to-Use Spreadsheets" },
+];
+
+export default function StatsBand() {
+  return (
+    <section className="gradient-brand relative overflow-hidden py-14 lg:py-16">
+      <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#071A33] via-transparent to-[#071A33]" aria-hidden />
+
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 divide-y divide-white/10 px-6 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:px-8">
+        {stats.map((stat, i) => (
+          <div key={stat.label} className="flex items-center justify-center gap-4 px-6 py-6 lg:py-2">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/20">
+              <stat.icon className="h-5 w-5 text-accent" />
+            </span>
+            <div>
+              <span className="block font-heading text-3xl font-bold tracking-tight text-white lg:text-4xl">
+                <CountUp end={stat.end} suffix={stat.suffix} />
+              </span>
+              <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-white/60">
+                {stat.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
