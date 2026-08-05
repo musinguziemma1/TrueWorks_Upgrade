@@ -39,7 +39,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
 
       {/* Main heading */}
       <motion.h1 
-        className="font-heading text-5xl lg:text-7xl font-bold text-white leading-tight mb-6"
+        className="font-heading text-4xl lg:text-6xl font-bold text-white leading-tight mb-5"
         variants={textSlideUp}
       >
         <span className="block">{slide.title}</span>
@@ -48,7 +48,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
 
       {/* Description */}
       <motion.p 
-        className="font-body text-xl text-white/80 leading-relaxed mb-12 max-w-2xl"
+        className="font-body text-lg text-white/80 leading-relaxed mb-10 max-w-2xl"
         variants={textFadeIn}
       >
         {slide.description}
@@ -83,7 +83,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
             >
               <div className="flex flex-col items-center text-center p-6 rounded-2xl backdrop-blur-sm bg-white/5 border border-white/10 transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20">
                 <motion.div
-                  className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-[#D4A64A] to-[#B8932E] flex items-center justify-center"
+                  className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#D4A64A] to-[#B8932E] flex items-center justify-center"
                   whileHover={{ 
                     rotate: 10,
                     scale: 1.1,
@@ -91,10 +91,10 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                   }}
                   transition={{ duration: 0.3 }}
                 >
-                  <IconComponent className="w-8 h-8 text-[#081728]" />
+                  <IconComponent className="w-7 h-7 text-[#081728]" />
                 </motion.div>
                 
-                <h3 className="font-heading text-white font-semibold text-lg mb-2">
+                <h3 className="font-heading text-white font-semibold text-base mb-2">
                   {feature.name}
                 </h3>
                 
