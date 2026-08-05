@@ -11,6 +11,7 @@ import { convexClient } from "@/lib/convex";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { StoreSidebar } from "@/components/store/store-sidebar";
+import StoreHeroVisual from "@/components/store/store-hero-visual";
 import {
   Pagination,
   PaginationContent,
@@ -156,7 +157,8 @@ function StoreContentInner() {
         <div className="absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
         <div className="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
-          <div className="max-w-3xl">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-sm border border-white/10 mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
               The Store
@@ -190,6 +192,10 @@ function StoreContentInner() {
                 7-day Guarantee
               </span>
             </div>
+          </div>
+
+            {/* Animated dashboard visual */}
+            <StoreHeroVisual />
           </div>
         </div>
       </div>
