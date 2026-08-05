@@ -147,7 +147,7 @@ export default function HeroSlider({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen overflow-hidden bg-[#081728]"
+      className="relative w-full h-screen overflow-hidden bg-[#04101F]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseMove={handleMouseMove}

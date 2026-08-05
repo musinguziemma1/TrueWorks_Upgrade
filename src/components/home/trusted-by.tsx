@@ -16,7 +16,7 @@ const duplicated = [...sectors, ...sectors];
 
 function MarqueeItem({ name, icon: Icon }: { name: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="group mx-3 flex shrink-0 items-center gap-3 rounded-full border border-border/80 bg-gradient-to-b from-white to-surface px-6 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_24px_rgba(212,166,74,0.18)]">
+    <div className="group mx-3 flex shrink-0 items-center gap-3 rounded-full border border-border/80 bg-gradient-to-b from-white to-surface px-6 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_24px_rgba(227,188,63,0.18)]">
       <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20">
         <Icon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
       </div>

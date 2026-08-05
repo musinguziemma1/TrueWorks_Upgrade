@@ -143,7 +143,7 @@ export default function AboutContent() {
             {values.map((item, i) => (
               <FadeIn key={item.title} delay={i * 0.1}>
                 <div className="group relative h-full overflow-hidden rounded-2xl border border-border/70 bg-white p-8 shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-accent/30 hover:shadow-elevated">
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-[#B8932E] opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-[#C9A227] opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
                   <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-light shadow-soft transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                     <item.icon className="h-6 w-6 text-accent" />
                   </span>
@@ -346,7 +346,7 @@ export default function AboutContent() {
                         </div>
                       </div>
                       <div className="relative z-10 shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-accent bg-white shadow-[0_0_0_4px_rgba(212,166,74,0.15)]">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-accent bg-white shadow-[0_0_0_4px_rgba(227,188,63,0.15)]">
                           <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
                         </span>
                       </div>

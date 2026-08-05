@@ -57,7 +57,7 @@ const bgBeams = Array.from({ length: 3 }, (_, i) => ({
 function AnimatedBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#071A33] via-[#0D223A] to-[#071A33]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33]" />
 
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/[0.08] rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/[0.06] rounded-full blur-3xl" />
@@ -130,7 +130,7 @@ function ShopByIndustryInner() {
         <AnimatedBackground />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#D4A64A]">Industries</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#E3BC3F]">Industries</p>
             <h2 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">Built for Your Sector</h2>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
@@ -160,7 +160,7 @@ function ShopByIndustryInner() {
           transition={{ duration: 0.6 }}
           className="mb-12 text-center"
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#D4A64A]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#E3BC3F]">
             Industries
           </p>
           <h2 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
@@ -185,13 +185,13 @@ function ShopByIndustryInner() {
               >
                 <Link
                   href={`/store?category=${encodeURIComponent(cat.name)}`}
-                  className="group flex h-full flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4A64A]/50 hover:bg-white/10 hover:shadow-elevated"
+                  className="group flex h-full flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#E3BC3F]/50 hover:bg-white/10 hover:shadow-elevated"
                 >
                   <div className="flex w-full items-start justify-between">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A64A] text-[#071A33] transition-colors duration-300 group-hover:bg-[#D4A64A]/90">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E3BC3F] text-[#071A33] transition-colors duration-300 group-hover:bg-[#E3BC3F]/90">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <ArrowUpRight className="h-4 w-4 text-white/30 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-[#D4A64A]" />
+                    <ArrowUpRight className="h-4 w-4 text-white/30 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-[#E3BC3F]" />
                   </div>
                   <div>
                     <p className="font-heading text-base font-semibold text-white">
@@ -202,7 +202,7 @@ function ShopByIndustryInner() {
                         {cat.description}
                       </p>
                     )}
-                    <p className="mt-1.5 text-[11px] font-medium text-[#D4A64A]">
+                    <p className="mt-1.5 text-[11px] font-medium text-[#E3BC3F]">
                       {cat.productCount} {cat.productCount === 1 ? "template" : "templates"}
                     </p>
                   </div>

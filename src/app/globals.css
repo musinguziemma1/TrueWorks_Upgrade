@@ -7,18 +7,18 @@
 @theme inline {
   /* ── Brand palette ─────────────────────────────────────────── */
   --color-primary: #0b2545;
-  --color-primary-dark: #081a35;
-  --color-primary-light: #14335c;
-  --color-secondary: #4a6fa5;
-  --color-secondary-light: #6b8fc4;
+  --color-primary-dark: #071A33;
+  --color-primary-light: #123663;
+  --color-secondary: #3E6990;
+  --color-secondary-light: #8FB3CC;
   --color-accent: #c9a227;
-  --color-accent-light: #d9bc4a;
-  --color-accent-dark: #a8841c;
+  --color-accent-light: #E3BC3F;
+  --color-accent-dark: #9B7B14;
   --color-background: #ffffff;
-  --color-surface: #f6f8fb;
-  --color-foreground: #1a2436;
-  --color-muted: #55677f;
-  --color-border: #e3e8f0;
+  --color-surface: #FAFBFC;
+  --color-foreground: #161C24;
+  --color-muted: #6B7684;
+  --color-border: #DDE4EC;
   --color-success: #2e7d32;
   --color-error: #dc2626;
   --color-white: #ffffff;
@@ -119,19 +119,22 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
   .gradient-brand {
-    background: linear-gradient(158deg, #0b2545 0%, #0a2140 45%, #081a35 100%);
+    background:
+      radial-gradient(1100px 500px at 85% -10%, rgba(62, 105, 144, 0.35), transparent 60%),
+      radial-gradient(700px 400px at -5% 110%, rgba(201, 162, 39, 0.12), transparent 55%),
+      linear-gradient(165deg, #04101F 0%, #071A33 55%, #0B2545 100%);
   }
   .gradient-gold {
-    background: linear-gradient(135deg, #d9bc4a 0%, #c9a227 100%);
+    background: linear-gradient(135deg, #E3BC3F 0%, #c9a227 100%);
   }
   .text-gradient {
-    background: linear-gradient(135deg, #0b2545 0%, #4a6fa5 100%);
+    background: linear-gradient(135deg, #0b2545 0%, #3E6990 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .text-gradient-gold {
-    background: linear-gradient(120deg, #e6cd6b 0%, #c9a227 55%, #d9bc4a 100%);
+    background: linear-gradient(120deg, #E8D9A0 0%, #c9a227 55%, #E3BC3F 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

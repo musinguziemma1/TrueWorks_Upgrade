@@ -48,8 +48,8 @@ const AdminRevenueChart = dynamic(
   }
 )
 
-const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#94A3B8"]
-const PIE_COLORS = ["#0B2545", "#4A6FA5", "#C9A227"]
+const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#94A3B8"]
+const PIE_COLORS = ["#0B2545", "#3E6990", "#C9A227"]
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#4A6FA5]/10 text-[#4A6FA5]">
+                <div className="p-3 rounded-full bg-[#3E6990]/10 text-[#3E6990]">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#4A6FA5]/10 text-[#4A6FA5]">
+                <div className="p-2 rounded-full bg-[#3E6990]/10 text-[#3E6990]">
                   <Download className="h-4 w-4" />
                 </div>
               </div>
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
         <Card className="transition-shadow duration-200 hover:shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-              <BarChart3 className="h-5 w-5 text-[#4A6FA5]" />
+              <BarChart3 className="h-5 w-5 text-[#3E6990]" />
               Revenue Trend
             </CardTitle>
             <CardDescription>Revenue over time</CardDescription>
@@ -278,14 +278,14 @@ export default function AdminDashboard() {
       <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-            <ShoppingCart className="h-5 w-5 text-[#4A6FA5]" />
+            <ShoppingCart className="h-5 w-5 text-[#3E6990]" />
             Recent Orders
           </CardTitle>
           <CardDescription>Latest customer orders</CardDescription>
           <CardAction>
             <Link
               href="/admin/orders"
-              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#4A6FA5] transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#3E6990] transition-colors hover:bg-muted"
             >
               View All
               <ArrowRight className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap items-center gap-3">
             {[
               { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-[#0B2545]" },
-              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-[#4A6FA5]" },
+              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-[#3E6990]" },
               { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-[#C9A227]" },
               { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600" },
               { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600" },
@@ -351,7 +351,7 @@ export default function AdminDashboard() {
               <Link
                 key={action.label}
                 href={action.href}
-                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:bg-muted hover:border-[#4A6FA5]/30 hover:shadow-card"
+                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:bg-muted hover:border-[#3E6990]/30 hover:shadow-card"
               >
                 <span className={`p-2 rounded-lg text-white ${action.color}`}>
                   <action.icon className="h-4 w-4" />

@@ -43,10 +43,10 @@ function getColorScale(value: number, max: number): string {
   if (max === 0) return "#E5E7EB"
   const ratio = value / max
   if (ratio > 0.75) return "#0B2545"
-  if (ratio > 0.5) return "#1a3a5c"
-  if (ratio > 0.25) return "#4A6FA5"
-  if (ratio > 0.1) return "#7B9CC2"
-  return "#C9D6E8"
+  if (ratio > 0.5) return "#071A33"
+  if (ratio > 0.25) return "#3E6990"
+  if (ratio > 0.1) return "#3E6990"
+  return "#8FB3CC"
 }
 
 interface MapChartProps {
@@ -177,7 +177,7 @@ function MapChartInner({ data }: MapChartProps) {
 
       <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground justify-center">
         <span>Less</span>
-        {["#C9D6E8", "#7B9CC2", "#4A6FA5", "#1a3a5c", "#0B2545"].map(
+        {["#8FB3CC", "#3E6990", "#3E6990", "#071A33", "#0B2545"].map(
           (c) => (
             <div
               key={c}

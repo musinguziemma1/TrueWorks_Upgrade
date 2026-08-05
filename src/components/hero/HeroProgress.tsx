@@ -25,7 +25,7 @@ export default function HeroProgress({
         >
           {index === currentSlide && autoPlay && (
             <motion.div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#D4A64A] to-[#B8932E] rounded-full"
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] rounded-full"
               variants={progressFill}
               initial="hidden"
               animate="visible"
@@ -34,7 +34,7 @@ export default function HeroProgress({
             />
           )}
           {index < currentSlide && (
-            <div className="absolute inset-0 bg-gradient-to-r from-[#D4A64A] to-[#B8932E] rounded-full" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] rounded-full" />
           )}
         </div>
       ))}

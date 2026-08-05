@@ -22,10 +22,10 @@ export default function HeroBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* Primary gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#081728] via-[#0D223A] to-[#081728]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#04101F] via-[#071A33] to-[#04101F]" />
       
       {/* Spotlight effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4A64A] rounded-full blur-3xl opacity-5" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#E3BC3F] rounded-full blur-3xl opacity-5" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500 rounded-full blur-3xl opacity-3" />
       <div className="absolute top-1/2 left-0 w-64 h-64 bg-purple-500 rounded-full blur-3xl opacity-2" />
       
@@ -73,7 +73,7 @@ export default function HeroBackground() {
       />
       
       {/* Radial gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#081728]/80" />
+      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#04101F]/80" />
     </div>
   );
 }

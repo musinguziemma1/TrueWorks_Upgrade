@@ -44,11 +44,11 @@ export const textFadeIn: Variants = {
 export const buttonHover: Variants = {
   rest: { 
     scale: 1,
-    boxShadow: '0 10px 40px rgba(212, 166, 74, 0.15)'
+    boxShadow: '0 10px 40px rgba(227, 188, 63, 0.15)'
   },
   hover: { 
     scale: 1.02,
-    boxShadow: '0 20px 60px rgba(212, 166, 74, 0.25)',
+    boxShadow: '0 20px 60px rgba(227, 188, 63, 0.25)',
     transition: { 
       duration: 0.3, 
       ease: easeInOutQuart
@@ -71,7 +71,7 @@ export const outlineButtonHover: Variants = {
   hover: { 
     scale: 1.02,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(212, 166, 74, 0.5)',
+    borderColor: 'rgba(227, 188, 63, 0.5)',
     transition: { 
       duration: 0.3, 
       ease: easeInOutQuart
@@ -95,7 +95,7 @@ export const featureIconHover: Variants = {
   hover: { 
     scale: 1.1,
     rotate: 5,
-    backgroundColor: 'rgba(212, 166, 74, 0.1)',
+    backgroundColor: 'rgba(227, 188, 63, 0.1)',
     transition: { 
       duration: 0.4, 
       ease: easeInOutQuart
@@ -230,10 +230,10 @@ export const counterAnimation = {
 // Glow effect for interactive elements
 export const glowEffect: Variants = {
   rest: {
-    boxShadow: '0 0 0 rgba(212, 166, 74, 0)'
+    boxShadow: '0 0 0 rgba(227, 188, 63, 0)'
   },
   hover: {
-    boxShadow: '0 0 30px rgba(212, 166, 74, 0.3)',
+    boxShadow: '0 0 30px rgba(227, 188, 63, 0.3)',
     transition: {
       duration: 0.3,
       ease: easeInOutQuart

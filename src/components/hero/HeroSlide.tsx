@@ -30,12 +30,12 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                 {/* Laptop screen */}
                 <div className="relative w-full h-80 bg-gradient-to-b from-gray-900 to-black rounded-t-2xl border-4 border-gray-700 overflow-hidden">
                   {/* Dashboard content */}
-                  <div className="p-6 h-full bg-gradient-to-br from-[#081728] to-[#0D223A]">
+                  <div className="p-6 h-full bg-gradient-to-br from-[#04101F] to-[#071A33]">
                     {/* Top bar */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#D4A64A] rounded-lg flex items-center justify-center">
-                          <span className="text-[#081728] font-bold text-sm">TW</span>
+                        <div className="w-8 h-8 bg-[#E3BC3F] rounded-lg flex items-center justify-center">
+                          <span className="text-[#04101F] font-bold text-sm">TW</span>
                         </div>
                         <span className="text-white font-semibold">TrueWorks BOS</span>
                       </div>
@@ -74,7 +74,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                         {Array.from({ length: 12 }, (_, i) => (
                           <motion.div
                             key={i}
-                            className="flex-1 bg-gradient-to-t from-[#D4A64A] to-[#B8932E] rounded-sm"
+                            className="flex-1 bg-gradient-to-t from-[#E3BC3F] to-[#C9A227] rounded-sm"
                             initial={{ height: 0 }}
                             animate={isActive ? { height: `${Math.random() * 60 + 20}%` } : { height: 0 }}
                             transition={{ delay: 1 + i * 0.05 }}
@@ -99,7 +99,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
             {/* Large wall display */}
             <div className="relative w-[700px] h-[400px]">
               <motion.div
-                className="w-full h-full bg-gradient-to-br from-[#081728] to-[#0D223A] rounded-3xl border-8 border-gray-800 overflow-hidden"
+                className="w-full h-full bg-gradient-to-br from-[#04101F] to-[#071A33] rounded-3xl border-8 border-gray-800 overflow-hidden"
                 variants={kenBurnsEffect}
                 initial="initial"
                 animate={isActive ? "animate" : "initial"}
@@ -145,7 +145,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
         return (
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Default dashboard layout */}
-            <div className="relative w-[600px] h-[350px] bg-gradient-to-br from-[#081728] to-[#0D223A] rounded-2xl border border-white/10 overflow-hidden">
+            <div className="relative w-[600px] h-[350px] bg-gradient-to-br from-[#04101F] to-[#071A33] rounded-2xl border border-white/10 overflow-hidden">
               <motion.div
                 className="p-6 h-full"
                 variants={kenBurnsEffect}
@@ -195,7 +195,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
           {/* Background glow effect based on theme */}
           <div 
             className={`absolute inset-0 opacity-30 ${
-              slide.theme === 'finance' ? 'bg-gradient-radial from-[#D4A64A]/20' :
+              slide.theme === 'finance' ? 'bg-gradient-radial from-[#E3BC3F]/20' :
               slide.theme === 'operations' ? 'bg-gradient-radial from-blue-500/20' :
               slide.theme === 'healthcare' ? 'bg-gradient-radial from-green-500/20' :
               slide.theme === 'manufacturing' ? 'bg-gradient-radial from-orange-500/20' :

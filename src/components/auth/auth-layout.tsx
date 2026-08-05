@@ -39,7 +39,7 @@ export function AuthLayout({
         {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-[#C9A227]" />
-          <div className="absolute bottom-12 right-12 h-64 w-64 rounded-full bg-[#4A6FA5]" />
+          <div className="absolute bottom-12 right-12 h-64 w-64 rounded-full bg-[#3E6990]" />
           <div className="absolute top-1/2 left-1/3 h-48 w-48 rounded-full bg-[#C9A227]/30" />
         </div>
 
@@ -103,7 +103,7 @@ export function AuthLayout({
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/sign-up"
-                    className="font-medium text-[#0B2545] hover:text-[#4A6FA5] transition-colors"
+                    className="font-medium text-[#0B2545] hover:text-[#3E6990] transition-colors"
                   >
                     Sign up free
                   </Link>
@@ -113,7 +113,7 @@ export function AuthLayout({
                   Already have an account?{" "}
                   <Link
                     href="/sign-in"
-                    className="font-medium text-[#0B2545] hover:text-[#4A6FA5] transition-colors"
+                    className="font-medium text-[#0B2545] hover:text-[#3E6990] transition-colors"
                   >
                     Sign in
                   </Link>

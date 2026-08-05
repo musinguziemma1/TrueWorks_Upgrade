@@ -32,7 +32,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         className="mb-8"
         variants={textFadeIn}
       >
-        <span className="font-body text-[#D4A64A] text-sm font-semibold tracking-wider uppercase">
+        <span className="font-body text-[#E3BC3F] text-sm font-semibold tracking-wider uppercase">
           Enterprise Business Operating Systems
         </span>
       </motion.div>
@@ -43,7 +43,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         variants={textSlideUp}
       >
         <span className="block">{slide.title}</span>
-        <span className="block text-[#D4A64A]">{slide.subtitle}</span>
+        <span className="block text-[#E3BC3F]">{slide.subtitle}</span>
       </motion.h1>
 
       {/* Description */}
@@ -83,15 +83,15 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
             >
               <div className="flex flex-col items-center text-center p-6 rounded-2xl backdrop-blur-sm bg-white/5 border border-white/10 transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20">
                 <motion.div
-                  className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#D4A64A] to-[#B8932E] flex items-center justify-center"
+                  className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#E3BC3F] to-[#C9A227] flex items-center justify-center"
                   whileHover={{ 
                     rotate: 10,
                     scale: 1.1,
-                    boxShadow: '0 20px 40px rgba(212, 166, 74, 0.3)'
+                    boxShadow: '0 20px 40px rgba(227, 188, 63, 0.3)'
                   }}
                   transition={{ duration: 0.3 }}
                 >
-                  <IconComponent className="w-7 h-7 text-[#081728]" />
+                  <IconComponent className="w-7 h-7 text-[#04101F]" />
                 </motion.div>
                 
                 <h3 className="font-heading text-white font-semibold text-base mb-2">
@@ -105,8 +105,8 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                 {/* Glow effect */}
                 <motion.div
                   className="absolute inset-0 rounded-2xl"
-                  initial={{ boxShadow: '0 0 0 rgba(212, 166, 74, 0)' }}
-                  whileHover={{ boxShadow: '0 0 30px rgba(212, 166, 74, 0.2)' }}
+                  initial={{ boxShadow: '0 0 0 rgba(227, 188, 63, 0)' }}
+                  whileHover={{ boxShadow: '0 0 30px rgba(227, 188, 63, 0.2)' }}
                   transition={{ duration: 0.3 }}
                 />
               </div>

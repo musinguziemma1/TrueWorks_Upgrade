@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 // Dynamically import the hero slider for better performance
 const HeroSlider = dynamic(() => import('@/components/hero/HeroSlider'), {
   loading: () => (
-    <div className="h-screen bg-gradient-to-br from-[#081728] via-[#0D223A] to-[#081728] flex items-center justify-center">
+    <div className="h-screen bg-gradient-to-br from-[#04101F] via-[#071A33] to-[#04101F] flex items-center justify-center">
       <div className="text-white text-xl">Loading...</div>
     </div>
   ),

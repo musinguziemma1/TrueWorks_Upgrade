@@ -59,10 +59,10 @@ const defaultSettings: SettingsState = {
   siteDescription: "",
   siteUrl: "",
   primaryColor: "#0B2545",
-  secondaryColor: "#4A6FA5",
+  secondaryColor: "#3E6990",
   accentColor: "#C9A227",
   backgroundColor: "#FFFFFF",
-  surfaceColor: "#F2F5F9",
+  surfaceColor: "#FAFBFC",
   foregroundColor: "#1E293B",
   headingFont: "georgia",
   bodyFont: "calibri",
@@ -165,10 +165,10 @@ export default function SettingsPage() {
 
   const colorKeys = [
     { label: "Primary Color", key: "primaryColor" as const, default: "#0B2545" },
-    { label: "Secondary Color", key: "secondaryColor" as const, default: "#4A6FA5" },
+    { label: "Secondary Color", key: "secondaryColor" as const, default: "#3E6990" },
     { label: "Accent Color", key: "accentColor" as const, default: "#C9A227" },
     { label: "Background", key: "backgroundColor" as const, default: "#FFFFFF" },
-    { label: "Surface Color", key: "surfaceColor" as const, default: "#F2F5F9" },
+    { label: "Surface Color", key: "surfaceColor" as const, default: "#FAFBFC" },
     { label: "Foreground", key: "foregroundColor" as const, default: "#1E293B" },
   ]
 

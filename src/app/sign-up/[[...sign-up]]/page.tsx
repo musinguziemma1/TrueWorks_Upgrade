@@ -26,7 +26,7 @@ export default function Page() {
             formButtonPrimary:
               "bg-[#0B2545] hover:bg-[#0B2545]/90 text-white font-medium py-2.5 px-4 rounded-lg transition-colors",
             footerActionLink:
-              "text-[#0B2545] hover:text-[#4A6FA5] font-medium",
+              "text-[#0B2545] hover:text-[#3E6990] font-medium",
             card: "shadow-none border-0",
             headerTitle: "text-[#0B2545] font-display text-xl font-bold",
             headerSubtitle: "text-muted-foreground text-sm",

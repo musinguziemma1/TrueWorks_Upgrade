@@ -14,7 +14,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
     <div className="flex flex-col sm:flex-row gap-4 items-start">
       {/* Primary CTA - Explore Solutions */}
       <motion.button
-        className="group relative px-7 py-3.5 bg-gradient-to-r from-[#D4A64A] to-[#B8932E] text-[#081728] font-body font-bold text-base rounded-xl overflow-hidden transition-all duration-300"
+        className="group relative px-7 py-3.5 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] text-[#04101F] font-body font-bold text-base rounded-xl overflow-hidden transition-all duration-300"
         variants={buttonHover}
         initial="rest"
         whileHover="hover"
@@ -23,7 +23,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
       >
         {/* Button glow effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-[#D4A64A] to-[#B8932E] rounded-xl"
+          className="absolute inset-0 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] rounded-xl"
           variants={glowEffect}
           initial="rest"
           whileHover="hover"
@@ -62,7 +62,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
         <div className="relative flex items-center gap-3">
           <motion.div
             className="flex items-center justify-center w-6 h-6 bg-white/10 rounded-full"
-            whileHover={{ scale: 1.1, backgroundColor: 'rgba(212, 166, 74, 0.2)' }}
+            whileHover={{ scale: 1.1, backgroundColor: 'rgba(227, 188, 63, 0.2)' }}
             transition={{ duration: 0.3 }}
           >
             <Play className="w-3 h-3 fill-current" />
@@ -73,8 +73,8 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
         {/* Border glow on hover */}
         <motion.div
           className="absolute inset-0 rounded-xl"
-          initial={{ boxShadow: '0 0 0 rgba(212, 166, 74, 0)' }}
-          whileHover={{ boxShadow: '0 0 20px rgba(212, 166, 74, 0.3)' }}
+          initial={{ boxShadow: '0 0 0 rgba(227, 188, 63, 0)' }}
+          whileHover={{ boxShadow: '0 0 20px rgba(227, 188, 63, 0.3)' }}
           transition={{ duration: 0.3 }}
         />
       </motion.button>

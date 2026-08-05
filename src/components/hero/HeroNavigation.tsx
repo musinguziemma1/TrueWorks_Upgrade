@@ -39,10 +39,10 @@ export default function HeroNavigation({
         <ChevronLeft className="w-5 h-5 text-white" />
         <motion.div
           className="absolute inset-0 rounded-full"
-          initial={{ boxShadow: '0 0 0 rgba(212, 166, 74, 0)' }}
+          initial={{ boxShadow: '0 0 0 rgba(227, 188, 63, 0)' }}
           whileHover={
             canNavigate && currentSlide > 0 
-              ? { boxShadow: '0 0 20px rgba(212, 166, 74, 0.3)' }
+              ? { boxShadow: '0 0 20px rgba(227, 188, 63, 0.3)' }
               : undefined
           }
           transition={{ duration: 0.3 }}
@@ -57,7 +57,7 @@ export default function HeroNavigation({
             className={`
               w-2 h-2 rounded-full transition-all duration-300
               ${index === currentSlide 
-                ? 'bg-[#D4A64A] w-8' 
+                ? 'bg-[#E3BC3F] w-8' 
                 : 'bg-white/30 hover:bg-white/50'
               }
             `}
@@ -85,10 +85,10 @@ export default function HeroNavigation({
         <ChevronRight className="w-5 h-5 text-white" />
         <motion.div
           className="absolute inset-0 rounded-full"
-          initial={{ boxShadow: '0 0 0 rgba(212, 166, 74, 0)' }}
+          initial={{ boxShadow: '0 0 0 rgba(227, 188, 63, 0)' }}
           whileHover={
             canNavigate && currentSlide < totalSlides - 1 
-              ? { boxShadow: '0 0 20px rgba(212, 166, 74, 0.3)' }
+              ? { boxShadow: '0 0 20px rgba(227, 188, 63, 0.3)' }
               : undefined
           }
           transition={{ duration: 0.3 }}

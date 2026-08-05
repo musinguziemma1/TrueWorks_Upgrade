@@ -26,7 +26,7 @@ const MapChart = dynamic(() => import("@/components/admin/map-chart").then(m => 
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
-const COLORS = ["#0B2545", "#4A6FA5", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
+const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
 const chartConfig = { value: { label: "Value", color: "#0B2545" } }
 
 function getDateRangeFilter(range: string) {
@@ -380,7 +380,7 @@ export default function AnalyticsPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="visitors" stroke="#4A6FA5" strokeWidth={2} dot={{ fill: "#4A6FA5" }} name="Visitors" />
+                    <Line type="monotone" dataKey="visitors" stroke="#3E6990" strokeWidth={2} dot={{ fill: "#3E6990" }} name="Visitors" />
                     <Line type="monotone" dataKey="pageViews" stroke="#C9A227" strokeWidth={2} dot={{ fill: "#C9A227" }} name="Page Views" />
                   </LineChart>
                 </ChartContainer>
