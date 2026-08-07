@@ -229,6 +229,18 @@ export const handleCallback = httpAction(async (ctx, request) => {
                 status: "active",
               });
             }
+            if (product?.requiresLicense) {
+              const count = product.licenseKeyCount ?? 1;
+              for (let i = 0; i < count; i++) {
+                await ctx.runMutation(internal.licenses.issue, {
+                  productId: item.productId,
+                  productName: product.name,
+                  email: order.customerEmail,
+                  orderId: order._id,
+                  maxActivations: product.activationLimit ?? 1,
+                });
+              }
+            }
           }
 
           if (downloadLinks.length > 0) {

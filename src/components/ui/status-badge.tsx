@@ -25,6 +25,7 @@ const statusColorMap: Record<string, string> = {
   canceled: "bg-red-50 text-red-700 border-red-200",
   failed: "bg-red-50 text-red-700 border-red-200",
   rejected: "bg-red-50 text-red-700 border-red-200",
+  revoked: "bg-red-50 text-red-700 border-red-200",
   expired: "bg-red-50 text-red-700 border-red-200",
   high: "bg-red-50 text-red-700 border-red-200",
   critical: "bg-red-50 text-red-700 border-red-200",

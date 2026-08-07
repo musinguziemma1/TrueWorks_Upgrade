@@ -79,6 +79,9 @@ export default defineSchema({
       changelog: v.string(),
       updatedAt: v.number(),
     }))),
+    requiresLicense: v.optional(v.boolean()),
+    licenseKeyCount: v.optional(v.number()),
+    activationLimit: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -175,6 +178,21 @@ export default defineSchema({
     .index("by_orderId", ["orderId"])
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"]),
+
+  licenses: defineTable({
+    key: v.string(),
+    productId: v.id("products"),
+    productName: v.string(),
+    email: v.string(),
+    orderId: v.optional(v.id("orders")),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    maxActivations: v.number(),
+    activations: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_key", ["key"])
+    .index("by_productId", ["productId"]),
 
   reviews: defineTable({
     productId: v.id("products"),

@@ -325,6 +325,18 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
               status: "active",
             });
           }
+          if (product?.requiresLicense) {
+            const count = product.licenseKeyCount ?? 1;
+            for (let i = 0; i < count; i++) {
+              await ctx.runMutation(internal.licenses.issue, {
+                productId: item.productId,
+                productName: product.name,
+                email: order.customerEmail,
+                orderId,
+                maxActivations: product.activationLimit ?? 1,
+              });
+            }
+          }
         }
 
         await ctx.runMutation(internal.orders.updateFromPayment, {

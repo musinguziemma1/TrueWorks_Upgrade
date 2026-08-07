@@ -27,6 +27,9 @@ export interface ProductInput {
   changelog?: string;
   downloadLimit?: number;
   downloadExpiry?: number;
+  requiresLicense?: boolean;
+  licenseKeyCount?: number;
+  activationLimit?: number;
   seoTitle?: string;
   seoDescription?: string;
   faqs: { question: string; answer: string }[];

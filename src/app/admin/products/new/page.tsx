@@ -50,6 +50,9 @@ export default function NewProductPage() {
   const [seoDescription, setSeoDescription] = useState("")
   const [downloadLimit, setDownloadLimit] = useState("")
   const [downloadExpiry, setDownloadExpiry] = useState("")
+  const [requiresLicense, setRequiresLicense] = useState(false)
+  const [licenseKeyCount, setLicenseKeyCount] = useState("1")
+  const [activationLimit, setActivationLimit] = useState("1")
   const [featured, setFeatured] = useState(false)
   const [status, setStatus] = useState<ProductStatus>("draft")
 
@@ -172,6 +175,9 @@ export default function NewProductPage() {
       changelog: changelog || undefined,
       downloadLimit: downloadLimit ? Number(downloadLimit) : undefined,
       downloadExpiry: downloadExpiry ? Number(downloadExpiry) * 24 * 60 * 60 * 1000 : undefined,
+      requiresLicense,
+      licenseKeyCount: requiresLicense ? Number(licenseKeyCount) || 1 : undefined,
+      activationLimit: requiresLicense ? Number(activationLimit) || 1 : undefined,
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
       faqs: faqs.filter((f) => f.question && f.answer),
@@ -494,6 +500,22 @@ export default function NewProductPage() {
                       <Input type="number" placeholder="Never" value={downloadExpiry} onChange={(e) => setDownloadExpiry(e.target.value)} />
                     </div>
                   </div>
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <Label>License Key After Purchase</Label>
+                    <Switch checked={requiresLicense} onCheckedChange={setRequiresLicense} />
+                  </div>
+                  {requiresLicense && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <Label>Keys per Purchase</Label>
+                        <Input type="number" value={licenseKeyCount} onChange={(e) => setLicenseKeyCount(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Activation Limit / Key</Label>
+                        <Input type="number" value={activationLimit} onChange={(e) => setActivationLimit(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
