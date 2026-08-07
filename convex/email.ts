@@ -291,6 +291,114 @@ export const sendWelcomeEmail = httpAction(async (ctx, request) => {
   return new Response(JSON.stringify({ sent }), { status: 200 });
 });
 
+export const sendSubscriberWelcome = internalAction({
+  args: {
+    subscriberEmail: v.string(),
+    subscriberName: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    const greeting = args.subscriberName
+      ? `Hi ${escapeHtml(args.subscriberName)},`
+      : "Hi there,";
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+    .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 40px 32px; text-align: center; position: relative; overflow: hidden; }
+    .banner::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 60%); }
+    .banner h1 { color: #ffffff; font-size: 28px; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.5px; }
+    .banner .accent { color: #c9a227; }
+    .banner p { color: rgba(255,255,255,0.7); font-size: 14px; margin: 0; }
+    .gold-bar { height: 3px; background: linear-gradient(90deg, #c9a227, #e8d48b, #c9a227); }
+    .content { padding: 36px 32px; color: #334155; line-height: 1.7; }
+    .content h2 { color: #0b2545; font-size: 22px; margin: 0 0 16px 0; }
+    .content p { margin: 0 0 16px 0; font-size: 15px; }
+    .benefits { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .benefits h3 { color: #0b2545; font-size: 16px; margin: 0 0 16px 0; }
+    .benefit-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+    .benefit-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #c9a227, #e8d48b); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .benefit-icon span { color: #0b2545; font-size: 16px; }
+    .benefit-text { font-size: 14px; color: #475569; }
+    .benefit-text strong { color: #0b2545; }
+    .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; letter-spacing: 0.3px; }
+    .button:hover { background: #d4af37; }
+    .divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
+    .footer { padding: 28px 32px; background: #0b2545; text-align: center; }
+    .footer p { color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 8px 0; }
+    .footer a { color: #c9a227; text-decoration: none; }
+    .footer .brand { color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="banner">
+      <h1>Welcome to <span class="accent">TrueWorks</span></h1>
+      <p>You're now part of our newsletter community</p>
+    </div>
+    <div class="gold-bar"></div>
+    <div class="content">
+      <h2>You're In! 🎉</h2>
+      <p>${greeting}</p>
+      <p>Thank you for subscribing to the TrueWorks newsletter. You've just unlocked access to exclusive insights, industry trends, and premium resources designed to help your organization operate smarter and grow faster.</p>
+
+      <div class="benefits">
+        <h3>Here's What You'll Receive:</h3>
+        <div class="benefit-item">
+          <div class="benefit-icon"><span>📊</span></div>
+          <div class="benefit-text"><strong>Industry Insights</strong> — Deep dives into operational excellence, financial modeling, and business intelligence trends.</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon"><span>🎁</span></div>
+          <div class="benefit-text"><strong>Exclusive Resources</strong> — Free templates, dashboards, and guides before they hit the store.</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon"><span>💡</span></div>
+          <div class="benefit-text"><strong>Expert Tips</strong> — Practical advice from our team on optimizing your business operations.</div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon"><span>🏷️</span></div>
+          <div class="benefit-text"><strong>Subscriber-Only Deals</strong> — Special discounts and early access to new product launches.</div>
+        </div>
+      </div>
+
+      <p>In the meantime, why not explore what we have to offer?</p>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${SITE_URL}/store" class="button">Browse the Store →</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <p style="font-size: 13px; color: #64748b; margin: 0;">
+        We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:hello@trueworksgroup.com" style="color: #c9a227;">hello@trueworksgroup.com</a>.
+      </p>
+    </div>
+    <div class="footer">
+      <p class="brand">TrueWorks</p>
+      <p>Premium Business Operating Systems</p>
+      <p>Kampala, Uganda · <a href="${SITE_URL}">trueworksgroup.com</a></p>
+      <p>© ${new Date().getFullYear()} TrueWorks Limited. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const sent = await sendEmail({
+      to: args.subscriberEmail,
+      subject: "Welcome to TrueWorks — You're In! 🎉",
+      html,
+    });
+
+    return { sent };
+  },
+});
+
 export const sendNewsletter = httpAction(async (ctx, request) => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;

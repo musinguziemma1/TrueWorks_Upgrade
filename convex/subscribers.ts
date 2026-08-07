@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
@@ -32,15 +33,29 @@ export const create = mutation({
       .withIndex("by_email", (q) => q.eq("email", email))
       .collect();
     if (existing.length > 0) {
+      const wasInactive = !existing[0].active;
       await ctx.db.patch(existing[0]._id, { active: true });
+      // Send welcome-back email if re-subscribing
+      if (wasInactive) {
+        await ctx.scheduler.runAfter(0, internal.email.sendSubscriberWelcome, {
+          subscriberEmail: email,
+          subscriberName: args.name,
+        });
+      }
       return existing[0]._id;
     }
-    return await ctx.db.insert("subscribers", {
+    const id = await ctx.db.insert("subscribers", {
       ...args,
       email,
       active: true,
       createdAt: Date.now(),
     });
+    // Send welcome email to new subscribers
+    await ctx.scheduler.runAfter(0, internal.email.sendSubscriberWelcome, {
+      subscriberEmail: email,
+      subscriberName: args.name,
+    });
+    return id;
   },
 });
 
