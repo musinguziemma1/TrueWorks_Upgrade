@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
 
@@ -116,7 +116,7 @@ function SectionCard({ title, description, children }: { title: string; descript
 export default function SettingsPage() {
   const rawSettings = useQuery(api.settings.getAll)
   const setMultiple = useMutation(api.settings.setMultiple)
-  const uploadFile = useMutation(api.storage.uploadFile as any)
+  const uploadFile = useAction(api.storage.uploadFile)
   const mediaFiles = useQuery(api.storage.listFiles, {})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
@@ -149,9 +149,9 @@ export default function SettingsPage() {
     setUploading(folder)
     try {
       const buffer = await file.arrayBuffer()
-      const result = await (uploadFile as any)({
+      const result = await uploadFile({
         name: file.name,
-        content: new Uint8Array(buffer),
+        content: new Uint8Array(buffer) as any,
         contentType: file.type,
         folder,
       })

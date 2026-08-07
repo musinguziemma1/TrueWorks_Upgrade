@@ -29,18 +29,53 @@ export function isAdminEmail(email: string): boolean {
   return getAdminEmails().includes(email.toLowerCase());
 }
 
+async function findUserByIdentity(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) return null;
+
+  // Try tokenIdentifier lookup first
+  let users = await ctx.db
+    .query("users")
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+    .collect();
+  if (users[0]) return users[0];
+
+  // Fallback: lookup by Clerk ID (sub claim)
+  if (identity.subject) {
+    users = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .collect();
+    if (users[0]) return users[0];
+  }
+
+  // Last resort: lookup by email from identity
+  const email = identity.email ?? (identity as { emailAddresses?: Array<{ emailAddress: string }> })?.emailAddresses?.[0]?.emailAddress;
+  if (email) {
+    users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), email))
+      .collect();
+    if (users[0]) return users[0];
+  }
+
+  return null;
+}
+
 export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new Error("Unauthorized: No authenticated user");
   }
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-    .collect();
-  const level = (user[0] && ROLE_HIERARCHY[user[0].role]) ?? 0;
-  if (!user[0] || level < ROLE_HIERARCHY.editor) {
+  const user = await findUserByIdentity(ctx);
+  if (!user) throw new Error("Unauthorized: Admin access required");
+  const level = ROLE_HIERARCHY[user.role] ?? 0;
+  if (level < ROLE_HIERARCHY.editor) {
     throw new Error("Unauthorized: Admin access required");
+  }
+  // Backfill tokenIdentifier in mutation context for future fast lookups
+  if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
+    await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
   }
 }
 
@@ -48,12 +83,14 @@ export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<b
   try {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-      .collect();
-    const level = (user[0] && ROLE_HIERARCHY[user[0].role]) ?? 0;
-    if (!user[0] || level < ROLE_HIERARCHY.editor) return false;
+    const user = await findUserByIdentity(ctx);
+    if (!user) return false;
+    const level = ROLE_HIERARCHY[user.role] ?? 0;
+    if (level < ROLE_HIERARCHY.editor) return false;
+    // Backfill tokenIdentifier in mutation context for future fast lookups
+    if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
+      await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
+    }
     return true;
   } catch {
     return false;
