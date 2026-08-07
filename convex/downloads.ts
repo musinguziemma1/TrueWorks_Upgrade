@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
 
@@ -48,11 +49,13 @@ export const create = internalMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("downloads", {
+    const id = await ctx.db.insert("downloads", {
       ...args,
       revoked: false,
       createdAt: now,
     });
+    await ctx.scheduler.runAfter(0, internal.analytics.recordDownload, { at: now });
+    return id;
   },
 });
 

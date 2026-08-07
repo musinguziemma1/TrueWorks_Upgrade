@@ -1,12 +1,12 @@
 import { internalAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const sendRecoveryEmails = internalAction({
   args: {},
   handler: async (ctx): Promise<{ sent: number; total: number }> => {
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
 
-    const carts = await ctx.runQuery(api.abandonedCarts.list, {});
+    const carts = await ctx.runQuery(internal.abandonedCarts.listInternal, {});
 
     const abandoned = carts.filter(
       (cart: any) => !cart.recovered && !cart.recoveryEmailSentAt && cart.createdAt < oneHourAgo
@@ -96,6 +96,17 @@ export const sendRecoveryEmails = internalAction({
         sent++;
       } catch (error) {
         console.error("Failed to send recovery email:", error);
+      }
+
+      // Mark as emailed regardless of send success/failure to avoid hammering
+      // the same carts every cron tick.
+      try {
+        await ctx.runMutation(internal.abandonedCarts._internalUpdate, {
+          id: cart._id,
+          recoveryEmailSentAt: Date.now(),
+        });
+      } catch (error) {
+        console.error("Failed to mark cart emailed:", error);
       }
     }
 

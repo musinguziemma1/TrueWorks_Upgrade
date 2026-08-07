@@ -334,6 +334,11 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
           paymentId: pi.id as string,
         });
 
+        await ctx.runMutation(internal.analytics.recordRevenue, {
+          timestamp: order.createdAt,
+          revenue: order.total ?? 0,
+        });
+
         await sendPaymentEmail(order, order.items);
       }
 

@@ -173,7 +173,8 @@ export default defineSchema({
     .index("by_customerId", ["customerId"])
     .index("by_email", ["email"])
     .index("by_orderId", ["orderId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"]),
 
   reviews: defineTable({
     productId: v.id("products"),

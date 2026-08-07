@@ -236,6 +236,10 @@ export const handleCallback = httpAction(async (ctx, request) => {
               id: order._id,
               orderStatus: "completed",
             });
+            await ctx.runMutation(internal.analytics.recordRevenue, {
+              timestamp: order.createdAt,
+              revenue: order.total ?? 0,
+            });
             await sendPaymentEmail(order);
           }
         }

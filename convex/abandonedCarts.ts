@@ -1,5 +1,6 @@
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdminSilent } from "./users";
 
 export const track = mutation({
   args: {
@@ -69,6 +70,9 @@ export const list = query({
     recoveredOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // SECURITY: abandoned-cart data contains customer emails + cart contents.
+    // Only admins may enumerate it.
+    if (!(await requireAdminSilent(ctx))) return [];
     const all = await ctx.db
       .query("abandonedCarts")
       .order("desc")
@@ -81,9 +85,20 @@ export const list = query({
   },
 });
 
+/** Internal: enumerate abandoned carts for the recovery cron. */
+export const listInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("abandonedCarts").order("desc").collect();
+  },
+});
+
 export const stats = query({
   args: {},
   handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) return {
+      total: 0, recovered: 0, pending: 0, totalValue: 0, recoveredValue: 0, recoveryRate: 0, emailsSent: 0,
+    };
     const all = await ctx.db.query("abandonedCarts").collect();
     const recovered = all.filter((c) => c.recovered);
     const totalValue = all.reduce((sum, c) => sum + c.totalValue, 0);
