@@ -273,4 +273,61 @@ http.route({
   handler: withAuditTiming(handleStripeWebhook),
 });
 
+// ---------------------------------------------------------------------------
+// Public reseller REST API (auth via x-api-key)
+// ---------------------------------------------------------------------------
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function requireApiKey(ctx: any, req: Request): Promise<boolean> {
+  const key = req.headers.get("x-api-key") ?? "";
+  if (!key) return false;
+  try {
+    return await ctx.runMutation(internal.webhooks.validateKey, { key });
+  } catch {
+    return false;
+  }
+}
+
+const publicCatalogQuery = httpAction(async (ctx, req) => {
+  const url = new URL(req.url);
+  if (req.method === "GET") {
+    if (!(await requireApiKey(ctx, req))) {
+      return json({ error: "Unauthorized: missing or invalid x-api-key" }, 401);
+    }
+    const category = url.searchParams.get("category") ?? undefined;
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? 50) || 50, 100);
+    const products = await ctx.runQuery(api.products.list, {
+      category: category === "all" ? undefined : category,
+    });
+    const rows = (products ?? []).slice(0, limit).map((p: any) => ({
+      id: p._id,
+      name: p.name,
+      slug: p.slug,
+      category: p.category,
+      shortDescription: p.shortDescription,
+      price: p.salePrice ?? p.price,
+      currency: "USD",
+      thumbnail: p.thumbnail,
+      rating: p.rating,
+      reviewCount: p.reviewCount,
+      tags: p.tags ?? [],
+      updatedAt: p.updatedAt,
+    }));
+    return json({ count: rows.length, products: rows });
+  }
+  return json({ error: "Method not allowed" }, 405);
+});
+
+http.route({
+  path: "/api/v1/products",
+  method: "GET",
+  handler: withAuditTiming(publicCatalogQuery),
+});
+
 export default http;

@@ -47,6 +47,7 @@ import type * as stripe from "../stripe.js";
 import type * as subscribers from "../subscribers.js";
 import type * as testSmtp from "../testSmtp.js";
 import type * as users from "../users.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   subscribers: typeof subscribers;
   testSmtp: typeof testSmtp;
   users: typeof users;
+  webhooks: typeof webhooks;
 }>;
 
 /**

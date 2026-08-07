@@ -480,4 +480,35 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_recovered", ["recovered"])
     .index("by_createdAt", ["createdAt"]),
+
+  apiKeys: defineTable({
+    name: v.string(),
+    keyPrefix: v.string(),
+    keyHash: v.string(),
+    enabled: v.boolean(),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_keyHash", ["keyHash"]),
+
+  webhookEndpoints: defineTable({
+    url: v.string(),
+    events: v.array(v.string()),
+    enabled: v.boolean(),
+    secret: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_enabled", ["enabled"]),
+
+  webhookDeliveries: defineTable({
+    endpointId: v.optional(v.id("webhookEndpoints")),
+    event: v.string(),
+    url: v.string(),
+    status: v.union(v.literal("success"), v.literal("failed")),
+    responseStatus: v.optional(v.number()),
+    responseBody: v.optional(v.string()),
+    payload: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"]),
 });
