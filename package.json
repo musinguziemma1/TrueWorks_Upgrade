@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "npx convex run seed:run",
-    "seed:clear": "npx convex run seed:clear"
+    "seed:clear": "npx convex run seed:clear",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -53,6 +55,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
