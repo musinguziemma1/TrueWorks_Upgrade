@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface TawkToProps {
   propertyId?: string;
@@ -9,41 +9,35 @@ interface TawkToProps {
 
 /**
  * Tawk.to live chat widget integration.
- * Configure via NEXT_PUBLIC_TAWK_PROPERTY_ID and NEXT_PUBLIC_TAWK_WIDGET_ID env vars.
- * If not configured, renders nothing.
+ * Uses the same injection pattern as the official Tawk.to embed script.
  */
 export function LiveChat({ propertyId, widgetId }: TawkToProps) {
+  const loaded = useRef(false);
+
   const TAWK_PROPERTY_ID = propertyId ?? process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID ?? "6a7618b0c010c21d4b631999";
   const TAWK_WIDGET_ID = widgetId ?? process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ?? "1jvel0slm";
 
   useEffect(() => {
     if (!TAWK_PROPERTY_ID || !TAWK_WIDGET_ID) return;
+    if (loaded.current) return;
+    loaded.current = true;
 
-    // Prevent duplicate loading
-    if (document.getElementById("tawk-script")) return;
+    // Use the exact same injection pattern as the official Tawk.to embed script
+    // @ts-expect-error Tawk API global
+    window.Tawk_API = window.Tawk_API || {};
+    // @ts-expect-error Tawk API global
+    window.Tawk_LoadStart = new Date();
 
-    const script = document.createElement("script");
-    script.id = "tawk-script";
-    script.async = true;
-    script.src = `https://embed.tawk.to/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`;
-    script.charset = "UTF-8";
-    script.setAttribute("crossorigin", "*");
-    document.head.appendChild(script);
-
-    return () => {
-      // Cleanup on unmount
-      const el = document.getElementById("tawk-script");
-      if (el) el.remove();
-      // @ts-expect-error Tawk API global
-      if (typeof window !== "undefined" && window.Tawk_API) {
-        // @ts-expect-error Tawk API global
-        delete window.Tawk_API;
-        // @ts-expect-error Tawk API global
-        delete window.Tawk_LoadStart;
-      }
-    };
+    const s1 = document.createElement("script");
+    const s0 = document.getElementsByTagName("script")[0];
+    s1.async = true;
+    s1.src = `https://embed.tawk.to/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`;
+    s1.charset = "UTF-8";
+    s1.setAttribute("crossorigin", "*");
+    if (s0 && s0.parentNode) {
+      s0.parentNode.insertBefore(s1, s0);
+    }
   }, [TAWK_PROPERTY_ID, TAWK_WIDGET_ID]);
 
-  // Don't render anything — Tawk.to injects its own widget
   return null;
 }
