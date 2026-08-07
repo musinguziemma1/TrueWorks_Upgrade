@@ -51,7 +51,10 @@ export default async function AdminRootLayout({ children }: { children: React.Re
 
   const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAdminEmail(claimsEmail)
 
-  if (!hasAdminAccess && token) {
+  // Always ensure the user record exists and tokenIdentifier is current.
+  // This fixes the case where the user was imported from dev (old tokenIdentifier)
+  // and isAdminEmail grants access but the Convex user record is stale.
+  if (token && !convexRole) {
     try {
       const cu = await currentUser()
       if (cu) {
@@ -65,7 +68,14 @@ export default async function AdminRootLayout({ children }: { children: React.Re
           },
           { token }
         )
-        convexRole = "admin"
+        // Re-fetch role after seedAdmin upserted the record
+        try {
+          const u2 = await fetchQuery(api.users.current, {}, { token })
+          convexRole = u2?.role ?? null
+          convexStatus = u2?.status ?? null
+        } catch {
+          convexRole = "admin"
+        }
       }
     } catch {
       // Not eligible for admin promotion

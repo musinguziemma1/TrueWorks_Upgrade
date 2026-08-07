@@ -68,15 +68,23 @@ export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
     throw new Error("Unauthorized: No authenticated user");
   }
   const user = await findUserByIdentity(ctx);
-  if (!user) throw new Error("Unauthorized: Admin access required");
-  const level = ROLE_HIERARCHY[user.role] ?? 0;
-  if (level < ROLE_HIERARCHY.editor) {
-    throw new Error("Unauthorized: Admin access required");
+  if (user) {
+    const level = ROLE_HIERARCHY[user.role] ?? 0;
+    if (level < ROLE_HIERARCHY.editor) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+    // Backfill tokenIdentifier in mutation context for future fast lookups
+    if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
+      await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
+    }
+    return;
   }
-  // Backfill tokenIdentifier in mutation context for future fast lookups
-  if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
-    await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
-  }
+  // Safety net: check admin email allowlist when user record not found.
+  // This handles edge cases where the user record hasn't been created yet
+  // (e.g. imported from dev, seedAdmin hasn't run yet).
+  const email = (identity.email ?? "").toLowerCase();
+  if (email && isAdminEmail(email)) return;
+  throw new Error("Unauthorized: Admin access required");
 }
 
 export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<boolean> {
@@ -84,14 +92,19 @@ export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<b
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
     const user = await findUserByIdentity(ctx);
-    if (!user) return false;
-    const level = ROLE_HIERARCHY[user.role] ?? 0;
-    if (level < ROLE_HIERARCHY.editor) return false;
-    // Backfill tokenIdentifier in mutation context for future fast lookups
-    if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
-      await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
+    if (user) {
+      const level = ROLE_HIERARCHY[user.role] ?? 0;
+      if (level < ROLE_HIERARCHY.editor) return false;
+      // Backfill tokenIdentifier in mutation context for future fast lookups
+      if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
+        await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });
+      }
+      return true;
     }
-    return true;
+    // Safety net: check admin email allowlist when user record not found
+    const email = (identity.email ?? "").toLowerCase();
+    if (email && isAdminEmail(email)) return true;
+    return false;
   } catch {
     return false;
   }
@@ -494,7 +507,7 @@ export const seedAdmin = mutation({
       // SECURITY: Only allow token update if:
       // 1. The caller's email matches the found user's email (self-linking), OR
       // 2. The caller is already an admin/superadmin
-      const callerEmail = (identity.email ?? "").toLowerCase();
+      const callerEmail = (args.email ?? "").toLowerCase();
       const isSelfLink = foundUser.email.toLowerCase() === callerEmail;
 
       let isCallerAdmin = false;
