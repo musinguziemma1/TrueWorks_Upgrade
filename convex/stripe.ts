@@ -246,6 +246,19 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  const eventId = (event.id ?? "") as string;
+  if (eventId) {
+    // Idempotency: Stripe retries events on delivery failures. Once processed,
+    // ignore replays so downloads are never granted twice.
+    const already = await ctx.runQuery(internal.webhooks.isProcessed, {
+      provider: "stripe",
+      eventId,
+    });
+    if (already) {
+      return new Response("Already processed", { status: 200 });
+    }
+  }
+
   const eventType = event.type as string;
   const dataObject = event.data as { object?: Record<string, unknown> };
   const pi = dataObject?.object as Record<string, unknown> | undefined;
@@ -331,6 +344,13 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
         link: "/admin/orders",
       });
     }
+
+    if (eventId) {
+      await ctx.runMutation(internal.webhooks.markProcessed, {
+        provider: "stripe",
+        eventId,
+      });
+    }
   } else if (eventType === "payment_intent.payment_failed") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
@@ -357,6 +377,13 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
           title: "Payment Failed",
           message: `Stripe payment failed for order ${orderId}: ${(lastError.message as string) ?? "Unknown error"}`,
           link: "/admin/orders",
+        });
+      }
+
+      if (eventId) {
+        await ctx.runMutation(internal.webhooks.markProcessed, {
+          provider: "stripe",
+          eventId,
         });
       }
     }

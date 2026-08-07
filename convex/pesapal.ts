@@ -163,6 +163,17 @@ export const handleCallback = httpAction(async (ctx, request) => {
     return new Response("Missing parameters", { status: 400 });
   }
 
+  // Idempotency: Pesapal may POST the same callback repeatedly. Use the
+  // tracking id as the dedupe key so grants/emails run at most once.
+  const eventId = orderTrackingId;
+  const already = await ctx.runQuery(internal.webhooks.isProcessed, {
+    provider: "pesapal",
+    eventId,
+  });
+  if (already) {
+    return new Response("Already processed", { status: 200 });
+  }
+
   try {
     const token = await getPesapalToken();
     const response = await fetch(
@@ -229,6 +240,13 @@ export const handleCallback = httpAction(async (ctx, request) => {
           }
         }
       }
+    }
+
+    if (eventId) {
+      await ctx.runMutation(internal.webhooks.markProcessed, {
+        provider: "pesapal",
+        eventId,
+      });
     }
 
     return new Response("OK", { status: 200 });

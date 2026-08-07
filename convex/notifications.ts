@@ -39,6 +39,9 @@ export const create = mutation({
     link: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // SECURITY: only admins/managers can create notifications; automated flows
+    // use createPublic (internal) instead.
+    await requireAdmin(ctx);
     return await ctx.db.insert("notifications", {
       ...args,
       read: false,

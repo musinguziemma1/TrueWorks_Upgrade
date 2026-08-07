@@ -1,4 +1,4 @@
-import { mutation, query, internalMutation, action } from "./_generated/server";
+import { mutation, query, internalQuery, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
@@ -47,6 +47,37 @@ export const generateKey = mutation({
       summary: `Created API key "${args.name}"`,
     });
     return { key: full, prefix };
+  },
+});
+
+/**
+ * Idempotency guard for inbound provider events (Stripe, Pesapal). Stripe/Pesapal
+ * retry deliveries on network failures; without a dedupe record every retry would
+ * re-grant downloads and re-send emails. The event table records what we've already
+ * processed, so replays are no-ops.
+ *
+ * `markProcessed` is insert-then-detect: Convex abort-retries on write conflicts,
+ * so concurrent delivery of the same event can't both succeed.
+ */
+export const isProcessed = internalQuery({
+  args: { provider: v.string(), eventId: v.string() },
+  handler: async (ctx, args) => {
+    const hit = await ctx.db
+      .query("webhookEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .first();
+    return hit?.provider === args.provider;
+  },
+});
+
+export const markProcessed = internalMutation({
+  args: { provider: v.string(), eventId: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("webhookEvents", {
+      provider: args.provider,
+      eventId: args.eventId,
+      createdAt: Date.now(),
+    });
   },
 });
 

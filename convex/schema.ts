@@ -513,4 +513,11 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_createdAt", ["createdAt"]),
+
+  webhookEvents: defineTable({
+    provider: v.string(),
+    eventId: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_eventId", ["eventId"]),
 });
