@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 
 export interface EmailTemplate {
   id: string;
@@ -120,7 +120,7 @@ export const saveTemplate = mutation({
     html: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
 
     const template = templates.find((t) => t.id === args.templateId);
     if (!template) throw new Error("Template not found");

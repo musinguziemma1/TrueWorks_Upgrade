@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
 
 export const list = query({
@@ -9,7 +9,7 @@ export const list = query({
     status: v.optional(v.union(v.literal("draft"), v.literal("scheduled"), v.literal("sent"))),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     if (args.status) {
       return await ctx.db
         .query("campaigns")
@@ -24,7 +24,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id("campaigns") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     return await ctx.db.get(args.id);
   },
 });
@@ -57,7 +57,7 @@ export const create = mutation({
     scheduledAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const now = Date.now();
     const id = await ctx.db.insert("campaigns", {
       ...args,
@@ -87,7 +87,7 @@ export const update = mutation({
     scheduledAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)

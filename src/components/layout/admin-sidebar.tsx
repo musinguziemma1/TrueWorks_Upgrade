@@ -52,6 +52,7 @@ interface NavItem {
   href: string
   icon: React.ReactNode
   badge?: string
+  adminOnly?: boolean
 }
 
 interface NavSection {
@@ -86,18 +87,18 @@ const navSections: NavSection[] = [
     title: "Data",
     items: [
       { label: "Analytics", href: "/admin/analytics", icon: <BarChart3 className="h-4 w-4" /> },
-      { label: "Payments", href: "/admin/payments", icon: <Wallet className="h-4 w-4" /> },
-      { label: "Reports", href: "/admin/reports", icon: <FileBarChart className="h-4 w-4" /> },
+      { label: "Payments", href: "/admin/payments", icon: <Wallet className="h-4 w-4" />, adminOnly: true },
+      { label: "Reports", href: "/admin/reports", icon: <FileBarChart className="h-4 w-4" />, adminOnly: true },
     ],
   },
   {
     title: "System",
     items: [
       { label: "Profile", href: "/admin/profile", icon: <UserCircle className="h-4 w-4" /> },
-      { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" /> },
-      { label: "Audit Log", href: "/admin/audit", icon: <ClipboardList className="h-4 w-4" /> },
-      { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
-      { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" /> },
+      { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" />, adminOnly: true },
+      { label: "Audit Log", href: "/admin/audit", icon: <ClipboardList className="h-4 w-4" />, adminOnly: true },
+      { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" />, adminOnly: true },
+      { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" />, adminOnly: true },
       { label: "Support", href: "/admin/support", icon: <LifeBuoy className="h-4 w-4" /> },
     ],
   },
@@ -117,6 +118,8 @@ export default function AdminSidebar() {
   const { user } = useUser()
   const { signOut } = useAuth()
   const me = useQuery(api.users.current)
+
+  const isAdminUser = me && ["superadmin", "admin", "owner"].includes(me.role)
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin"
@@ -160,16 +163,19 @@ export default function AdminSidebar() {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
           <div className="space-y-6">
-            {navSections.map((section, sectionIndex) => (
-              <div key={section.title}>
-                {sectionIndex > 0 && (
-                  <div className="mb-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                )}
-                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/30">
-                  {section.title}
-                </p>
-                <ul className="space-y-0.5">
-                  {section.items.map((item) => {
+            {navSections.map((section, sectionIndex) => {
+              const visibleItems = section.items.filter((item) => !item.adminOnly || isAdminUser)
+              if (visibleItems.length === 0) return null
+              return (
+                <div key={section.title}>
+                  {sectionIndex > 0 && (
+                    <div className="mb-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  )}
+                  <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/30">
+                    {section.title}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {visibleItems.map((item) => {
                     const active = isActive(item.href)
                     const comingSoon = item.badge === "Coming Soon"
 
@@ -225,7 +231,8 @@ export default function AdminSidebar() {
                   })}
                 </ul>
               </div>
-            ))}
+            )
+          })}
           </div>
         </nav>
 

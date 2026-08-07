@@ -1,6 +1,6 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { checkRateLimit } from "./rateLimit";
 import { auditLog } from "./lib/audit";
 import { internal } from "./_generated/api";
@@ -130,7 +130,7 @@ export const create = mutation({
 export const approve = mutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const review = await ctx.db.get(args.id);
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "approved" });
@@ -147,7 +147,7 @@ export const approve = mutation({
 export const reject = mutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const review = await ctx.db.get(args.id);
     if (!review) throw new Error("Review not found");
     await ctx.db.patch(args.id, { status: "rejected" });
@@ -164,7 +164,7 @@ export const reject = mutation({
 export const toggleFeatured = mutation({
   args: { id: v.id("reviews") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const review = await ctx.db.get(args.id);
     if (review) {
       await ctx.db.patch(args.id, { featured: !review.featured });

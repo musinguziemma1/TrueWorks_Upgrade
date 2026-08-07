@@ -2,7 +2,7 @@ import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { PaginationOptions } from "convex/server";
 import { Doc, Id } from "./_generated/dataModel";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
 
 /**
@@ -208,7 +208,7 @@ export const create = mutation({
     bundleProductIds: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const existing = await ctx.db
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -282,7 +282,7 @@ export const update = mutation({
     bundleProductIds: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const { id, ...updates } = args;
     const oldProduct = await ctx.db.get(id);
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));

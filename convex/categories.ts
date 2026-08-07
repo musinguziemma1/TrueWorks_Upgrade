@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireAdmin, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
 
 export const list = query({
@@ -34,7 +34,7 @@ export const create = mutation({
     icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const existing = await ctx.db
       .query("categories")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -67,7 +67,7 @@ export const update = mutation({
     icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     const old = await ctx.db.get(id);

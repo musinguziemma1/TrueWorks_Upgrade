@@ -70,7 +70,11 @@ export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
   const user = await findUserByIdentity(ctx);
   if (user) {
     const level = ROLE_HIERARCHY[user.role] ?? 0;
-    if (level < ROLE_HIERARCHY.editor) {
+    // SECURITY: requireAdmin is the STRICT admin gate (admin+). Destructive or
+    // privileged ops (deletes, users, settings, storage, revenue, webhooks/API
+    // keys, orders, customer writes) must NOT be reachable by editor/viewer.
+    // Non-destructive content work should use requireEditor() instead.
+    if (level < ROLE_HIERARCHY.admin) {
       throw new Error("Unauthorized: Admin access required");
     }
     // Backfill tokenIdentifier in mutation context for future fast lookups
@@ -85,6 +89,26 @@ export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
   const email = (identity.email ?? "").toLowerCase();
   if (email && isAdminEmail(email)) return;
   throw new Error("Unauthorized: Admin access required");
+}
+
+/** Content-editor gate (editor+). For create/update of content an editor may
+ * manage without full admin privileges (drafts, pricing, templates). */
+export async function requireEditor(ctx: MutationCtx | QueryCtx): Promise<void> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized: No authenticated user");
+  }
+  const user = await findUserByIdentity(ctx);
+  if (user) {
+    const level = ROLE_HIERARCHY[user.role] ?? 0;
+    if (level < ROLE_HIERARCHY.editor) {
+      throw new Error("Unauthorized: Editor access required");
+    }
+    return;
+  }
+  const email = (identity.email ?? "").toLowerCase();
+  if (email && isAdminEmail(email)) return;
+  throw new Error("Unauthorized: Editor access required");
 }
 
 export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<boolean> {

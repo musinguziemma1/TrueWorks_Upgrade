@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
 
 export const list = query({
@@ -38,7 +38,7 @@ export const create = mutation({
     status: v.union(v.literal("draft"), v.literal("published")),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const now = Date.now();
     const id = await ctx.db.insert("pages", {
       ...args,
@@ -69,7 +69,7 @@ export const update = mutation({
     status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const { id, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     const old = await ctx.db.get(id);

@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./users";
+import { requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
 
 export const create = mutation({
@@ -13,7 +13,7 @@ export const create = mutation({
     url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireEditor(ctx);
     const id = await ctx.db.insert("mediaFiles", {
       name: args.name,
       contentType: args.contentType,
