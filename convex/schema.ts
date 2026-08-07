@@ -251,6 +251,22 @@ export default defineSchema({
   })
     .index("by_date", ["date"]),
 
+  analyticsEvents: defineTable({
+    event: v.string(), // e.g. "view_product", "add_to_cart", "reach_checkout", "payment_start", "purchase"
+    sessionId: v.optional(v.string()),
+    productId: v.optional(v.id("products")),
+    productName: v.optional(v.string()),
+    category: v.optional(v.string()),
+    value: v.optional(v.number()),
+    path: v.optional(v.string()),
+    referrer: v.optional(v.string()),
+    email: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_event", ["event"])
+    .index("by_productId", ["productId"])
+    .index("by_createdAt", ["createdAt"]),
+
   settings: defineTable({
     key: v.string(),
     value: v.any(),

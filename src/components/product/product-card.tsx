@@ -19,6 +19,7 @@ import { Stars } from "./stars";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import { useWishlist } from "@/components/layout/wishlist-context";
+import { useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,6 +172,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const formatPrice = useFormatPrice();
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
+  const { track } = useAnalytics();
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -191,6 +193,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
       price,
       image: product.thumbnail || "",
       slug: product.slug,
+    });
+    track("add_to_cart", {
+      productId: product._id,
+      productName: product.name,
+      category: product.category,
+      value: price,
     });
     toast.success("Added to cart", { description: product.name });
   };

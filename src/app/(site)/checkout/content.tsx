@@ -28,6 +28,7 @@ import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
 import { cn } from "@/lib/utils";
 import { useCart, cartItemKey } from "@/components/layout/cart-context";
+import { useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,6 +135,7 @@ function StripePaymentForm({
 export default function CheckoutContent() {
   const formatPrice = useFormatPrice();
   const router = useRouter();
+  const { track } = useAnalytics();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -150,6 +152,10 @@ export default function CheckoutContent() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [convexOrderId, setConvexOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    track("reach_checkout", { value: totalPrice });
+  }, [track, totalPrice]);
 
   const discountAmount = appliedCoupon?.discount ?? 0;
   const displayTotal = Math.max(0, totalPrice - discountAmount);
@@ -243,6 +249,10 @@ export default function CheckoutContent() {
 
     setIsSubmitting(true);
     try {
+      track("payment_start", {
+        value: totalPrice,
+        email: email.trim() || undefined,
+      });
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -292,6 +302,10 @@ export default function CheckoutContent() {
           const pesapalResult = await initiateResponse.json();
           if (pesapalResult.success && pesapalResult.redirectUrl) {
             clearCart();
+            track("purchase", {
+              value: displayTotal,
+              email: email.trim() || undefined,
+            });
             // Mark abandoned cart as recovered
             if (convexClient) {
               convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
@@ -315,6 +329,10 @@ export default function CheckoutContent() {
 
   const handleStripeSuccess = () => {
     clearCart();
+    track("purchase", {
+      value: displayTotal,
+      email: email.trim() || undefined,
+    });
     // Mark abandoned cart as recovered
     if (convexClient) {
       convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});

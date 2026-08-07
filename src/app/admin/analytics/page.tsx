@@ -112,6 +112,14 @@ export default function AnalyticsPage() {
     startDate: filter.startTimestamp || undefined,
     endDate: filter.endTimestamp || undefined,
   })
+  const funnelData = useQuery(api.analyticsEvents.funnel, {
+    startDate: filter.startTimestamp || undefined,
+    endDate: filter.endTimestamp || undefined,
+  })
+  const eventOverview = useQuery(api.analyticsEvents.overview, {
+    startDate: filter.startTimestamp || undefined,
+    endDate: filter.endTimestamp || undefined,
+  })
 
   const loading =
     summary === undefined ||
@@ -119,7 +127,9 @@ export default function AnalyticsPage() {
     orders === undefined ||
     paymentMethods === undefined ||
     ltvSegments === undefined ||
-    geoData === undefined
+    geoData === undefined ||
+    funnelData === undefined ||
+    eventOverview === undefined
 
   const productPerformance = useMemo(() => {
     if (!products || !orders) return [] as { name: string; totalSales: number; totalRevenue: number }[]
@@ -433,14 +443,11 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Visitor-to-Purchase Funnel</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Conversion Funnel</CardTitle></CardHeader>
             <CardContent>
-              <FunnelChart
-                steps={[
-                  { label: "Total Visitors", value: safeSummary.totalVisitors, pct: 100 },
-                  { label: "Orders Completed", value: totalOrdersCount, pct: safeSummary.totalVisitors > 0 ? Math.round((totalOrdersCount / safeSummary.totalVisitors) * 100) : 0 },
-                  { label: "Downloads", value: safeSummary.totalDownloads, pct: safeSummary.totalVisitors > 0 ? Math.round((safeSummary.totalDownloads / safeSummary.totalVisitors) * 100) : 0 },
-                ]}
+              <EventFunnel
+                funnel={funnelData?.funnel ?? []}
+                rates={funnelData?.rates ?? []}
               />
             </CardContent>
           </Card>
@@ -519,19 +526,53 @@ export default function AnalyticsPage() {
   )
 }
 
-function FunnelChart({ steps }: { steps: { label: string; value: number; pct: number }[] }) {
+const STEP_LABELS: Record<string, string> = {
+  view_product: "Viewed Product",
+  add_to_cart: "Added to Cart",
+  reach_checkout: "Reached Checkout",
+  payment_start: "Started Payment",
+  purchase: "Purchased",
+}
+
+function EventFunnel({ funnel, rates }: {
+  funnel: { name: string; count: number }[]
+  rates: { from: string; to: string; rate: number }[]
+}) {
+  const max = Math.max(1, ...funnel.map((s) => s.count))
+  if (funnel.every((s) => s.count === 0)) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-8">
+        No funnel events yet. Events are recorded as customers browse, add to cart,
+        and check out.
+      </p>
+    )
+  }
   return (
     <div className="space-y-3 pt-2">
-      {steps.map((step) => (
-        <div key={step.label} className="flex items-center gap-4">
-          <div className="w-32 shrink-0 text-sm text-muted-foreground">{step.label}</div>
-          <div className="flex-1 h-10 rounded-lg bg-[#0B2545]/10 flex items-center justify-between px-4 relative overflow-hidden">
-            <div className="absolute left-0 top-0 h-full bg-[#0B2545]/20 rounded-lg" style={{ width: `${step.pct}%` }} />
-            <span className="relative z-10 text-sm font-medium">{step.value.toLocaleString()}</span>
-            <span className="relative z-10 text-xs text-muted-foreground">{step.pct}%</span>
+      {funnel.map((step, i) => {
+        const rate = rates[i - 1]
+        return (
+          <div key={step.name}>
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="capitalize">{STEP_LABELS[step.name] ?? step.name.replace(/_/g, " ")}</span>
+              <div className="flex items-center gap-2">
+                {rate !== undefined && step.count > 0 && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {i === 0 ? "100%" : `${Math.round(step.count / Math.max(1, funnel[i - 1].count) * 100)}% step`}
+                  </span>
+                )}
+                <span className="font-medium">{step.count.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="h-3.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#0B2545] transition-all"
+                style={{ width: `${(step.count / max) * 100}%` }}
+              />
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
-  );
+  )
 }

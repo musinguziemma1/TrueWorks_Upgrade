@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
+import { useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Stars } from "@/components/product/stars";
@@ -48,6 +49,7 @@ export default function ProductDetail() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { addItem } = useCart();
+  const { track } = useAnalytics();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
@@ -83,6 +85,18 @@ export default function ProductDetail() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (product && product._id && viewedRef.current !== product._id) {
+      viewedRef.current = product._id;
+      track("view_product", {
+        productId: product._id,
+        productName: product.name,
+        category: product.category,
+      });
+    }
+  }, [product, track]);
 
   if (product === undefined) {
     return (
@@ -132,6 +146,12 @@ export default function ProductDetail() {
       image: p.thumbnail || "",
       slug: p.slug,
       tier: selectedTierObj?.name,
+    });
+    track("add_to_cart", {
+      productId: p._id,
+      productName: p.name,
+      category: p.category,
+      value: price,
     });
     toast.success("Added to cart", { description: p.name });
   };
