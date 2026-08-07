@@ -13,8 +13,8 @@ interface TawkToProps {
  * If not configured, renders nothing.
  */
 export function LiveChat({ propertyId, widgetId }: TawkToProps) {
-  const TAWK_PROPERTY_ID = propertyId ?? process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID;
-  const TAWK_WIDGET_ID = widgetId ?? process.env.NEXT_PUBLIC_TAWK_WIDGET_ID;
+  const TAWK_PROPERTY_ID = propertyId ?? process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID ?? "6a7618b0c010c21d4b631999";
+  const TAWK_WIDGET_ID = widgetId ?? process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ?? "1jvel0slm";
 
   useEffect(() => {
     if (!TAWK_PROPERTY_ID || !TAWK_WIDGET_ID) return;
