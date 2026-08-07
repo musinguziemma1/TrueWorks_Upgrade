@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
@@ -21,6 +20,8 @@ interface SettingsState {
   siteTagline: string
   siteDescription: string
   siteUrl: string
+  siteLogo: string
+  siteFavicon: string
   primaryColor: string
   secondaryColor: string
   accentColor: string
@@ -37,6 +38,10 @@ interface SettingsState {
   currency: string
   taxRate: number
   pesapalEnabled: boolean
+  stripeEnabled: boolean
+  mtnMomoEnabled: boolean
+  airtelMoneyEnabled: boolean
+  paypalEnabled: boolean
   maxDownloadsPerPurchase: number
   downloadLinkExpiryDays: number
   downloadMethod: string
@@ -58,6 +63,8 @@ const defaultSettings: SettingsState = {
   siteTagline: "",
   siteDescription: "",
   siteUrl: "",
+  siteLogo: "",
+  siteFavicon: "",
   primaryColor: "#0B2545",
   secondaryColor: "#3E6990",
   accentColor: "#C9A227",
@@ -74,6 +81,10 @@ const defaultSettings: SettingsState = {
   currency: "USD",
   taxRate: 18,
   pesapalEnabled: true,
+  stripeEnabled: true,
+  mtnMomoEnabled: true,
+  airtelMoneyEnabled: true,
+  paypalEnabled: false,
   maxDownloadsPerPurchase: 5,
   downloadLinkExpiryDays: 30,
   downloadMethod: "direct",
@@ -105,7 +116,10 @@ function SectionCard({ title, description, children }: { title: string; descript
 export default function SettingsPage() {
   const rawSettings = useQuery(api.settings.getAll)
   const setMultiple = useMutation(api.settings.setMultiple)
+  const uploadFile = useMutation(api.storage.uploadFile as any)
+  const mediaFiles = useQuery(api.storage.listFiles, {})
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState<string | null>(null)
   const [settings, setSettings] = useState<SettingsState>(defaultSettings)
 
   const initFromDb = useCallback((dbData: Record<string, unknown>) => {
@@ -123,6 +137,37 @@ export default function SettingsPage() {
       initFromDb(rawSettings)
     }
   }, [rawSettings, initFromDb])
+
+  const totalStorageBytes = mediaFiles?.reduce((sum, f) => sum + (f.size ?? 0), 0) ?? 0
+  const totalStorageGB = +(totalStorageBytes / (1024 * 1024 * 1024)).toFixed(2)
+
+  const handleFileUpload = async (file: File, folder: string, settingKey?: string) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File must be under 2MB")
+      return
+    }
+    setUploading(folder)
+    try {
+      const buffer = await file.arrayBuffer()
+      const result = await (uploadFile as any)({
+        name: file.name,
+        content: new Uint8Array(buffer),
+        contentType: file.type,
+        folder,
+      })
+      if (settingKey && result?.url) {
+        update(settingKey as keyof SettingsState, result.url as any)
+        await setMultiple({ settings: [{ key: settingKey, value: result.url }] })
+        toast.success(`${folder} uploaded successfully`)
+      } else {
+        toast.success(`File "${file.name}" uploaded to ${folder}`)
+      }
+    } catch {
+      toast.error("Upload failed")
+    } finally {
+      setUploading(null)
+    }
+  }
 
   const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }))
@@ -246,13 +291,7 @@ export default function SettingsPage() {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
-                      if (file) {
-                        if (file.size > 2 * 1024 * 1024) {
-                          toast.error("File must be under 2MB")
-                          return
-                        }
-                        toast.success(`Logo selected: ${file.name}`)
-                      }
+                      if (file) handleFileUpload(file, "Logos", "siteLogo")
                     }}
                   />
                 </div>
@@ -272,9 +311,7 @@ export default function SettingsPage() {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
-                      if (file) {
-                        toast.success(`Favicon selected: ${file.name}`)
-                      }
+                      if (file) handleFileUpload(file, "Favicons", "siteFavicon")
                     }}
                   />
                 </div>
@@ -390,20 +427,17 @@ export default function SettingsPage() {
             <SectionCard title="Payment Gateways">
               <div className="space-y-4">
                 {[
-                  { name: "MTN MoMo", enabled: true },
-                  { name: "Airtel Money", enabled: true },
-                  { name: "Stripe (Card)", enabled: true },
-                  { name: "PayPal", enabled: false },
+                  { name: "MTN MoMo", key: "mtnMomoEnabled" as const },
+                  { name: "Airtel Money", key: "airtelMoneyEnabled" as const },
+                  { name: "Stripe (Card)", key: "stripeEnabled" as const },
+                  { name: "PayPal", key: "paypalEnabled" as const },
                 ].map((gateway) => (
                   <div key={gateway.name} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                     <div className="flex items-center gap-3">
                       <CreditCard className="h-5 w-5 text-muted-foreground" />
                       <span className="text-sm font-medium">{gateway.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="sm" onClick={() => toast.info(`Configure ${gateway.name} — coming soon`)}>Configure</Button>
-                      <Switch defaultChecked={gateway.enabled} />
-                    </div>
+                    <Switch checked={settings[gateway.key]} onCheckedChange={(v) => update(gateway.key, v)} />
                   </div>
                 ))}
               </div>
@@ -488,14 +522,15 @@ export default function SettingsPage() {
                 <div className="p-4 rounded-lg bg-muted">
                   <div className="flex justify-between text-sm mb-1">
                     <span>Storage Used</span>
-                    <span className="text-muted-foreground">{settings.storageUsed} GB / {settings.storageMax} GB</span>
+                    <span className="text-muted-foreground">{totalStorageGB} GB / {settings.storageMax} GB</span>
                   </div>
                   <div className="h-2.5 bg-border rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full bg-primary"
-                      style={{ width: `${settings.storageMax > 0 ? (settings.storageUsed / settings.storageMax) * 100 : 0}%` }}
+                      style={{ width: `${settings.storageMax > 0 ? (totalStorageGB / settings.storageMax) * 100 : 0}%` }}
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">{mediaFiles?.length ?? 0} files stored</p>
                 </div>
               </div>
             </SectionCard>

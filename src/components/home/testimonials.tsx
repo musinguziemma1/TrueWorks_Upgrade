@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Quote, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { Stars } from "@/components/product/stars";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -20,34 +22,38 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
   );
 }
 
-const testimonials = [
+interface TestimonialItem {
+  quote: string;
+  name: string;
+  title: string;
+  organization: string;
+  rating: number;
+}
+
+const fallbackTestimonials: TestimonialItem[] = [
   {
-    quote:
-      "TrueWorks transformed our financial reporting. The hospital dashboard gives us real-time visibility into KPIs we never had before.",
+    quote: "TrueWorks transformed our financial reporting. The hospital dashboard gives us real-time visibility into KPIs we never had before.",
     name: "Dr. Emmanuel Kato",
     title: "Chief Administrator",
     organization: "Kampala Medical Centre",
     rating: 5,
   },
   {
-    quote:
-      "As a growing NGO, the grant tracker was exactly what we needed. Donor reporting went from days to minutes. Exceptional quality.",
+    quote: "As a growing NGO, the grant tracker was exactly what we needed. Donor reporting went from days to minutes. Exceptional quality.",
     name: "Grace Akello",
     title: "Finance Director",
     organization: "Global NGO Alliance",
     rating: 5,
   },
   {
-    quote:
-      "The school fee management system streamlined our entire billing process. We reduced arrears by 40% in the first term alone.",
+    quote: "The school fee management system streamlined our entire billing process. We reduced arrears by 40% in the first term alone.",
     name: "Peter Mwangi",
     title: "School Bursar",
     organization: "Nairobi Preparatory School",
     rating: 5,
   },
   {
-    quote:
-      "We use the cash flow model across our entire SME portfolio. It's robust, flexible, and the investor-ready charts are a game-changer.",
+    quote: "We use the cash flow model across our entire SME portfolio. It's robust, flexible, and the investor-ready charts are a game-changer.",
     name: "Sarah Nabatanzi",
     title: "Business Consultant",
     organization: "Uganda SME Hub",
@@ -62,14 +68,28 @@ const slideVariants = {
 };
 
 export default function Testimonials() {
+  const reviews = useQuery(api.reviews.list, {});
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
 
+  const dbTestimonials: TestimonialItem[] = (reviews ?? [])
+    .filter((r) => r.status === "approved" && r.featured && r.title)
+    .slice(0, 8)
+    .map((r) => ({
+      quote: r.content,
+      name: r.customerName,
+      title: r.title ?? "Customer",
+      organization: "",
+      rating: r.rating,
+    }));
+
+  const testimonials = dbTestimonials.length > 0 ? dbTestimonials : fallbackTestimonials;
+
   const go = useCallback((dir: number) => {
     setDirection(dir);
     setIndex((prev) => (prev + dir + testimonials.length) % testimonials.length);
-  }, []);
+  }, [testimonials.length]);
 
   useEffect(() => {
     if (paused) return;

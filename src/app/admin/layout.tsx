@@ -5,12 +5,7 @@ import { api } from "@convex/_generated/api"
 import AdminSidebar from "@/components/layout/admin-sidebar"
 import AdminHeader from "@/components/layout/admin-header"
 import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context"
-
-const ADMIN_EMAILS = ["musinguzie612@gmail.com"]
-
-function isAllowedAdmin(email: string | null | undefined): boolean {
-  return !!email && ADMIN_EMAILS.includes(email.toLowerCase())
-}
+import { isAdminEmail } from "@/lib/admin-emails"
 
 function isAllowedRole(role: string | null | undefined): boolean {
   return role === "superadmin" || role === "admin" || role === "owner" || role === "editor" || role === "viewer"
@@ -54,7 +49,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     redirect("/?error=suspended")
   }
 
-  const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAllowedAdmin(claimsEmail)
+  const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAdminEmail(claimsEmail)
 
   if (!hasAdminAccess && token) {
     try {
@@ -77,7 +72,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     }
   }
 
-  const finalAdminCheck = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAllowedAdmin(claimsEmail)
+  const finalAdminCheck = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAdminEmail(claimsEmail)
   if (!finalAdminCheck) redirect("/")
 
   return (
