@@ -76,6 +76,7 @@ export default function ContactContent() {
       await convexClient.mutation(api.contact.create, {
         name: formData.name,
         email: formData.email,
+        phone: formData.phone || undefined,
         subject: formData.subject || undefined,
         message: formData.message,
       });

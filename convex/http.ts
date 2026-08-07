@@ -171,7 +171,7 @@ http.route({
         typeof data.public_metadata === "object" &&
         (data.public_metadata as { role?: unknown }).role;
       const publicRole =
-        pmRole === "owner" || pmRole === "admin" || pmRole === "editor" || pmRole === "viewer" ? pmRole : undefined;
+        pmRole === "owner" || pmRole === "admin" || pmRole === "editor" || pmRole === "viewer" || pmRole === "superadmin" ? pmRole : undefined;
 
       await ctx.runMutation(internal.users.upsertFromClerk, {
         clerkId: data.id,

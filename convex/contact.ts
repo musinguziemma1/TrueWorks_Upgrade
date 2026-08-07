@@ -8,6 +8,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     email: v.string(),
+    phone: v.optional(v.string()),
     subject: v.optional(v.string()),
     message: v.string(),
   },
@@ -23,6 +24,7 @@ export const create = mutation({
     const id = await ctx.db.insert("contactMessages", {
       name: args.name.trim().slice(0, 120),
       email,
+      phone: args.phone?.trim().slice(0, 30) || undefined,
       subject: args.subject?.trim().slice(0, 200),
       message: args.message.trim(),
       read: false,

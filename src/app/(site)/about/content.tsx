@@ -33,7 +33,7 @@ const brandValues = [
   { title: "Stewardship", description: "We create solutions that endure - maintainable, documented, and owned." },
 ];
 
-const founderPhotoUrl = "https://laudable-ptarmigan-104.convex.cloud/api/storage/0877880f-4e1c-4646-8a02-fbff3abf03dc"
+const founderPhotoUrl = "https://disciplined-clownfish-256.convex.cloud/api/storage/0877880f-4e1c-4646-8a02-fbff3abf03dc"
 
 const founder = {
   name: "Gerald Muwonge",

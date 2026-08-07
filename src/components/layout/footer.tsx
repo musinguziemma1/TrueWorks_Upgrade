@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { Logo } from "@/components/logo";
 import { SocialIcon, socialLinks } from "@/components/layout/social-icons";
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
 import { FooterCopyright } from "@/components/layout/footer-copyright";
-const productCategories = [
+
+const fallbackCategories = [
   "Healthcare",
   "Business",
   "Finance",
@@ -35,6 +40,11 @@ const contactRows = [
 const paymentMethods = ["VISA", "Mastercard", "MTN MoMo", "Airtel Money"];
 
 export default function Footer() {
+  const categories = useQuery(api.categories.list, {});
+  const productCategories = categories
+    ? categories.map((c) => c.name)
+    : fallbackCategories;
+
   return (
     <footer className="bg-primary-dark text-white">
       <div className="mx-auto max-w-7xl px-6 pb-10 pt-16 lg:px-8">

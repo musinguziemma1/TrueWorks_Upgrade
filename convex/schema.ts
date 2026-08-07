@@ -350,6 +350,7 @@ export default defineSchema({
   contactMessages: defineTable({
     name: v.string(),
     email: v.string(),
+    phone: v.optional(v.string()),
     subject: v.optional(v.string()),
     message: v.string(),
     read: v.boolean(),

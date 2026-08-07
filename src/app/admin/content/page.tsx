@@ -26,6 +26,8 @@ interface ContentItem {
   type: string
   status: string
   slug: string
+  content?: string
+  excerpt?: string
   createdAt: number
 }
 
@@ -139,9 +141,9 @@ export default function ContentPage() {
     setFormData({
       title: item.title,
       slug: item.slug,
-      content: "",
+      content: item.content ?? "",
       type: item.type as "page" | "post" | "resource",
-      excerpt: "",
+      excerpt: item.excerpt ?? "",
       status: item.status as "draft" | "published",
     })
     setDialogOpen(true)
