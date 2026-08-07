@@ -8,7 +8,7 @@ import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context"
 import { isAdminEmail } from "@/lib/admin-emails"
 
 function isAllowedRole(role: string | null | undefined): boolean {
-  return role === "superadmin" || role === "admin" || role === "owner" || role === "editor" || role === "viewer"
+  return role === "superadmin" || role === "admin" || role === "owner" || role === "editor"
 }
 
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
