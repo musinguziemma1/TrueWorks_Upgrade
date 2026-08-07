@@ -38,7 +38,7 @@ export const saveMine = mutation({
   },
   handler: async (ctx, args) => {
     const me = await getCurrentUser(ctx);
-    if (!me?.clerkId) throw new Error("Unauthorized");
+    if (!me?.clerkId) return null;
 
     const existing = await ctx.db
       .query("carts")

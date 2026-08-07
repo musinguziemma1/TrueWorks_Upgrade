@@ -23,10 +23,11 @@ export function CartSync() {
 
   const serverCart = useQuery(api.carts.getMine, isLoaded && isSignedIn ? {} : "skip");
   const saveMine = useMutation(api.carts.saveMine);
+  const currentUser = useQuery(api.users.current, isLoaded && isSignedIn ? {} : "skip");
 
   // Initial merge on sign-in
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || synced || serverCart === undefined) return;
+    if (!isLoaded || !isSignedIn || synced || serverCart === undefined || currentUser === undefined) return;
 
     if (serverCart && (serverCart.items.length > 0 || serverCart.wishlist.length > 0)) {
       // Server has data — it wins (cross-device truth)
@@ -39,17 +40,17 @@ export function CartSync() {
     }
     setSynced(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, isSignedIn, serverCart, synced]);
+  }, [isLoaded, isSignedIn, serverCart, currentUser, synced]);
 
   // Debounced save on changes
   useEffect(() => {
-    if (!synced || !isSignedIn) return;
+    if (!synced || !isSignedIn || !currentUser) return;
     const t = setTimeout(() => {
       saveMine({ items: cart.items, wishlist: wishlist.items }).catch(() => {});
     }, 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart.items, wishlist.items, synced, isSignedIn]);
+  }, [cart.items, wishlist.items, synced, isSignedIn, currentUser]);
 
   // Reset sync state on sign-out so a different account can re-sync
   useEffect(() => {
