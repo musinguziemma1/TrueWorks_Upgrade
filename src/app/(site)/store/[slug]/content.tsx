@@ -51,6 +51,7 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
@@ -98,7 +99,13 @@ export default function ProductDetail() {
   }
 
   const p = product as StoreProduct;
-  const price = p.salePrice ?? p.price;
+  const hasTiers = !!p.pricingTiers && p.pricingTiers.length > 0;
+  const selectedTierObj = hasTiers
+    ? p.pricingTiers!.find((t) => t.name === selectedTier) ?? null
+    : null;
+  const price = selectedTierObj
+    ? selectedTierObj.salePrice ?? selectedTierObj.price
+    : p.salePrice ?? p.price;
   const gallery = p.galleryImages?.length > 0 ? p.galleryImages : [];
   const related = (relatedProducts ?? [])
     .filter((rp: StoreProduct) => rp._id !== p._id)
@@ -111,6 +118,7 @@ export default function ProductDetail() {
       price,
       image: p.thumbnail || "",
       slug: p.slug,
+      tier: selectedTierObj?.name,
     });
     toast.success("Added to cart", { description: p.name });
   };
@@ -311,6 +319,64 @@ export default function ProductDetail() {
                   </div>
                 )}
               </div>
+
+              {hasTiers && (
+                <div className="mt-9">
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                    Choose a License
+                  </h2>
+                  <div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {p.pricingTiers!.map((tier) => {
+                      const active = selectedTierObj?.name === tier.name;
+                      const tierPrice = tier.salePrice ?? tier.price;
+                      const isFirst = !selectedTierObj && tier.name === p.pricingTiers![0].name;
+                      const selected = active || isFirst;
+                      return (
+                        <button
+                          key={tier.name}
+                          type="button"
+                          onClick={() => setSelectedTier(selected ? null : tier.name)}
+                          className={cn(
+                            "relative flex flex-col rounded-xl border bg-white p-4 text-left transition-all duration-200",
+                            selected
+                              ? "border-accent ring-1 ring-accent/40 shadow-sm"
+                              : "border-border/70 hover:border-primary/25"
+                          )}
+                        >
+                          {selected && (
+                            <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full gradient-gold text-primary-dark">
+                              <Check className="h-3 w-3" strokeWidth={3} />
+                            </span>
+                          )}
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                            {tier.name}
+                          </span>
+                          <span className="mt-2 flex items-baseline gap-1.5">
+                            <span className="font-heading text-lg font-bold text-primary">
+                              {formatPrice(tierPrice)}
+                            </span>
+                            {tier.salePrice && (
+                              <span className="text-xs text-muted line-through">
+                                {formatPrice(tier.price)}
+                              </span>
+                            )}
+                          </span>
+                          {tier.quantity && (
+                            <span className="mt-1 text-xs text-muted">
+                              Up to {tier.quantity} seats
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-muted">
+                    {selectedTierObj
+                      ? `Licensed for ${selectedTierObj.name}.`
+                      : "Select a license tier to see its price."}
+                  </p>
+                </div>
+              )}
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Button

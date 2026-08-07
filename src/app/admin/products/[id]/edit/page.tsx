@@ -50,6 +50,7 @@ export default function EditProductPage() {
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
   const [salePrice, setSalePrice] = useState("")
+  const [tiers, setTiers] = useState<{ name: string; price: string; salePrice: string; quantity: string }[]>([])
   const [category, setCategory] = useState("")
   const [industry, setIndustry] = useState("")
   const [fileType, setFileType] = useState("")
@@ -91,6 +92,12 @@ export default function EditProductPage() {
       setDescription(product.description)
       setPrice(String(product.price))
       setSalePrice(product.salePrice ? String(product.salePrice) : "")
+      setTiers((product.pricingTiers ?? []).map((t) => ({
+        name: t.name,
+        price: String(t.price),
+        salePrice: t.salePrice ? String(t.salePrice) : "",
+        quantity: t.quantity ? String(t.quantity) : "",
+      })))
       setCategory(product.category)
       setIndustry(product.industry)
       setFileType(product.fileType)
@@ -189,6 +196,14 @@ export default function EditProductPage() {
         description,
         price: Number(price),
         salePrice: salePrice ? Number(salePrice) : undefined,
+        pricingTiers: tiers
+          .filter((t) => t.name.trim() && t.price)
+          .map((t) => ({
+            name: t.name.trim(),
+            price: Number(t.price),
+            salePrice: t.salePrice ? Number(t.salePrice) : undefined,
+            quantity: t.quantity ? Number(t.quantity) : undefined,
+          })),
         category,
         industry,
         fileType: fileType || undefined,
@@ -311,6 +326,41 @@ export default function EditProductPage() {
                     <Label>Sale Price (USD)</Label>
                     <Input type="number" placeholder="0 (optional)" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} />
                   </div>
+                </CardContent>
+                <CardContent className="space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">License Tiers</Label>
+                    <Button variant="ghost" size="sm" onClick={() => setTiers([...tiers, { name: "", price: "", salePrice: "", quantity: "" }])}>
+                      <Plus className="h-3 w-3" /> Add Tier
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Optional per-tier pricing (e.g. Single, Team, Enterprise). Leave empty for a simple one-price product.
+                  </p>
+                  {tiers.length === 0 && (
+                    <p className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                      No tiers — this product sells at its base price.
+                    </p>
+                  )}
+                  {tiers.map((t, i) => (
+                    <div key={i} className="grid grid-cols-2 gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1.4fr_1fr_1fr_0.7fr_auto]">
+                      <Input placeholder="Tier name" value={t.name} onChange={(e) => {
+                        const next = [...tiers]; next[i] = { ...next[i], name: e.target.value }; setTiers(next);
+                      }} />
+                      <Input type="number" placeholder="Price" value={t.price} onChange={(e) => {
+                        const next = [...tiers]; next[i] = { ...next[i], price: e.target.value }; setTiers(next);
+                      }} />
+                      <Input type="number" placeholder="Sale" value={t.salePrice} onChange={(e) => {
+                        const next = [...tiers]; next[i] = { ...next[i], salePrice: e.target.value }; setTiers(next);
+                      }} />
+                      <Input type="number" placeholder="Seats" value={t.quantity} onChange={(e) => {
+                        const next = [...tiers]; next[i] = { ...next[i], quantity: e.target.value }; setTiers(next);
+                      }} />
+                      <button onClick={() => setTiers(tiers.filter((_, idx) => idx !== i))} className="flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-red-50">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </TabsContent>

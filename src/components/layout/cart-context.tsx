@@ -9,6 +9,7 @@ export interface CartItem {
   quantity: number;
   image: string;
   slug: string;
+  tier?: string;
 }
 
 interface CartContextType {
@@ -20,6 +21,10 @@ interface CartContextType {
   replaceItems: (items: CartItem[]) => void;
   totalItems: number;
   totalPrice: number;
+}
+
+export function cartItemKey(item: Pick<CartItem, "id" | "tier">): string {
+  return item.tier ? `${item.id}::${item.tier}` : item.id;
 }
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -54,10 +59,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
       setItems((prev) => {
-        const existing = prev.find((i) => i.id === item.id);
+        const key = cartItemKey(item);
+        const existing = prev.find((i) => cartItemKey(i) === key);
         if (existing) {
           return prev.map((i) =>
-            i.id === item.id
+            cartItemKey(i) === key
               ? { ...i, quantity: i.quantity + (item.quantity ?? 1) }
               : i
           );
@@ -69,13 +75,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    setItems((prev) => prev.filter((i) => cartItemKey(i) !== id));
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {
     if (quantity < 1) return;
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity } : i))
+      prev.map((i) => (cartItemKey(i) === id ? { ...i, quantity } : i))
     );
   }, []);
 

@@ -57,6 +57,12 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       if (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
         return new Response(JSON.stringify({ error: "Invalid item quantity (must be 1-100)" }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
+      if (typeof item.slug !== "string" || !item.slug) {
+        return new Response(JSON.stringify({ error: "Invalid item" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      if (item.tier !== undefined && typeof item.tier !== "string") {
+        return new Response(JSON.stringify({ error: "Invalid item tier" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
 
       const product = await ctx.runQuery(api.products.getBySlug, { slug: item.slug });
       if (!product) {
@@ -65,11 +71,20 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       if (product.status !== "published") {
         return new Response(JSON.stringify({ error: `Product not available: ${product.name}` }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
-      const price = product.salePrice ?? product.price;
+      // Resolve price server-side. If a pricing tier is requested, it MUST
+      // match a valid tier on the product — never trust a client-sent price.
+      let price = product.salePrice ?? product.price;
+      if (item.tier && product.pricingTiers && product.pricingTiers.length > 0) {
+        const tier = product.pricingTiers.find((t) => t.name === item.tier);
+        if (!tier) {
+          return new Response(JSON.stringify({ error: `Invalid tier for ${product.name}` }), { status: 400, headers: { "Content-Type": "application/json" } });
+        }
+        price = tier.salePrice ?? tier.price;
+      }
       subtotal += price * item.quantity;
       orderItems.push({
         productId: product._id,
-        productName: product.name,
+        productName: item.tier ? `${product.name} (${item.tier})` : product.name,
         quantity: item.quantity,
         price,
       });

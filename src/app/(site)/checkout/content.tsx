@@ -27,7 +27,7 @@ import {
 import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
 import { cn } from "@/lib/utils";
-import { useCart } from "@/components/layout/cart-context";
+import { useCart, cartItemKey } from "@/components/layout/cart-context";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,6 +250,7 @@ export default function CheckoutContent() {
           items: items.map((item) => ({
             slug: item.slug,
             quantity: item.quantity,
+            tier: item.tier,
           })),
           customerEmail: email,
           customerName: `${firstName} ${lastName}`,
@@ -687,7 +688,7 @@ export default function CheckoutContent() {
                 <div className="mt-4 max-h-60 divide-y divide-border overflow-y-auto">
                   {items.map((item) => (
                     <div
-                      key={item.id}
+                      key={cartItemKey(item)}
                       className="flex items-center justify-between gap-3 py-3 first:pt-0"
                     >
                       <div className="flex min-w-0 items-center gap-3">
@@ -700,6 +701,11 @@ export default function CheckoutContent() {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-foreground">
                             {item.name}
+                            {item.tier && (
+                              <span className="ml-1.5 text-xs font-medium text-accent-dark">
+                                ({item.tier})
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-muted">Qty: {item.quantity}</p>
                         </div>

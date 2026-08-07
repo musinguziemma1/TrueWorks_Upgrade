@@ -139,6 +139,14 @@ export const create = mutation({
     description: v.string(),
     price: v.number(),
     salePrice: v.optional(v.number()),
+    pricingTiers: v.optional(v.array(
+      v.object({
+        name: v.string(),
+        price: v.number(),
+        salePrice: v.optional(v.number()),
+        quantity: v.optional(v.number()),
+      })
+    )),
     category: v.string(),
     industry: v.string(),
     fileType: v.string(),
@@ -203,6 +211,14 @@ export const update = mutation({
     description: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
+    pricingTiers: v.optional(v.array(
+      v.object({
+        name: v.string(),
+        price: v.number(),
+        salePrice: v.optional(v.number()),
+        quantity: v.optional(v.number()),
+      })
+    )),
     category: v.optional(v.string()),
     industry: v.optional(v.string()),
     fileType: v.optional(v.string()),

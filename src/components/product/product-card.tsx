@@ -31,6 +31,7 @@ export interface StoreProduct {
   shortDescription: string;
   price: number;
   salePrice?: number;
+  pricingTiers?: { name: string; price: number; salePrice?: number; quantity?: number }[];
   category: string;
   thumbnail: string;
   galleryImages: string[];

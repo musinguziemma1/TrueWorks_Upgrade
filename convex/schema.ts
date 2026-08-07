@@ -38,6 +38,14 @@ export default defineSchema({
     description: v.string(),
     price: v.number(),
     salePrice: v.optional(v.number()),
+    pricingTiers: v.optional(v.array(
+      v.object({
+        name: v.string(),
+        price: v.number(),
+        salePrice: v.optional(v.number()),
+        quantity: v.optional(v.number()),
+      })
+    )),
     category: v.string(),
     industry: v.string(),
     fileType: v.string(),

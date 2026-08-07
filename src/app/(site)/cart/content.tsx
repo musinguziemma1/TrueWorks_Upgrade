@@ -14,7 +14,7 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCart } from "@/components/layout/cart-context";
+import { useCart, cartItemKey } from "@/components/layout/cart-context";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 
@@ -69,7 +69,7 @@ export default function CartContent() {
                 <AnimatePresence initial={false}>
                   {items.map((item) => (
                     <motion.div
-                      key={item.id}
+                      key={cartItemKey(item)}
                       layout
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -101,13 +101,18 @@ export default function CartContent() {
                               className="font-heading text-base font-semibold text-primary transition-colors hover:text-accent-dark"
                             >
                               {item.name}
+                              {item.tier && (
+                                <span className="ml-2 text-xs font-medium text-accent-dark">
+                                  ({item.tier})
+                                </span>
+                              )}
                             </Link>
                             <p className="mt-1 text-xs text-muted">
                               Digital download · {formatPrice(item.price)} each
                             </p>
                           </div>
                           <button
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => removeItem(cartItemKey(item))}
                             className="rounded-md p-2 text-muted transition-colors hover:bg-error/5 hover:text-error"
                             aria-label={`Remove ${item.name} from cart`}
                           >
@@ -118,7 +123,7 @@ export default function CartContent() {
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center rounded-lg border border-border">
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(cartItemKey(item), item.quantity - 1)}
                               disabled={item.quantity <= 1}
                               className="p-2.5 text-muted transition-colors hover:bg-surface hover:text-foreground disabled:opacity-30"
                               aria-label="Decrease quantity"
@@ -129,7 +134,7 @@ export default function CartContent() {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(cartItemKey(item), item.quantity + 1)}
                               className="p-2.5 text-muted transition-colors hover:bg-surface hover:text-foreground"
                               aria-label="Increase quantity"
                             >
