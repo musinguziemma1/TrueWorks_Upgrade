@@ -57,6 +57,7 @@ export interface StoreProduct {
   totalSales: number;
   createdAt: number;
   updatedAt: number;
+  bundleProductIds?: string[];
 }
 
 interface ProductCardProps {

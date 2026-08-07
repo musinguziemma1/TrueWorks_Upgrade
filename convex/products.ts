@@ -130,6 +130,16 @@ export const getRelatedByIds = query({
   },
 });
 
+export const getBundleMembers = query({
+  args: { ids: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const docs = await Promise.all(
+      args.ids.map((id) => ctx.db.get(id as Id<"products">).catch(() => null))
+    );
+    return docs.filter((d): d is NonNullable<typeof d> => d !== null && d.status === "published");
+  },
+});
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -165,6 +175,7 @@ export const create = mutation({
     demoVideo: v.optional(v.string()),
     featured: v.boolean(),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    bundleProductIds: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -237,6 +248,7 @@ export const update = mutation({
     demoVideo: v.optional(v.string()),
     featured: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
+    bundleProductIds: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);

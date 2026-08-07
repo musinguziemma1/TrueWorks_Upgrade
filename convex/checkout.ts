@@ -81,13 +81,35 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
         }
         price = tier.salePrice ?? tier.price;
       }
-      subtotal += price * item.quantity;
-      orderItems.push({
-        productId: product._id,
-        productName: item.tier ? `${product.name} (${item.tier})` : product.name,
-        quantity: item.quantity,
-        price,
-      });
+
+      // Bunde handling: expand a bundle product into its members. Each member
+      // becomes a resolved order line so downloads & fulfillment work per item.
+      // Pricing is always recomputed from the database — never from the client.
+      const isBundle = product.bundleProductIds && product.bundleProductIds.length > 0;
+      if (isBundle) {
+        for (const memberId of product.bundleProductIds!) {
+          const member = await ctx.runQuery(api.products.getById, { id: memberId as any });
+          if (!member || member.status !== "published") {
+            return new Response(JSON.stringify({ error: `Bundle contains an unavailable product` }), { status: 400, headers: { "Content-Type": "application/json" } });
+          }
+          const memberPrice = member.salePrice ?? member.price;
+          subtotal += memberPrice * item.quantity;
+          orderItems.push({
+            productId: member._id,
+            productName: member.name,
+            quantity: item.quantity,
+            price: memberPrice,
+          });
+        }
+      } else {
+        subtotal += price * item.quantity;
+        orderItems.push({
+          productId: product._id,
+          productName: item.tier ? `${product.name} (${item.tier})` : product.name,
+          quantity: item.quantity,
+          price,
+        });
+      }
     }
 
     let discountAmount = 0;

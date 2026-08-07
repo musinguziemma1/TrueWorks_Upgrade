@@ -23,10 +23,19 @@ import {
   deleteProduct,
   uploadFile,
   useCategories,
+  useProducts,
   ProductStatus,
 } from "@/lib/admin-queries"
 
 interface FaqItem { question: string; answer: string }
+
+function fmtMoney(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
 
 export default function EditProductPage() {
   const params = useParams()
@@ -38,6 +47,7 @@ export default function EditProductPage() {
   const remove = deleteProduct.useMutation()
   const upload = uploadFile.useAction()
   const dbCategories = useCategories()
+  const allProducts = useProducts({ status: "published" })
   const categories = (dbCategories ?? []).map((c) => c.name)
   const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
 
@@ -74,6 +84,7 @@ export default function EditProductPage() {
   const [uploadingFile, setUploadingFile] = useState(false)
 
   const [faqs, setFaqs] = useState<FaqItem[]>([])
+  const [bundleProductIds, setBundleProductIds] = useState<string[]>([])
 
   const thumbInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +127,7 @@ export default function EditProductPage() {
       setDownloadableFileUrl(product.downloadableFile ?? "")
       setFileSize(product.fileSize ?? "")
       setFaqs(product.faqs.length > 0 ? product.faqs : [{ question: "", answer: "" }])
+      setBundleProductIds(product.bundleProductIds ? [...product.bundleProductIds] : [])
     }
   }, [product])
 
@@ -222,6 +234,7 @@ export default function EditProductPage() {
         demoVideo: demoVideo || undefined,
         featured,
         status,
+        bundleProductIds: bundleProductIds.length > 0 ? bundleProductIds : undefined,
       } as never)
       toast.success("Product updated!")
     } catch (err) {
@@ -285,6 +298,7 @@ export default function EditProductPage() {
           <TabsTrigger value="description">Description</TabsTrigger>
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="media">Media</TabsTrigger>
+          <TabsTrigger value="bundle">Bundle</TabsTrigger>
           <TabsTrigger value="additional">Additional</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -457,6 +471,61 @@ export default function EditProductPage() {
                     </div>
                     <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryUpload} />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="bundle">
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Bundle</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Turn this product into a multi-item bundle. When purchased, the selected
+                    templates are all delivered. Leave empty for a standalone product.
+                  </p>
+                  {(allProducts ?? []).filter((pl) => pl._id !== product._id).length === 0 ? (
+                    <p className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                      No other published products are available to add.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto border border-border rounded-lg p-2">
+                      {(allProducts ?? [])
+                        .filter((pl) => pl._id !== product._id)
+                        .map((pl) => {
+                          const checked = bundleProductIds.includes(pl._id as never);
+                          return (
+                            <label
+                              key={pl._id}
+                              className="flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-muted cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) => {
+                                    setBundleProductIds((prev) =>
+                                      e.target.checked
+                                        ? [...prev, pl._id as never]
+                                        : prev.filter((id) => id !== pl._id)
+                                    );
+                                  }}
+                                  className="accent-[#C9A227]"
+                                />
+                                <span className="truncate">{pl.name}</span>
+                              </span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {fmtMoney(pl.salePrice ?? pl.price)}
+                              </span>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  )}
+                  {bundleProductIds.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Bundle total at checkout will equal the sum of selected templates.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

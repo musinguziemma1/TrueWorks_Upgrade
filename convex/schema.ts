@@ -72,6 +72,7 @@ export default defineSchema({
     reviewCount: v.number(),
     relatedProductIds: v.optional(v.array(v.string())),
     upsellIds: v.optional(v.array(v.string())),
+    bundleProductIds: v.optional(v.array(v.string())),
     versionHistory: v.optional(v.array(v.object({
       version: v.string(),
       changelog: v.string(),

@@ -71,6 +71,12 @@ export default function ProductDetail() {
       ? { ids: product.relatedProductIds }
       : "skip"
   );
+  const bundleMembers = useQuery(
+    api.products.getBundleMembers,
+    product?.bundleProductIds && product.bundleProductIds.length > 0
+      ? { ids: product.bundleProductIds }
+      : "skip"
+  );
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 500);
@@ -100,10 +106,17 @@ export default function ProductDetail() {
 
   const p = product as StoreProduct;
   const hasTiers = !!p.pricingTiers && p.pricingTiers.length > 0;
+  const isBundle = !!p.bundleProductIds && p.bundleProductIds.length > 0;
+  const members = (bundleMembers ?? []) as StoreProduct[];
+  const bundleTotal = isBundle
+    ? members.reduce((sum, m) => sum + (m.salePrice ?? m.price), 0)
+    : null;
   const selectedTierObj = hasTiers
     ? p.pricingTiers!.find((t) => t.name === selectedTier) ?? null
     : null;
-  const price = selectedTierObj
+  const price = bundleTotal && bundleTotal > 0
+    ? bundleTotal
+    : selectedTierObj
     ? selectedTierObj.salePrice ?? selectedTierObj.price
     : p.salePrice ?? p.price;
   const gallery = p.galleryImages?.length > 0 ? p.galleryImages : [];
@@ -378,6 +391,43 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {isBundle && members.length > 0 && (
+                <div className="mt-9 rounded-xl border border-primary/10 bg-primary/[0.03] p-5">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full gradient-gold">
+                      <Check className="h-3.5 w-3.5 text-primary-dark" strokeWidth={3} />
+                    </span>
+                    <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                      This Bundle Includes
+                    </h2>
+                  </div>
+                  <ul className="mt-4 space-y-2.5">
+                    {members.map((m) => (
+                      <li key={m._id} className="flex items-center justify-between gap-3 text-sm">
+                        <Link
+                          href={`/store/${m.slug}`}
+                          className="flex min-w-0 items-center gap-2 text-foreground transition-colors hover:text-accent-dark"
+                        >
+                          <Download className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                          <span className="truncate">{m.name}</span>
+                        </Link>
+                        <span className="shrink-0 font-medium text-muted">
+                          {formatPrice(m.salePrice ?? m.price)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                    <span className="text-xs text-muted">
+                      {members.length} templates in one purchase
+                    </span>
+                    <span className="font-heading text-lg font-bold text-primary">
+                      {formatPrice(members.reduce((sum, m) => sum + (m.salePrice ?? m.price), 0))}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Button
                   onClick={addToCart}
@@ -608,17 +658,11 @@ export default function ProductDetail() {
       >
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div>
-            {p.salePrice ? (
-              <div className="flex items-baseline gap-2">
-                <span className="font-heading text-lg font-bold text-primary">
-                  {formatPrice(p.salePrice)}
-                </span>
-                <span className="text-sm text-muted line-through">{formatPrice(p.price)}</span>
-              </div>
-            ) : (
-              <span className="font-heading text-lg font-bold text-primary">
-                {formatPrice(p.price)}
-              </span>
+            <span className="font-heading text-lg font-bold text-primary">
+              {formatPrice(price)}
+            </span>
+            {p.salePrice && !bundleTotal && !selectedTierObj && (
+              <span className="text-sm text-muted line-through">{formatPrice(p.price)}</span>
             )}
           </div>
           <Button onClick={addToCart} className="gradient-gold font-semibold text-primary-dark">
