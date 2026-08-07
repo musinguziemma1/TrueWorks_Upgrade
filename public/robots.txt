@@ -1,0 +1,36 @@
+# TrueWorks - https://trueworksgroup.com
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /account/
+Disallow: /checkout/
+Disallow: /order-confirmation/
+Disallow: /sign-in/
+Disallow: /sign-up/
+Disallow: /sso-callback/
+
+Sitemap: https://trueworksgroup.com/sitemap.xml
+
+# Crawl-delay for polite bots
+User-agent: *
+Crawl-delay: 1
+
+# Block AI training crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /

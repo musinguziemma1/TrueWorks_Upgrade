@@ -420,7 +420,7 @@ export const sendCampaignEmails = internalAction({
     for (let i = 0; i < active.length; i += 50) {
       const batch = active.slice(i, i + 50);
       const results = await Promise.allSettled(
-        batch.map((sub) =>
+        batch.map((sub: { email: string; name?: string }) =>
           sendEmail({
             to: sub.email,
             subject: String(campaign.subject ?? "").slice(0, 128),

@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as abandonedCarts from "../abandonedCarts.js";
 import type * as analytics from "../analytics.js";
 import type * as auditLogs from "../auditLogs.js";
 import type * as campaigns from "../campaigns.js";
+import type * as cartRecovery from "../cartRecovery.js";
 import type * as carts from "../carts.js";
 import type * as categories from "../categories.js";
 import type * as checkout from "../checkout.js";
@@ -20,6 +22,7 @@ import type * as coupons from "../coupons.js";
 import type * as customers from "../customers.js";
 import type * as downloads from "../downloads.js";
 import type * as email from "../email.js";
+import type * as emailTemplates from "../emailTemplates.js";
 import type * as gdpr from "../gdpr.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
@@ -41,6 +44,7 @@ import type * as settings from "../settings.js";
 import type * as storage from "../storage.js";
 import type * as stripe from "../stripe.js";
 import type * as subscribers from "../subscribers.js";
+import type * as testSmtp from "../testSmtp.js";
 import type * as users from "../users.js";
 
 import type {
@@ -50,9 +54,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  abandonedCarts: typeof abandonedCarts;
   analytics: typeof analytics;
   auditLogs: typeof auditLogs;
   campaigns: typeof campaigns;
+  cartRecovery: typeof cartRecovery;
   carts: typeof carts;
   categories: typeof categories;
   checkout: typeof checkout;
@@ -62,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   customers: typeof customers;
   downloads: typeof downloads;
   email: typeof email;
+  emailTemplates: typeof emailTemplates;
   gdpr: typeof gdpr;
   http: typeof http;
   invitations: typeof invitations;
@@ -83,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   storage: typeof storage;
   stripe: typeof stripe;
   subscribers: typeof subscribers;
+  testSmtp: typeof testSmtp;
   users: typeof users;
 }>;
 

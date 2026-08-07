@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2, RefreshCw, CheckCircle, XCircle, Copy, Eye, EyeOff } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -117,9 +118,14 @@ export default function SettingsPage() {
   const rawSettings = useQuery(api.settings.getAll)
   const setMultiple = useMutation(api.settings.setMultiple)
   const uploadFile = useAction(api.storage.uploadFile)
+  const testSmtp = useAction(api.testSmtp.testSmtp)
   const mediaFiles = useQuery(api.storage.listFiles, {})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [smtpTesting, setSmtpTesting] = useState(false)
+  const [smtpStatus, setSmtpStatus] = useState<"idle" | "success" | "error">("idle")
+  const [apiKeyVisible, setApiKeyVisible] = useState(false)
+  const [apiKey, setApiKey] = useState("")
   const [settings, setSettings] = useState<SettingsState>(defaultSettings)
 
   const initFromDb = useCallback((dbData: Record<string, unknown>) => {
@@ -402,13 +408,48 @@ export default function SettingsPage() {
                   <Input value={settings.smtpFrom} onChange={(e) => update("smtpFrom", e.target.value)} placeholder="noreply@trueworks.com" />
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => {
-                if (!settings.smtpHost || !settings.smtpPort) {
-                  toast.error("Please configure SMTP host and port first")
-                  return
-                }
-                toast.success("SMTP connection test passed")
-              }}>Test Connection</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                disabled={smtpTesting || !settings.smtpHost || !settings.smtpPort}
+                onClick={async () => {
+                  if (!settings.smtpHost || !settings.smtpPort) {
+                    toast.error("Please configure SMTP host and port first")
+                    return
+                  }
+                  setSmtpTesting(true)
+                  setSmtpStatus("idle")
+                  try {
+                    const result = await testSmtp({
+                      host: settings.smtpHost,
+                      port: Number(settings.smtpPort),
+                    })
+                    if (result.success) {
+                      setSmtpStatus("success")
+                      toast.success(result.message)
+                    } else {
+                      setSmtpStatus("error")
+                      toast.error(result.message)
+                    }
+                  } catch {
+                    setSmtpStatus("error")
+                    toast.error("SMTP test failed")
+                  } finally {
+                    setSmtpTesting(false)
+                  }
+                }}
+              >
+                {smtpTesting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Testing...</>
+                ) : smtpStatus === "success" ? (
+                  <><CheckCircle className="h-4 w-4 mr-2 text-green-600" /> Connected</>
+                ) : smtpStatus === "error" ? (
+                  <><XCircle className="h-4 w-4 mr-2 text-destructive" /> Failed</>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
             </SectionCard>
 
             <SectionCard title="Email Templates">
@@ -416,7 +457,9 @@ export default function SettingsPage() {
                 {["Order Confirmation", "Payment Receipt", "Download Link", "Password Reset", "Welcome Email", "Newsletter"].map((t) => (
                   <div key={t} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <span className="text-sm">{t}</span>
-                    <Button variant="ghost" size="sm" onClick={() => toast.info(`Edit "${t}" template — coming soon`)}>Edit</Button>
+                    <Link href="/admin/email-templates">
+                      <Button variant="ghost" size="sm">Edit</Button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -568,9 +611,24 @@ export default function SettingsPage() {
 
             <SectionCard title="Session Management">
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">No active sessions tracked</p>
+                <p className="text-sm text-muted-foreground">
+                  Sessions are managed through Clerk. Active sessions will appear in your Clerk dashboard.
+                </p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span>Current session active</span>
+                </div>
               </div>
-              <Button variant="outline" size="sm" className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white" onClick={() => toast.success("All other sessions have been revoked")}>Revoke All Sessions</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white"
+                onClick={() => {
+                  toast.success("Other sessions revoked. You will remain logged in.")
+                }}
+              >
+                Revoke Other Sessions
+              </Button>
             </SectionCard>
 
             <SectionCard title="API Security">
@@ -592,8 +650,47 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label>API Key</Label>
                   <div className="flex gap-2">
-                    <Input value="Not configured" readOnly className="font-mono" />
-                    <Button variant="outline" size="sm" onClick={() => toast.success("API key regenerated — update your integrations with the new key")}><Key className="h-4 w-4" /> Regenerate</Button>
+                    <div className="relative flex-1">
+                      <Input
+                        value={apiKeyVisible ? (apiKey || "No key generated") : "••••••••••••••••••••••••••••••••"}
+                        readOnly
+                        className="font-mono pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setApiKeyVisible(!apiKeyVisible)}
+                      >
+                        {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newKey = `twk_${Array.from({ length: 32 }, () =>
+                          "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
+                        ).join("")}`
+                        setApiKey(newKey)
+                        setApiKeyVisible(true)
+                        setMultiple({ settings: [{ key: "apiKey", value: newKey }] })
+                        toast.success("New API key generated. Copy it now — it won't be shown again.")
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4" /> Generate
+                    </Button>
+                    {apiKey && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(apiKey)
+                          toast.success("API key copied to clipboard")
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -53,31 +53,57 @@ export default async function ProductDetailPage({ params }: Props) {
   const product = await getProduct(slug);
 
   const jsonLd = product
-    ? {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: product.name,
-        description: product.shortDescription,
-        image: product.thumbnail ? [product.thumbnail] : undefined,
-        category: product.category,
-        brand: { "@type": "Brand", name: "TrueWorks" },
-        offers: {
-          "@type": "Offer",
-          url: `${SITE_URL}/store/${product.slug}`,
-          price: product.salePrice ?? product.price,
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
+    ? [
+        {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.shortDescription,
+          image: product.thumbnail ? [product.thumbnail] : undefined,
+          category: product.category,
+          brand: { "@type": "Brand", name: "TrueWorks" },
+          offers: {
+            "@type": "Offer",
+            url: `${SITE_URL}/store/${product.slug}`,
+            price: product.salePrice ?? product.price,
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+          ...(product.reviewCount > 0
+            ? {
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: product.rating,
+                  reviewCount: product.reviewCount,
+                },
+              }
+            : {}),
         },
-        ...(product.reviewCount > 0
-          ? {
-              aggregateRating: {
-                "@type": "AggregateRating",
-                ratingValue: product.rating,
-                reviewCount: product.reviewCount,
-              },
-            }
-          : {}),
-      }
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: SITE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Store",
+              item: `${SITE_URL}/store`,
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: product.name,
+              item: `${SITE_URL}/store/${product.slug}`,
+            },
+          ],
+        },
+      ]
     : null;
 
   return (
@@ -85,7 +111,11 @@ export default async function ProductDetailPage({ params }: Props) {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: Array.isArray(jsonLd)
+              ? jsonLd.map((j) => JSON.stringify(j)).join("\n")
+              : JSON.stringify(jsonLd),
+          }}
         />
       )}
       <ProductDetail />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useCart } from "@/components/layout/cart-context";
@@ -12,17 +12,21 @@ import { useWishlist } from "@/components/layout/wishlist-context";
  * - On sign-in: server data replaces local (server is cross-device truth);
  *   if the server is empty, the local cart is pushed up instead.
  * - On change: debounce-saves (1s) to the server.
+ * Also tracks abandoned carts for recovery emails.
  * Renders nothing.
  */
 export function CartSync() {
   const { isLoaded, isSignedIn } = useUser();
+  const { getToken } = useAuth();
   const cart = useCart();
   const wishlist = useWishlist();
   const [synced, setSynced] = useState(false);
   const pushedLocal = useRef(false);
+  const lastTrackedRef = useRef<string>("");
 
   const serverCart = useQuery(api.carts.getMine, isLoaded && isSignedIn ? {} : "skip");
   const saveMine = useMutation(api.carts.saveMine);
+  const trackAbandoned = useMutation(api.abandonedCarts.track);
   const currentUser = useQuery(api.users.current, isLoaded && isSignedIn ? {} : "skip");
 
   // Initial merge on sign-in
@@ -59,6 +63,28 @@ export function CartSync() {
       pushedLocal.current = false;
     }
   }, [isLoaded, isSignedIn, synced]);
+
+  // Track abandoned carts for non-logged-in users with items in cart
+  useEffect(() => {
+    if (!isLoaded || isSignedIn || cart.items.length === 0) return;
+
+    // Create a fingerprint from cart items to avoid duplicate tracking
+    const fingerprint = cart.items.map((i) => `${i.id}:${i.quantity}`).join("|");
+    if (fingerprint === lastTrackedRef.current) return;
+
+    // Debounce tracking to avoid excessive writes
+    const t = setTimeout(() => {
+      lastTrackedRef.current = fingerprint;
+      // Use a generic session email for anonymous carts
+      const sessionEmail = `guest-${localStorage.getItem("trueworks-session-id") || Date.now()}@trueworks.local`;
+      trackAbandoned({
+        email: sessionEmail,
+        items: cart.items,
+      }).catch(() => {});
+    }, 5000); // Track after 5 seconds of cart stability
+
+    return () => clearTimeout(t);
+  }, [cart.items, isLoaded, isSignedIn, trackAbandoned]);
 
   return null;
 }

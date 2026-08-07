@@ -158,6 +158,26 @@ export const current = query({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("users"),
+    name: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) throw new Error("Unauthorized");
+    if (me._id !== args.id) throw new Error("Can only update your own profile");
+
+    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.avatar !== undefined) updates.avatar = args.avatar;
+
+    await ctx.db.patch(args.id, updates);
+    return args.id;
+  },
+});
+
 export const isAdmin = query({
   args: {},
   handler: async (ctx) => {

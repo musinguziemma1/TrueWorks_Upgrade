@@ -1,15 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useUser, useAuth } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, Shield, Calendar, Mail, User } from "lucide-react";
+import { LogOut, Shield, Calendar, Mail, User, Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 
 function fmtDate(ts: number) {
@@ -41,12 +46,35 @@ export default function AdminProfilePage() {
   const { signOut } = useAuth();
   const router = useRouter();
   const me = useQuery(api.users.current);
+  const updateUser = useMutation(api.users.update);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [notifications, setNotifications] = useState({
+    orderUpdates: true,
+    newReviews: true,
+    marketing: false,
+  });
 
   function initials(name?: string, email?: string) {
     const src = (name || email || "?").trim();
     const parts = src.split(/\s+|@/).filter(Boolean);
     return (parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")) || "?";
   }
+
+  const handleSave = async () => {
+    if (!me) return;
+    setSaving(true);
+    try {
+      await updateUser({ id: me._id, name: name.trim() || me.name });
+      setEditing(false);
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -72,20 +100,52 @@ export default function AdminProfilePage() {
                   {initials(user?.fullName ?? undefined, user?.primaryEmailAddress?.emailAddress ?? undefined)}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="mt-4 text-xl font-semibold text-foreground">
-                {user?.fullName ?? user?.username ?? "Admin"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {user?.primaryEmailAddress?.emailAddress ?? "—"}
-              </p>
-              {me && (
-                <Badge variant="outline" className={`mt-3 ${roleColors[me.role] ?? ""}`}>
-                  {roleLabels[me.role] ?? me.role}
-                </Badge>
+              {editing ? (
+                <div className="mt-4 w-full space-y-2">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={user?.fullName ?? "Your name"}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="mt-4 text-xl font-semibold text-foreground">
+                    {user?.fullName ?? user?.username ?? "Admin"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.primaryEmailAddress?.emailAddress ?? "—"}
+                  </p>
+                  {me && (
+                    <Badge variant="outline" className={`mt-3 ${roleColors[me.role] ?? ""}`}>
+                      {roleLabels[me.role] ?? me.role}
+                    </Badge>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => {
+                      setName(user?.fullName ?? "");
+                      setEditing(true);
+                    }}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                </>
               )}
               <Button
                 variant="outline"
-                className="mt-6 w-full"
+                className="mt-4 w-full"
                 onClick={() => signOut({ redirectUrl: "/" })}
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -180,6 +240,31 @@ export default function AdminProfilePage() {
                   Sign Out
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>Choose what notifications you receive</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                { key: "orderUpdates" as const, label: "Order Updates", desc: "Get notified about new orders and status changes" },
+                { key: "newReviews" as const, label: "New Reviews", desc: "Get notified when customers leave reviews" },
+                { key: "marketing" as const, label: "Marketing", desc: "Receive marketing tips and product updates" },
+              ].map((pref) => (
+                <div key={pref.key} className="flex items-center justify-between py-2">
+                  <div>
+                    <Label>{pref.label}</Label>
+                    <p className="text-xs text-muted-foreground">{pref.desc}</p>
+                  </div>
+                  <Switch
+                    checked={notifications[pref.key]}
+                    onCheckedChange={(v) => setNotifications((prev) => ({ ...prev, [pref.key]: v }))}
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

@@ -6,6 +6,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SkipNav } from "@/components/layout/skip-nav";
+import { LiveChat } from "@/components/layout/live-chat";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -99,6 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} h-full`}>
       <body className="font-body min-h-full flex flex-col antialiased">
+        <SkipNav />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -108,6 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Providers>{children}</Providers>
           </TooltipProvider>
         </ClerkProvider>
+        <LiveChat />
         <Analytics />
         <SpeedInsights />
       </body>

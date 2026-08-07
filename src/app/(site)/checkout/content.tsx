@@ -291,6 +291,10 @@ export default function CheckoutContent() {
           const pesapalResult = await initiateResponse.json();
           if (pesapalResult.success && pesapalResult.redirectUrl) {
             clearCart();
+            // Mark abandoned cart as recovered
+            if (convexClient) {
+              convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
+            }
             window.location.href = pesapalResult.redirectUrl;
           } else {
             throw new Error(pesapalResult.error || "Failed to initialize Pesapal payment");
@@ -310,6 +314,10 @@ export default function CheckoutContent() {
 
   const handleStripeSuccess = () => {
     clearCart();
+    // Mark abandoned cart as recovered
+    if (convexClient) {
+      convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
+    }
     router.push(`/order-confirmation?order=${orderId}&total=${displayTotal}`);
   };
 

@@ -434,4 +434,24 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"]),
+
+  abandonedCarts: defineTable({
+    email: v.string(),
+    items: v.array(v.object({
+      id: v.string(),
+      name: v.string(),
+      price: v.number(),
+      quantity: v.number(),
+      image: v.string(),
+      slug: v.string(),
+    })),
+    totalValue: v.number(),
+    recovered: v.boolean(),
+    recoveryEmailSentAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_recovered", ["recovered"])
+    .index("by_createdAt", ["createdAt"]),
 });
