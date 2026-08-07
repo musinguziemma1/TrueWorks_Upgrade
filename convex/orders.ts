@@ -461,7 +461,7 @@ export const getCoPurchased = query({
           fileType: p.fileType,
           tags: p.tags ?? [],
           downloadLimit: p.downloadLimit,
-          downloadableFile: p.downloadableFile,
+          hasDownloadableFile: !!(p.downloadableFileStorageId ?? p.downloadableFile),
           totalSales: p.totalSales,
           coPurchases: scores.get(id)?.count ?? 0,
           createdAt: p.createdAt,

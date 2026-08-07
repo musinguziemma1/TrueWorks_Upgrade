@@ -24,6 +24,7 @@ import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog";
+import { useSignedPreviewUrl } from "@/lib/use-signed-preview";
 
 export interface StoreProduct {
   _id: string;
@@ -43,6 +44,7 @@ export interface StoreProduct {
   tags: string[];
   status: string;
   downloadableFile?: string;
+  hasDownloadableFile?: boolean;
   downloadLimit?: number;
   downloadExpiry?: number;
   version?: string;
@@ -221,7 +223,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleView = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType)) {
+    if (product.hasDownloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType)) {
+      preview.resolve(product._id as never);
       setPreviewOpen(true);
     } else {
       router.push(href);
@@ -235,6 +238,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   };
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const preview = useSignedPreviewUrl();
 
   return (
     <>
@@ -405,12 +409,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       <ShareModal product={product} open={shareOpen} onClose={() => setShareOpen(false)} />
 
-      {product.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType) && (
+      {product.hasDownloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(product.fileType) && (
         <ExcelPreviewDialog
-          url={product.downloadableFile}
+          url={preview.url ?? ""}
           fileName={product.name}
           open={previewOpen}
           onOpenChange={setPreviewOpen}
+          loadingUrl={preview.loading}
         />
       )}
     </>

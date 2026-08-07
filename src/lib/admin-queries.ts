@@ -21,6 +21,7 @@ export interface ProductInput {
   galleryImages: string[];
   thumbnail: string;
   downloadableFile?: string;
+  downloadableFileStorageId?: unknown;
   fileSize?: string;
   version?: string;
   changelog?: string;

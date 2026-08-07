@@ -296,16 +296,16 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
         });
 
         for (const item of order.items) {
-          const product = await ctx.runQuery(api.products.getById, {
+          const product = await ctx.runQuery(internal.products.getByIdInternal, {
             id: item.productId,
           });
-          if (product?.downloadableFile) {
+          if (product?.downloadableFile || product?.downloadableFileStorageId) {
             const expiryDays = product.downloadExpiry ?? 30;
             await ctx.runMutation(internal.downloads.create, {
               orderId,
               productId: item.productId,
               email: order.customerEmail,
-              downloadUrl: product.downloadableFile,
+              storageId: product.downloadableFileStorageId,
               downloadCount: 0,
               remainingDownloads: product.downloadLimit ?? 10,
               expiresAt: Date.now() + expiryDays * 24 * 60 * 60 * 1000,

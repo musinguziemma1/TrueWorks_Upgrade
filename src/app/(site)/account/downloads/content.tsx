@@ -37,14 +37,20 @@ export default function DownloadsContent() {
     );
   }
 
-  const handleDownload = async (downloadId: string, downloadUrl: string) => {
+  const handleDownload = async (downloadId: string) => {
     setDownloadingId(downloadId);
     try {
-      await recordDownload({
+      // recordDownload validates ownership/limits server-side and returns a
+      // freshly-minted signed URL — never the stored permanent URL.
+      const signedUrl = await recordDownload({
         id: downloadId as never,
         browser: navigator.userAgent,
       });
-      window.open(downloadUrl, "_blank");
+      if (!signedUrl) {
+        toast.error("Download unavailable");
+        return;
+      }
+      window.open(signedUrl, "_blank");
       toast.success("Download started");
     } catch (err: any) {
       toast.error(err.message ?? "Download failed");
@@ -80,8 +86,8 @@ export default function DownloadsContent() {
                   <Button
                     size="sm"
                     className="w-full"
-                    onClick={() => d.downloadUrl && handleDownload(d._id, d.downloadUrl)}
-                    disabled={downloadingId === d._id || !d.downloadUrl}
+                    onClick={() => handleDownload(d._id)}
+                    disabled={downloadingId === d._id}
                   >
                     {downloadingId === d._id ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

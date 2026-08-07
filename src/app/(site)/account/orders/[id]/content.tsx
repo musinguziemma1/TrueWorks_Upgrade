@@ -290,14 +290,14 @@ export default function OrderDetailLoader() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {order.downloadLinks.map((dl, i) => (
-                  <a
+                  <Link
                     key={i}
-                    href={dl.url}
+                    href="/account/downloads"
                     className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/20 px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
                   >
                     <Package className="h-4 w-4" />
                     Download {i + 1}
-                  </a>
+                  </Link>
                 ))}
               </CardContent>
             </Card>

@@ -24,6 +24,7 @@ interface ExcelPreviewDialogProps {
   fileName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  loadingUrl?: boolean;
 }
 
 const ROWS_PER_PAGE = 100;
@@ -81,6 +82,7 @@ export function ExcelPreviewDialog({
   fileName,
   open,
   onOpenChange,
+  loadingUrl = false,
 }: ExcelPreviewDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function ExcelPreviewDialog({
   const [fullscreen, setFullscreen] = useState(false);
 
   const loadFile = useCallback(async () => {
-    if (!url) return;
+    if (!url || loadingUrl) return;
     setLoading(true);
     setError(null);
     setSheets([]);
@@ -249,10 +251,12 @@ export function ExcelPreviewDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          {loading && (
+          {(loading || loadingUrl) && (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-3 text-sm text-muted">Loading preview...</span>
+              <span className="ml-3 text-sm text-muted">
+                {loadingUrl ? "Signing preview..." : "Loading preview..."}
+              </span>
             </div>
           )}
 

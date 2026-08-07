@@ -22,6 +22,7 @@ import {
   uploadFile,
   useCategories,
   ProductStatus,
+  ProductInput,
 } from "@/lib/admin-queries"
 
 interface FaqItem { question: string; answer: string }
@@ -57,6 +58,7 @@ export default function NewProductPage() {
   const [uploadingThumb, setUploadingThumb] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [downloadableFileUrl, setDownloadableFileUrl] = useState("")
+  const [downloadableFileStorageId, setDownloadableFileStorageId] = useState<ProductInput["downloadableFileStorageId"]>(undefined)
   const [fileSize, setFileSize] = useState("")
   const [uploadingFile, setUploadingFile] = useState(false)
 
@@ -123,8 +125,9 @@ export default function NewProductPage() {
     setUploadingFile(true)
     try {
       const arrayBuf = await file.arrayBuffer()
-      const { url } = await upload({ name: file.name, content: arrayBuf, contentType: file.type, folder: "Downloads" })
-      setDownloadableFileUrl(url ?? "")
+      const result = await upload({ name: file.name, content: arrayBuf, contentType: file.type, folder: "Downloads" })
+      setDownloadableFileUrl(result.url ?? "")
+      setDownloadableFileStorageId(result.storageId ?? undefined)
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
       toast.success("File uploaded")
     } catch (err) {
@@ -163,6 +166,7 @@ export default function NewProductPage() {
       galleryImages,
       thumbnail,
       downloadableFile: downloadableFileUrl || undefined,
+      downloadableFileStorageId: downloadableFileStorageId ?? undefined,
       fileSize: fileSize || undefined,
       version: version || undefined,
       changelog: changelog || undefined,

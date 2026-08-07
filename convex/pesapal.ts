@@ -197,12 +197,12 @@ export const handleCallback = httpAction(async (ctx, request) => {
 
           const downloadLinks = [];
           for (const item of order.items) {
-            const product = await ctx.runQuery(api.products.getById, { id: item.productId });
-            if (product?.downloadableFile) {
+            const product = await ctx.runQuery(internal.products.getByIdInternal, { id: item.productId });
+            if (product?.downloadableFile || product?.downloadableFileStorageId) {
               const expiresAt = Date.now() + (product.downloadExpiry ?? 30) * 24 * 60 * 60 * 1000;
               downloadLinks.push({
                 productId: item.productId,
-                url: product.downloadableFile,
+                url: "",
                 expiresAt,
                 downloadCount: 0,
               });
@@ -214,7 +214,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
                 downloadCount: 0,
                 remainingDownloads: product.downloadLimit ?? 10,
                 expiresAt,
-                downloadUrl: product.downloadableFile,
+                storageId: product.downloadableFileStorageId,
                 status: "active",
               });
             }

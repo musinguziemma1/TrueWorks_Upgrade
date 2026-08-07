@@ -291,6 +291,19 @@ export const setRole = mutation({
       throw new Error("Cannot change your own role");
     }
 
+    // SECURITY: Only a superadmin can assign superadmin or owner roles. An
+    // admin may only assign roles at or below their own level.
+    const actorLevel = ROLE_HIERARCHY[actor[0].role] ?? 0;
+    const newRoleLevel = ROLE_HIERARCHY[args.role] ?? 0;
+    if (newRoleLevel > actorLevel) {
+      throw new Error(
+        "Unauthorized: You cannot assign a role higher than your own"
+      );
+    }
+    if ((args.role === "superadmin" || args.role === "owner") && actor[0].role !== "superadmin") {
+      throw new Error("Unauthorized: Only a superadmin can assign superadmin or owner roles");
+    }
+
     await ctx.db.patch(args.userId, { role: args.role, updatedAt: Date.now() });
 
     if (target.clerkId) {
@@ -525,36 +538,43 @@ export const seedAdmin = mutation({
     const foundUser = existing[0] ?? existingByEmail[0];
     if (foundUser) {
       // SECURITY: Only allow token update if:
-      // 1. The caller's email matches the found user's email (self-linking), OR
+      // 1. The caller's identity email matches the found user's email (self-linking), OR
       // 2. The caller is already an admin/superadmin
-      const callerEmail = (args.email ?? "").toLowerCase();
+      // The identity email is verified by Clerk — never trust args.email for
+      // authorization decisions.
+      const identityEmail = identity.email ?? "";
+      const callerEmail = identityEmail.toLowerCase();
       const isSelfLink = foundUser.email.toLowerCase() === callerEmail;
 
-      let isCallerAdmin = false;
+      let callerUser: { role: string } | null = null;
       if (!isSelfLink) {
         // Check if the CALLER (not the target) is already an admin
-        const callerUser = await ctx.db
+        callerUser = await ctx.db
           .query("users")
           .withIndex("by_tokenIdentifier", (q) =>
             q.eq("tokenIdentifier", identity.tokenIdentifier)
           )
           .first();
-        isCallerAdmin = !!(callerUser && ROLE_HIERARCHY[callerUser.role] >= ROLE_HIERARCHY.admin);
       }
+      const isCallerAdmin = !!callerUser &&
+        ROLE_HIERARCHY[callerUser.role] >= ROLE_HIERARCHY.admin;
 
       if (!isSelfLink && !isCallerAdmin) {
         throw new Error("Unauthorized: Cannot modify another user's account");
       }
 
-      // Only allow role escalation to superadmin if caller is superadmin
-      const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
-      const newRole = isSuperAdminEmail && isCallerAdmin ? "superadmin" : foundUser.role;
+      // SECURITY: Role escalation to superadmin requires the CALLER to actually
+      // be a superadmin — never base it on args.email (attacker-controlled).
+      const callerIsSuperAdmin = !!callerUser &&
+        ROLE_HIERARCHY[callerUser.role] >= ROLE_HIERARCHY.superadmin;
+      const newRole = callerIsSuperAdmin && isCallerAdmin ? "superadmin" : foundUser.role;
 
       const now = Date.now();
       await ctx.db.patch(foundUser._id, {
         tokenIdentifier: identity.tokenIdentifier,
         clerkId: args.clerkId,
-        email: args.email,
+        // Self-linking: store the verified identity email, not args.email.
+        email: isSelfLink ? (identityEmail.toLowerCase() || args.email) : args.email,
         name: args.name ?? foundUser.name,
         avatar: args.avatar ?? foundUser.avatar,
         role: newRole,
@@ -563,7 +583,10 @@ export const seedAdmin = mutation({
       return foundUser._id;
     }
 
-    // New user — check permissions
+    // New user — check permissions.
+    // SECURITY: All authorization must be derived from the identity verified by
+    // Clerk, never from client-supplied args.email.
+    const identityEmail = (identity.email ?? "").toLowerCase();
     const claims = identity as unknown as {
       role?: string;
       metadata?: { role?: string };
@@ -573,9 +596,9 @@ export const seedAdmin = mutation({
     const claimsRole =
       claims.role ?? claims.metadata?.role ?? claims.publicMetadata?.role;
 
-    // Allow if: has admin role in Clerk claims OR email is in admin allowlist
+    // Allow if: has admin role in Clerk claims OR identity email is in admin allowlist
     const hasClerkAdminRole = claimsRole === "admin" || claimsRole === "owner" || claimsRole === "superadmin";
-    const hasAdminEmail = isAdminEmail(args.email);
+    const hasAdminEmail = identityEmail.length > 0 && isAdminEmail(identityEmail);
 
     if (!hasClerkAdminRole && !hasAdminEmail) {
       throw new Error(
@@ -585,12 +608,14 @@ export const seedAdmin = mutation({
 
     const now = Date.now();
     const tokenIdentifier = identity.tokenIdentifier;
-    const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
+    const isSuperAdminEmail = identityEmail.length > 0 && SUPERADMIN_EMAILS.includes(identityEmail);
     const assignedRole = isSuperAdminEmail ? "superadmin" : "admin";
+    // Store the verified identity email, not args.email (which is attacker-controlled).
+    const storedEmail = identityEmail || (args.email ?? "").toLowerCase();
     const id = await ctx.db.insert("users", {
       clerkId: args.clerkId,
       tokenIdentifier,
-      email: args.email,
+      email: storedEmail,
       name: args.name,
       avatar: args.avatar,
       role: assignedRole,
@@ -602,7 +627,7 @@ export const seedAdmin = mutation({
       action: "user.seed_admin",
       entityType: "user",
       entityId: id,
-      summary: `Seeded admin account "${args.email}" as ${assignedRole}`,
+      summary: `Seeded admin account "${storedEmail}" as ${assignedRole}`,
     });
     return id;
   },
@@ -628,7 +653,11 @@ export const syncMyAccount = mutation({
       .first();
     if (user) return { synced: true, id: user._id };
 
-    if (args.clerkId) {
+    // SECURITY: only rebind a record via clerkId when the supplied clerkId
+    // matches the identity's own subject claim (verified by Clerk). This
+    // prevents claiming another user's record by guessing/stealing their id.
+    const identitySubject = identity.subject ?? identity.clerkId;
+    if (args.clerkId && identitySubject && args.clerkId === identitySubject) {
       user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -646,8 +675,10 @@ export const syncMyAccount = mutation({
       }
     }
 
-    // Find by email
-    if (args.email) {
+    // Find by email — SECURITY: only claim a record whose email matches the
+    // identity verified by Clerk. Never rebind based on client-supplied args.email.
+    const identityEmail = (identity.email ?? "").toLowerCase();
+    if (args.email && identityEmail && args.email.toLowerCase() === identityEmail) {
       user = await ctx.db
         .query("users")
         .filter((q) => q.eq(q.field("email"), args.email))

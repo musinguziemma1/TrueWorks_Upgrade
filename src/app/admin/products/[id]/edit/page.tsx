@@ -25,6 +25,7 @@ import {
   useCategories,
   useProducts,
   ProductStatus,
+  ProductInput,
 } from "@/lib/admin-queries"
 
 interface FaqItem { question: string; answer: string }
@@ -80,6 +81,7 @@ export default function EditProductPage() {
   const [uploadingThumb, setUploadingThumb] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [downloadableFileUrl, setDownloadableFileUrl] = useState("")
+  const [downloadableFileStorageId, setDownloadableFileStorageId] = useState<ProductInput["downloadableFileStorageId"]>(undefined)
   const [fileSize, setFileSize] = useState("")
   const [uploadingFile, setUploadingFile] = useState(false)
 
@@ -125,6 +127,7 @@ export default function EditProductPage() {
       setThumbnail(product.thumbnail)
       setGalleryImages(product.galleryImages)
       setDownloadableFileUrl(product.downloadableFile ?? "")
+      setDownloadableFileStorageId((product as any).downloadableFileStorageId ?? undefined)
       setFileSize(product.fileSize ?? "")
       setFaqs(product.faqs.length > 0 ? product.faqs : [{ question: "", answer: "" }])
       setBundleProductIds(product.bundleProductIds ? [...product.bundleProductIds] : [])
@@ -181,8 +184,9 @@ export default function EditProductPage() {
     setUploadingFile(true)
     try {
       const arrayBuf = await file.arrayBuffer()
-      const { url } = await upload({ name: file.name, content: arrayBuf, contentType: file.type, folder: "Downloads" })
-      setDownloadableFileUrl(url ?? "")
+      const result = await upload({ name: file.name, content: arrayBuf, contentType: file.type, folder: "Downloads" })
+      setDownloadableFileUrl(result.url ?? "")
+      setDownloadableFileStorageId(result.storageId ?? undefined)
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
       toast.success("File uploaded")
     } catch (err) {
@@ -223,6 +227,7 @@ export default function EditProductPage() {
         galleryImages,
         thumbnail,
         downloadableFile: downloadableFileUrl || undefined,
+        downloadableFileStorageId: downloadableFileStorageId ?? undefined,
         fileSize: fileSize || undefined,
         version: version || undefined,
         changelog: changelog || undefined,

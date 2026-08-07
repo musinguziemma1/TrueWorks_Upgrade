@@ -1,9 +1,26 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { PaginationOptions } from "convex/server";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
+
+/**
+ * SECURITY: The permanent storage URL (downloadableFile) must never reach the
+ * browser for non-admin callers — it is the sellable content and would let
+ * anyone download the paid file without purchasing. Public payloads expose a
+ * boolean `hasDownloadableFile` instead; actual URLs are minted on demand via
+ * signed, server-checked download/preview functions.
+ */
+type PublicProduct = Omit<Doc<"products">, "downloadableFile"> & {
+  downloadableFile?: string | undefined;
+  hasDownloadableFile: boolean;
+};
+
+function publicProduct(p: Doc<"products">): PublicProduct {
+  const { downloadableFile, ...rest } = p;
+  return { ...rest, hasDownloadableFile: !!(p.downloadableFileStorageId ?? downloadableFile) };
+}
 
 async function syncCategoryProductCount(ctx: any, categoryName: string) {
   const cats = await ctx.db
@@ -45,14 +62,16 @@ export const list = query({
     if (args.search) {
       const lower = args.search.toLowerCase();
       const all = await q.collect();
-      return all.filter((p) =>
+      const filtered = all.filter((p) =>
         p.name.toLowerCase().includes(lower) ||
         p.sku.toLowerCase().includes(lower) ||
         p.shortDescription.toLowerCase().includes(lower)
       );
+      return isAdmin ? filtered : filtered.map((p) => publicProduct(p));
     }
 
-    return await q.order("desc").take(100);
+    const rows = await q.order("desc").take(100);
+    return isAdmin ? rows : rows.map((p) => publicProduct(p));
   },
 });
 
@@ -66,7 +85,16 @@ export const getById = query({
       const isAdmin = await requireAdminSilent(ctx);
       if (!isAdmin) return null;
     }
-    return product;
+    const isAdmin = await requireAdminSilent(ctx);
+    return isAdmin ? product : publicProduct(product);
+  },
+});
+
+/** Internal: full product incl. sellable file metadata for payment webhooks. */
+export const getByIdInternal = internalQuery({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });
 
@@ -84,7 +112,8 @@ export const getBySlug = query({
       const isAdmin = await requireAdminSilent(ctx);
       if (!isAdmin) return null;
     }
-    return product;
+    const isAdmin = await requireAdminSilent(ctx);
+    return isAdmin ? product : publicProduct(product);
   },
 });
 
@@ -164,6 +193,7 @@ export const create = mutation({
     galleryImages: v.array(v.string()),
     thumbnail: v.string(),
     downloadableFile: v.optional(v.string()),
+    downloadableFileStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),
@@ -237,6 +267,7 @@ export const update = mutation({
     galleryImages: v.optional(v.array(v.string())),
     thumbnail: v.optional(v.string()),
     downloadableFile: v.optional(v.string()),
+    downloadableFileStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),

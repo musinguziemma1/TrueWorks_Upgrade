@@ -1,5 +1,6 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
 
@@ -38,6 +39,7 @@ export const create = internalMutation({
     remainingDownloads: v.number(),
     expiresAt: v.number(),
     downloadUrl: v.optional(v.string()),
+    storageId: v.optional(v.id("_storage")),
     browser: v.optional(v.string()),
     device: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
@@ -81,7 +83,40 @@ export const recordDownload = mutation({
       device: args.device ?? download.device,
       ipAddress: args.ipAddress ?? download.ipAddress,
     });
+    // Return a freshly-minted signed URL rather than any stored permanent URL.
+    // This keeps the sellable file URL out of queued responses and ensures the
+    // served link is tied to the just-validated download grant.
+    if (download.storageId) {
+      return await ctx.storage.getUrl(download.storageId as Id<"_storage">);
+    }
     return download.downloadUrl;
+  },
+});
+
+/** Preview a product's file after validating a purchase entitlement. */
+export const getPreviewUrl = mutation({
+  args: { productId: v.id("products") },
+  handler: async (ctx, args) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) throw new Error("You must be logged in");
+
+    // Must hold an active download grant for this product to preview its file.
+    const grant = await ctx.db
+      .query("downloads")
+      .withIndex("by_productId", (q) => q.eq("productId", args.productId))
+      .filter((q) => q.eq(q.field("email"), me.email))
+      .first();
+    if (!grant || grant.status !== "active") {
+      throw new Error("No active download for this product");
+    }
+    if (grant.expiresAt < Date.now()) {
+      throw new Error("Download has expired");
+    }
+    const product = await ctx.db.get(args.productId);
+    if (!product?.downloadableFileStorageId) {
+      throw new Error("No preview available");
+    }
+    return await ctx.storage.getUrl(product.downloadableFileStorageId as Id<"_storage">);
   },
 });
 

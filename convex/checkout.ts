@@ -75,7 +75,7 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
       // match a valid tier on the product — never trust a client-sent price.
       let price = product.salePrice ?? product.price;
       if (item.tier && product.pricingTiers && product.pricingTiers.length > 0) {
-        const tier = product.pricingTiers.find((t) => t.name === item.tier);
+        const tier = product.pricingTiers.find((t: any) => t.name === item.tier);
         if (!tier) {
           return new Response(JSON.stringify({ error: `Invalid tier for ${product.name}` }), { status: 400, headers: { "Content-Type": "application/json" } });
         }

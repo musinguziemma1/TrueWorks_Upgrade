@@ -16,6 +16,7 @@ import {
   Loader2,
   Star,
   Play,
+  Eye,
   X,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
@@ -32,7 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { ExcelPreview } from "@/components/ui/excel-preview";
+import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog";
+import { useSignedPreviewUrl } from "@/lib/use-signed-preview";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -54,6 +56,9 @@ export default function ProductDetail() {
   const [showVideo, setShowVideo] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const preview = useSignedPreviewUrl();
 
   const [reviewName, setReviewName] = useState("");
   const [reviewEmail, setReviewEmail] = useState("");
@@ -353,9 +358,19 @@ export default function ProductDetail() {
                     </span>
                   )}
                 </div>
-                {p.downloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(p.fileType) && (
+                {p.hasDownloadableFile && /excel|csv|xlsx|xls|xlsm|xlsb/i.test(p.fileType) && (
                   <div className="mt-4">
-                    <ExcelPreview url={p.downloadableFile} fileName={p.name} />
+                    <Button variant="outline" size="sm" onClick={() => { preview.resolve(product?._id as never); setPreviewOpen(true); }}>
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Preview
+                    </Button>
+                    <ExcelPreviewDialog
+                      url={preview.url ?? ""}
+                      fileName={p.name}
+                      open={previewOpen}
+                      onOpenChange={setPreviewOpen}
+                      loadingUrl={preview.loading}
+                    />
                   </div>
                 )}
               </div>
