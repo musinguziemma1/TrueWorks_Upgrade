@@ -588,6 +588,68 @@ export const seedAdmin = mutation({
   },
 });
 
+export const syncMyAccount = mutation({
+  args: {
+    clerkId: v.string(),
+    email: v.string(),
+    name: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { synced: false };
+
+    // Find existing user by any means
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
+      .first();
+    if (user) return { synced: true, id: user._id };
+
+    if (args.clerkId) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+        .first();
+      if (user) {
+        await ctx.db.patch(user._id, {
+          tokenIdentifier: identity.tokenIdentifier,
+          clerkId: args.clerkId,
+          email: args.email || user.email,
+          name: args.name ?? user.name,
+          avatar: args.avatar ?? user.avatar,
+          updatedAt: Date.now(),
+        });
+        return { synced: true, id: user._id };
+      }
+    }
+
+    // Find by email
+    if (args.email) {
+      user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), args.email))
+        .first();
+      if (user) {
+        await ctx.db.patch(user._id, {
+          tokenIdentifier: identity.tokenIdentifier,
+          clerkId: args.clerkId,
+          email: args.email,
+          name: args.name ?? user.name,
+          avatar: args.avatar ?? user.avatar,
+          updatedAt: Date.now(),
+        });
+        return { synced: true, id: user._id };
+      }
+    }
+
+    // Not found — let seedAdmin handle new user creation
+    return { synced: false };
+  },
+});
+
 export const deleteFromClerk = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {

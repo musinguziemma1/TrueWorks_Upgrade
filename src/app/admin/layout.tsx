@@ -24,14 +24,38 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     (sessionClaims as { emailAddresses?: Array<{ emailAddress: string }> } | undefined)?.emailAddresses?.[0]?.emailAddress ??
     null
 
-  let convexRole: string | null = null
-  let convexStatus: string | null = null
   let token: string | null = null
   try {
     token = await getToken({ template: "convex" })
   } catch {
     token = null
   }
+
+  // STEP 1: Sync the user record first — patches tokenIdentifier/clerkId
+  // to match the current JWT before any queries run.
+  if (token) {
+    try {
+      const cu = await currentUser()
+      if (cu) {
+        await fetchMutation(
+          api.users.syncMyAccount,
+          {
+            clerkId: cu.id,
+            email: cu.emailAddresses?.[0]?.emailAddress ?? "",
+            name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || undefined,
+            avatar: cu.imageUrl || undefined,
+          },
+          { token }
+        )
+      }
+    } catch {
+      // Ignore sync errors — seedAdmin below will handle new users
+    }
+  }
+
+  // STEP 2: Now fetch the user record (should exist after sync)
+  let convexRole: string | null = null
+  let convexStatus: string | null = null
 
   if (token) {
     try {
@@ -51,10 +75,8 @@ export default async function AdminRootLayout({ children }: { children: React.Re
 
   const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAdminEmail(claimsEmail)
 
-  // Always ensure the user record exists and tokenIdentifier is current.
-  // This fixes the case where the user was imported from dev (old tokenIdentifier)
-  // and isAdminEmail grants access but the Convex user record is stale.
-  if (token && !convexRole) {
+  // STEP 3: If still no Convex role, try seedAdmin for new users
+  if (!hasAdminAccess && token) {
     try {
       const cu = await currentUser()
       if (cu) {
@@ -68,14 +90,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
           },
           { token }
         )
-        // Re-fetch role after seedAdmin upserted the record
-        try {
-          const u2 = await fetchQuery(api.users.current, {}, { token })
-          convexRole = u2?.role ?? null
-          convexStatus = u2?.status ?? null
-        } catch {
-          convexRole = "admin"
-        }
+        convexRole = "admin"
       }
     } catch {
       // Not eligible for admin promotion
