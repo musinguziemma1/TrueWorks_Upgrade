@@ -6,6 +6,7 @@ import AdminSidebar from "@/components/layout/admin-sidebar"
 import AdminHeader from "@/components/layout/admin-header"
 import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context"
 import { isAdminEmail } from "@/lib/admin-emails"
+import { AuthGate } from "@/components/auth/auth-gate"
 
 function isAllowedRole(role: string | null | undefined): boolean {
   return role === "superadmin" || role === "admin" || role === "owner" || role === "editor"
@@ -106,7 +107,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
         <AdminSidebar />
         <div className="lg:pl-72">
           <AdminHeader />
-          <main className="p-4 lg:p-6">{children}</main>
+          <main className="p-4 lg:p-6"><AuthGate>{children}</AuthGate></main>
         </div>
       </div>
     </AdminSidebarProvider>
