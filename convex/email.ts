@@ -1,5 +1,6 @@
 import { httpAction, internalAction } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
@@ -396,6 +397,50 @@ export const sendSubscriberWelcome = internalAction({
     });
 
     return { sent };
+  },
+});
+
+export const sendCampaignEmails = internalAction({
+  args: {
+    campaignId: v.id("campaigns"),
+  },
+  handler: async (ctx, args) => {
+    const campaign = await ctx.runQuery(api.campaigns.getInternal, { id: args.campaignId });
+    if (!campaign) return { sent: 0, failed: 0 };
+
+    const active = await ctx.runQuery(api.subscribers.listActive);
+    if (active.length === 0) return { sent: 0, failed: 0 };
+
+    const html = baseTemplate(String(campaign.content ?? ""));
+
+    let sent = 0;
+    let failed = 0;
+
+    // Send in batches of 50 to avoid Resend rate limits
+    for (let i = 0; i < active.length; i += 50) {
+      const batch = active.slice(i, i + 50);
+      const results = await Promise.allSettled(
+        batch.map((sub) =>
+          sendEmail({
+            to: sub.email,
+            subject: String(campaign.subject ?? "").slice(0, 128),
+            html,
+          })
+        )
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) sent++;
+        else failed++;
+      }
+    }
+
+    // Update campaign record
+    await ctx.runMutation(api.campaigns.markSentInternal, {
+      id: args.campaignId,
+      sentCount: sent,
+    });
+
+    return { sent, failed };
   },
 });
 

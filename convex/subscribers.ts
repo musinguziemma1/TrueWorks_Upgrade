@@ -6,7 +6,9 @@ import { checkRateLimit } from "./rateLimit";
 import { auditLog } from "./lib/audit";
 
 export const list = query({
-  args: {     activeOnly: v.optional(v.boolean()) },
+  args: {
+    activeOnly: v.optional(v.boolean()),
+  },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
     const all = await ctx.db.query("subscribers").collect();
@@ -14,6 +16,14 @@ export const list = query({
       return all.filter((s) => s.active);
     }
     return all;
+  },
+});
+
+export const listActive = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("subscribers").collect();
+    return all.filter((s) => s.active);
   },
 });
 
@@ -54,6 +64,15 @@ export const create = mutation({
     await ctx.scheduler.runAfter(0, internal.email.sendSubscriberWelcome, {
       subscriberEmail: email,
       subscriberName: args.name,
+    });
+    // Notify admin
+    await ctx.db.insert("notifications", {
+      type: "subscriber",
+      title: "New Subscriber",
+      message: `${args.name || email} subscribed to the newsletter${args.source ? ` from ${args.source}` : ""}.`,
+      read: false,
+      link: "/admin/email",
+      createdAt: Date.now(),
     });
     return id;
   },

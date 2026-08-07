@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { requireAdmin } from "./users";
 import { auditLog } from "./lib/audit";
 
@@ -25,6 +26,25 @@ export const get = query({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     return await ctx.db.get(args.id);
+  },
+});
+
+export const getInternal = query({
+  args: { id: v.id("campaigns") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const markSentInternal = mutation({
+  args: { id: v.id("campaigns"), sentCount: v.number() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: "sent",
+      sentAt: Date.now(),
+      sentCount: args.sentCount,
+      updatedAt: Date.now(),
+    });
   },
 });
 
@@ -109,6 +129,40 @@ export const markSent = mutation({
       sentCount: args.sentCount,
       updatedAt: Date.now(),
     });
+  },
+});
+
+export const send = mutation({
+  args: { id: v.id("campaigns") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const campaign = await ctx.db.get(args.id);
+    if (!campaign) throw new Error("Campaign not found");
+    if (campaign.status === "sent") throw new Error("Campaign already sent");
+
+    // Schedule the actual email sending as an internal action
+    await ctx.scheduler.runAfter(0, internal.email.sendCampaignEmails, {
+      campaignId: args.id,
+    });
+
+    // Notify admin
+    await ctx.db.insert("notifications", {
+      type: "campaign",
+      title: "Campaign Sending",
+      message: `"${campaign.name}" is queued for delivery to active subscribers.`,
+      read: false,
+      link: "/admin/email",
+      createdAt: Date.now(),
+    });
+
+    await auditLog(ctx, {
+      action: "campaign.send",
+      entityType: "campaign",
+      entityId: args.id,
+      summary: `Queued campaign "${campaign.name}" for sending`,
+    });
+
+    return { queued: true };
   },
 });
 

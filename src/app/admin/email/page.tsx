@@ -56,6 +56,7 @@ export default function EmailPage() {
   const [editingId, setEditingId] = useState<Id<"campaigns"> | null>(null)
   const [formData, setFormData] = useState<CampaignFormData>(defaultFormData)
   const [saving, setSaving] = useState(false)
+  const [sendingId, setSendingId] = useState<Id<"campaigns"> | null>(null)
   const perPage = 8
 
   const campaigns = useQuery(api.campaigns.list, {})
@@ -64,7 +65,7 @@ export default function EmailPage() {
   const createCampaign = useMutation(api.campaigns.create)
   const updateCampaign = useMutation(api.campaigns.update)
   const deleteCampaign = useMutation(api.campaigns.remove)
-  const markSent = useMutation(api.campaigns.markSent)
+  const sendCampaign = useMutation(api.campaigns.send)
 
   const totalSubscribers = subscribers?.length ?? 0
   const activeSubscribers = subscribers?.filter((s) => s.active).length ?? 0
@@ -130,12 +131,14 @@ export default function EmailPage() {
   }
 
   async function handleSend(id: Id<"campaigns">) {
+    setSendingId(id)
     try {
-      const count = activeSubscribers
-      await markSent({ id, sentCount: count })
-      toast.success(`Campaign sent to ${count} subscriber${count !== 1 ? "s" : ""}`)
+      await sendCampaign({ id })
+      toast.success("Campaign queued for sending — emails are being delivered now")
     } catch {
       toast.error("Failed to send campaign")
+    } finally {
+      setSendingId(null)
     }
   }
 
@@ -228,7 +231,17 @@ export default function EmailPage() {
                           <TableCell>
                             <div className="flex items-center justify-end gap-1">
                               {c.status !== "sent" && (
-                                <Button variant="ghost" size="icon-sm" title="Send campaign" onClick={() => handleSend(c._id)}><Send className="h-4 w-4" /></Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  title="Send campaign"
+                                  disabled={sendingId === c._id}
+                                  onClick={() => handleSend(c._id)}
+                                >
+                                  {sendingId === c._id
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <Send className="h-4 w-4" />}
+                                </Button>
                               )}
                               <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(c)}><FileText className="h-4 w-4" /></Button>
                               <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => handleDelete(c._id)}><Trash2 className="h-4 w-4" /></Button>
