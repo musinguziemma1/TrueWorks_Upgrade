@@ -406,3 +406,69 @@ export const listMine = query({
       .take(50);
   },
 });
+
+/**
+ * "Frequently bought together" recommendations. Given a target product, count
+ * how many completed orders bundled it together with each other product, and
+ * return the most-commonly co-purchased products (published only).
+ */
+export const getCoPurchased = query({
+  args: {
+    productId: v.id("products"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const take = args.limit ?? 3;
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_paymentStatus", (q) => q.eq("paymentStatus", "completed"))
+      .collect();
+
+    const scores = new Map<string, { count: number; name?: string }>();
+    for (const order of orders) {
+      const present = new Set(order.items.map((it) => it.productId));
+      if (!present.has(args.productId)) continue;
+      for (const item of order.items) {
+        if (item.productId === args.productId) continue;
+        const cur = scores.get(item.productId) ?? { count: 0 };
+        cur.count += item.quantity ?? 1;
+        cur.name = cur.name ?? item.productName;
+        scores.set(item.productId, cur);
+      }
+    }
+
+    const ranked = Array.from(scores.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, take);
+
+    const out: Array<Record<string, unknown> & { _id: Id<"products"> }> = [];
+    for (const [id] of ranked) {
+      const p = await ctx.db.get(id as Id<"products">);
+      if (p && p.status === "published") {
+        out.push({
+          _id: p._id,
+          name: p.name,
+          slug: p.slug,
+          shortDescription: p.shortDescription,
+          price: p.salePrice ?? p.price,
+          salePrice: p.salePrice,
+          category: p.category,
+          thumbnail: p.thumbnail ?? "",
+          galleryImages: p.galleryImages ?? [],
+          rating: p.rating,
+          reviewCount: p.reviewCount,
+          featured: p.featured,
+          fileType: p.fileType,
+          tags: p.tags ?? [],
+          downloadLimit: p.downloadLimit,
+          downloadableFile: p.downloadableFile,
+          totalSales: p.totalSales,
+          coPurchases: scores.get(id)?.count ?? 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        });
+      }
+    }
+    return out;
+  },
+});

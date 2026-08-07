@@ -56,6 +56,7 @@ export default function ProductDetail() {
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
   const [reviewName, setReviewName] = useState("");
+  const [reviewEmail, setReviewEmail] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewContent, setReviewContent] = useState("");
@@ -78,6 +79,10 @@ export default function ProductDetail() {
     product?.bundleProductIds && product.bundleProductIds.length > 0
       ? { ids: product.bundleProductIds }
       : "skip"
+  );
+  const coPurchased = useQuery(
+    api.orders.getCoPurchased,
+    product ? { productId: product._id as Id<"products"> } : "skip"
   );
 
   useEffect(() => {
@@ -175,9 +180,11 @@ export default function ProductDetail() {
         rating: reviewRating,
         title: reviewTitle.trim() || undefined,
         content: reviewContent.trim(),
+        email: reviewEmail.trim() || undefined,
       });
       toast.success("Review submitted!", { description: "Thank you for your feedback." });
       setReviewName("");
+      setReviewEmail("");
       setReviewRating(0);
       setReviewTitle("");
       setReviewContent("");
@@ -545,6 +552,12 @@ export default function ProductDetail() {
                         <div className="flex-1">
                           <div className="mb-1 flex items-center gap-2">
                             <span className="text-sm font-semibold text-primary">{r.customerName}</span>
+                            {r.verified && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                                <ShieldCheck className="h-3 w-3" />
+                                Verified Purchase
+                              </span>
+                            )}
                             <span className="text-xs text-muted">{formatDate(r.createdAt)}</span>
                           </div>
                           <Stars rating={r.rating} className="mb-2" />
@@ -569,6 +582,18 @@ export default function ProductDetail() {
                         onChange={(e) => setReviewName(e.target.value)}
                         placeholder="John Doe"
                         required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-primary">
+                        Email <span className="text-muted">(to verify your purchase)</span>
+                      </label>
+                      <Input
+                        type="email"
+                        value={reviewEmail}
+                        onChange={(e) => setReviewEmail(e.target.value)}
+                        placeholder="you@example.com"
                       />
                     </div>
 
@@ -638,6 +663,31 @@ export default function ProductDetail() {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Frequently bought together */}
+          {coPurchased !== undefined && coPurchased.length > 0 && (
+            <div className="mt-16 lg:mt-20">
+              <div className="mb-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
+                  Frequently Bought Together
+                </p>
+                <h2 className="mt-2 font-heading text-2xl font-semibold text-primary md:text-3xl">
+                  Customers Also Purchased
+                </h2>
+                <p className="mt-2 text-sm text-muted">
+                  Pairs well with {p.name} — chosen by real customers.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                {coPurchased.map((cp) => (
+                  <ProductCard
+                    key={cp._id}
+                    product={cp as unknown as StoreProduct}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Related */}
           {related.length > 0 && (

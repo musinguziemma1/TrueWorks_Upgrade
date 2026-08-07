@@ -182,6 +182,7 @@ export default defineSchema({
     content: v.string(),
     status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
     featured: v.boolean(),
+    verified: v.optional(v.boolean()),
     helpfulCount: v.optional(v.number()),
     reported: v.optional(v.boolean()),
     createdAt: v.number(),

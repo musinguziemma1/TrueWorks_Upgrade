@@ -66,6 +66,7 @@ export const create = mutation({
     rating: v.number(),
     title: v.optional(v.string()),
     content: v.string(),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (args.rating < 1 || args.rating > 5) {
@@ -80,6 +81,23 @@ export const create = mutation({
       3_600_000
     );
 
+    // Verify the review is from a genuine purchaser. Only check when an email
+    // is supplied and only cross-reference completed orders for that email.
+    let verified = false;
+    if (args.email && args.email.trim()) {
+      const completed = await ctx.db
+        .query("orders")
+        .withIndex("by_customerEmail", (q) =>
+          q.eq("customerEmail", args.email!.trim().toLowerCase())
+        )
+        .collect();
+      verified = completed.some(
+        (o) =>
+          o.paymentStatus === "completed" &&
+          o.items.some((it) => it.productId === args.productId)
+      );
+    }
+
     const reviewId = await ctx.db.insert("reviews", {
       productId: args.productId,
       customerId: undefined,
@@ -89,6 +107,7 @@ export const create = mutation({
       content: args.content,
       status: "pending",
       featured: false,
+      verified,
       helpfulCount: 0,
       reported: false,
       createdAt: Date.now(),
