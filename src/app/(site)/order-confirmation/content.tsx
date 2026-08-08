@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -13,8 +12,9 @@ import {
   ArrowRight,
   Mail,
   ShoppingBag,
+  Clock,
+  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFormatPrice } from "@/lib/use-format-price";
 
@@ -38,13 +38,20 @@ const nextSteps = [
   },
 ];
 
+type ConfirmationStatus = "completed" | "pending" | "failed" | "refunded";
+
 export default function OrderConfirmationContent() {
   const formatPrice = useFormatPrice();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("order") || "";
   const total = Number(searchParams.get("total")) || 0;
+  const rawStatus = searchParams.get("status") || "";
+  const status: ConfirmationStatus =
+    rawStatus === "completed" || rawStatus === "pending" || rawStatus === "failed" || rawStatus === "refunded"
+      ? rawStatus
+      : "completed";
 
-  const hasOrder = orderNumber && total > 0;
+  const hasOrder = !!orderNumber;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -65,60 +72,126 @@ export default function OrderConfirmationContent() {
 
         {hasOrder ? (
           <>
-            <div className="rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card sm:p-12">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.15 }}
-                className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.4 }}
-                >
-                  <CheckCircle2 className="h-11 w-11 text-success" />
-                </motion.div>
-              </motion.div>
+            {status === "completed" ? (
+              <>
+                <div className="rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card sm:p-12">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.15 }}
+                    className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10"
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.4 }}
+                    >
+                      <CheckCircle2 className="h-11 w-11 text-success" />
+                    </motion.div>
+                  </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <h1 className="mt-6 font-heading text-3xl font-semibold text-primary md:text-4xl">
+                      Thank You for Your Order
+                    </h1>
+                    <p className="mt-3 text-muted">
+                      Your order has been received and is being processed.
+                    </p>
+
+                    <div className="mt-6 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5">
+                      <span className="text-sm text-muted">Order number</span>
+                      <span className="font-heading text-sm font-bold tracking-wider text-primary">
+                        {orderNumber}
+                      </span>
+                    </div>
+
+                    {total > 0 && (
+                      <div className="mt-4 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5 ml-2">
+                        <span className="text-sm text-muted">Total</span>
+                        <span className="font-heading text-sm font-bold tracking-wider text-primary">
+                          {formatPrice(total)}
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted">
+                      <Mail className="h-4 w-4 text-secondary" />
+                      A confirmation with download links is on its way to your inbox.
+                    </p>
+
+                    <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                      <Link href="/account/downloads">
+                        <Button
+                          size="lg"
+                          className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          View Your Downloads
+                        </Button>
+                      </Link>
+                      <Link href="/store">
+                        <Button variant="outline" size="lg" className="border-primary/20 px-7 font-semibold text-primary hover:bg-primary hover:text-white">
+                          Back to Store
+                        </Button>
+                      </Link>
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.85 }}
+                  className="mt-8 rounded-2xl border border-border/70 bg-white p-6 shadow-card sm:p-8"
+                >
+                  <h2 className="font-heading text-lg font-semibold text-primary">
+                    What Happens Next
+                  </h2>
+                  <div className="mt-5 space-y-5">
+                    {nextSteps.map((item, i) => (
+                      <div key={item.title} className="flex gap-4">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/[0.06]">
+                          <item.icon className="h-5 w-5 text-primary" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            <span className="mr-2 font-heading font-bold text-accent-dark">{i + 1}.</span>
+                            {item.title}
+                          </p>
+                          <p className="mt-0.5 text-sm text-muted">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            ) : status === "pending" ? (
+              <div className="rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card sm:p-12">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
+                  <Clock className="h-11 w-11 text-accent-dark" />
+                </div>
                 <h1 className="mt-6 font-heading text-3xl font-semibold text-primary md:text-4xl">
-                  Thank You for Your Order
+                  Payment Pending
                 </h1>
                 <p className="mt-3 text-muted">
-                  Your order has been received and is being processed.
+                  Your order <span className="font-semibold text-primary">{orderNumber}</span> was
+                  received, but the payment hasn&apos;t been confirmed yet. It typically completes
+                  within a few minutes.
                 </p>
-
-                <div className="mt-6 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5">
-                  <span className="text-sm text-muted">Order number</span>
-                  <span className="font-heading text-sm font-bold tracking-wider text-primary">
-                    {orderNumber}
-                  </span>
-                </div>
-
-                <div className="mt-4 inline-flex items-center gap-2.5 rounded-lg bg-surface px-4 py-2.5 ml-2">
-                  <span className="text-sm text-muted">Total</span>
-                  <span className="font-heading text-sm font-bold tracking-wider text-primary">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-
-                <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted">
+                <p className="mx-auto mt-4 flex max-w-md items-center justify-center gap-2 text-sm text-muted">
                   <Mail className="h-4 w-4 text-secondary" />
-                  A confirmation with download links is on its way to your inbox.
+                  Once the payment clears, your download links will be sent to your inbox automatically.
                 </p>
-
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link href="/account/downloads">
                     <Button
                       size="lg"
                       className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
                     >
-                      <Download className="mr-2 h-4 w-4" />
                       View Your Downloads
                     </Button>
                   </Link>
@@ -128,35 +201,33 @@ export default function OrderConfirmationContent() {
                     </Button>
                   </Link>
                 </div>
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.85 }}
-              className="mt-8 rounded-2xl border border-border/70 bg-white p-6 shadow-card sm:p-8"
-            >
-              <h2 className="font-heading text-lg font-semibold text-primary">
-                What Happens Next
-              </h2>
-              <div className="mt-5 space-y-5">
-                {nextSteps.map((item, i) => (
-                  <div key={item.title} className="flex gap-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/[0.06]">
-                      <item.icon className="h-5 w-5 text-primary" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        <span className="mr-2 font-heading font-bold text-accent-dark">{i + 1}.</span>
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 text-sm text-muted">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
-            </motion.div>
+            ) : (
+              <div className="rounded-2xl border border-border/70 bg-white p-8 text-center shadow-card sm:p-12">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
+                  <XCircle className="h-11 w-11 text-destructive" />
+                </div>
+                <h1 className="mt-6 font-heading text-3xl font-semibold text-primary md:text-4xl">
+                  {status === "refunded" ? "Payment Refunded" : "Payment Failed"}
+                </h1>
+                <p className="mx-auto mt-3 max-w-md text-muted">
+                  {status === "refunded"
+                    ? `The payment for order ${orderNumber} was reversed. If this looks like a mistake, our support team is happy to help.`
+                    : `We couldn't process the payment for order ${orderNumber}. No money has been charged. You can try again or use a different payment method.`}
+                </p>
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <Link href="/store">
+                    <Button
+                      size="lg"
+                      className="gradient-gold px-7 font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    >
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      {status === "refunded" ? "Contact Support" : "Try Checkout Again"}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center">

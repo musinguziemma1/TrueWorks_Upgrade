@@ -291,6 +291,7 @@ export default function CheckoutContent() {
               amount: result.total,
               customerEmail: email,
               customerName: `${firstName} ${lastName}`,
+              phone,
               method:
                 pesapalMethod === "mtn"
                   ? "MTN MoMo"

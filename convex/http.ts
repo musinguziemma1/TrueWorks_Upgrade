@@ -3,7 +3,7 @@ import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { Webhook } from "svix";
 import { internal } from "./_generated/api";
-import { initiatePayment, handleCallback } from "./pesapal";
+import { initiatePayment, handleCallback, handleIpn } from "./pesapal";
 import { createPaymentIntent, handleStripeWebhook } from "./stripe";
 import { createCheckoutOrder } from "./checkout";
 import {
@@ -217,6 +217,12 @@ http.route({
   path: "/pesapal-callback",
   method: "GET",
   handler: withAuditTiming(handleCallback),
+});
+
+http.route({
+  path: "/pesapal/ipn",
+  method: "POST",
+  handler: withAuditTiming(handleIpn),
 });
 
 http.route({
