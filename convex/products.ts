@@ -1,9 +1,17 @@
 import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import type { PaginationOptions } from "convex/server";
-import { Doc, Id } from "./_generated/dataModel";
+import {
+  paginationOptsValidator,
+  type Expression,
+  type FilterBuilder,
+  type NamedTableInfo,
+  type OrderedQuery,
+} from "convex/server";
+import { Doc, Id, type DataModel } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
+
+type ProductsInfo = NamedTableInfo<DataModel, "products">;
 
 /**
  * SECURITY: The permanent storage URL (downloadableFile) must never reach the
@@ -118,30 +126,144 @@ export const getBySlug = query({
 });
 
 /**
- * Server-side paginated product list for the store. Supports filtering
- * by category, industry, and status. Use paginationOpts for cursor.
+ * Server-side paginated product list for the store. All filter/sort logic runs
+ * inside Convex so the client only loads pages. Non-admin callers are always
+ * restricted to published products and never receive the sellable file URL.
  */
 export const listPaginated = query({
   args: {
+    search: v.optional(v.string()),
     category: v.optional(v.string()),
-    industry: v.optional(v.string()),
+    industries: v.optional(v.array(v.string())),
+    fileTypes: v.optional(v.array(v.string())),
+    onSale: v.optional(v.boolean()),
+    featured: v.optional(v.boolean()),
+    minRating: v.optional(v.number()),
+    minPrice: v.optional(v.number()),
+    maxPrice: v.optional(v.number()),
+    sort: v.optional(v.string()),
     status: v.optional(v.string()),
-    paginationOpts: v.object({
-      numItems: v.number(),
-      cursor: v.union(v.string(), v.null()),
-    }),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const status = (args.status ?? "published") as "draft" | "published" | "archived";
-    const baseQ = ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", status));
+    const isAdmin = await requireAdminSilent(ctx);
+    const status = (isAdmin ? args.status ?? "published" : "published") as "published" | "draft" | "archived";
 
-    const filtered = args.category
-      ? baseQ.filter((q) => q.eq(q.field("category"), args.category!))
-      : args.industry
-      ? baseQ.filter((q) => q.eq(q.field("industry"), args.industry!))
-      : baseQ;
+    const buildConds = (qb: FilterBuilder<ProductsInfo>): Expression<boolean>[] => {
+      const c: Expression<boolean>[] = [];
+      if (args.category) c.push(qb.eq(qb.field("category"), args.category));
+      if (args.industries?.length) c.push(qb.or(...args.industries.map((i) => qb.eq(qb.field("industry"), i))));
+      if (args.fileTypes?.length) c.push(qb.or(...args.fileTypes.map((f) => qb.eq(qb.field("fileType"), f))));
+      if (args.onSale)
+        c.push(qb.and(qb.neq(qb.field("salePrice"), undefined), qb.lt(qb.field("salePrice"), qb.field("price"))));
+      if (args.featured) c.push(qb.eq(qb.field("featured"), true));
+      if (args.minRating) c.push(qb.gte(qb.field("rating"), args.minRating));
+      if (args.minPrice)
+        c.push(
+          qb.or(
+            qb.and(qb.eq(qb.field("salePrice"), undefined), qb.gte(qb.field("price"), args.minPrice)),
+            qb.and(qb.neq(qb.field("salePrice"), undefined), qb.gte(qb.field("salePrice"), args.minPrice))
+          )
+        );
+      if (args.maxPrice)
+        c.push(
+          qb.or(
+            qb.and(qb.eq(qb.field("salePrice"), undefined), qb.lte(qb.field("price"), args.maxPrice)),
+            qb.and(qb.neq(qb.field("salePrice"), undefined), qb.lte(qb.field("salePrice"), args.maxPrice))
+          )
+        );
+      return c;
+    };
 
-    return await filtered.order("desc").paginate(args.paginationOpts as PaginationOptions);
+    const baseQuery = () => ctx.db.query("products");
+
+    const searchTerm = args.search?.trim();
+    const sort = args.sort ?? "newest";
+    const useStatusIndex = sort === "newest";
+    const order = (useStatusIndex
+      ? "desc"
+      : sort === "price-asc" || sort === "name-asc"
+      ? "asc"
+      : "desc") as "asc" | "desc";
+
+    // Ordering must be applied before the cursor is stable for pagination.
+    let base: OrderedQuery<ProductsInfo>;
+    if (searchTerm) {
+      base = baseQuery()
+        .withSearchIndex("search_products", (sq) => sq.search("name", searchTerm).eq("status", status))
+        .filter((qb) => {
+          const c = buildConds(qb);
+          return c.length ? qb.and(...c) : true;
+        });
+    } else {
+      const idx = (useStatusIndex
+        ? "by_status"
+        : sort === "popular"
+        ? "by_total_sales"
+        : sort === "price-asc" || sort === "price-desc"
+        ? "by_price"
+        : sort === "name-asc" || sort === "name-desc"
+        ? "by_name"
+        : "by_rating") as "by_status" | "by_total_sales" | "by_price" | "by_name" | "by_rating";
+      base = baseQuery()
+        .withIndex(idx)
+        .order(order)
+        .filter((qb) => {
+          const c = buildConds(qb);
+          c.push(qb.eq(qb.field("status"), status));
+          return qb.and(...c);
+        });
+    }
+
+    const page = await base.paginate(args.paginationOpts);
+    return {
+      ...page,
+      page: isAdmin ? page.page : page.page.map((p) => publicProduct(p)),
+    };
+  },
+});
+
+/**
+ * Aggregate counts/prices across published products for the store sidebar
+ * (category/industry/file-type counts, min/max price, sale/featured counts).
+ */
+export const getStoreFacets = query({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("products")
+      .withIndex("by_status", (q) => q.eq("status", "published"))
+      .collect();
+
+    const categoryCounts: Record<string, number> = {};
+    const industryCounts: Record<string, number> = {};
+    const fileTypeCounts: Record<string, number> = {};
+    let saleCount = 0;
+    let featuredCount = 0;
+    let minPrice = Infinity;
+    let maxPrice = 0;
+
+    for (const p of rows) {
+      categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+      if (p.industry) industryCounts[p.industry] = (industryCounts[p.industry] || 0) + 1;
+      if (p.fileType) fileTypeCounts[p.fileType] = (fileTypeCounts[p.fileType] || 0) + 1;
+      if (p.salePrice) saleCount++;
+      if (p.featured) featuredCount++;
+      const price = p.salePrice ?? p.price;
+      if (price < minPrice) minPrice = price;
+      if (price > maxPrice) maxPrice = price;
+    }
+
+    return {
+      total: rows.length,
+      categoryCounts,
+      industryCounts,
+      fileTypeCounts,
+      saleCount,
+      featuredCount,
+minPrice: minPrice === Infinity ? 0 : minPrice,
+      maxPrice,
+    };
   },
 });
 

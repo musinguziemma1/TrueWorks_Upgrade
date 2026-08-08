@@ -1,25 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { PackageSearch } from "lucide-react";
-import { useQuery } from "convex/react";
+import { PackageSearch, Loader2 } from "lucide-react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { cn } from "@/lib/utils";
 import { convexClient } from "@/lib/convex";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
-import { StoreSidebar } from "@/components/store/store-sidebar";
-import StoreHeroVisual from "@/components/store/store-hero-visual";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { StoreSidebar, type StoreFacets } from "@/components/store/store-sidebar";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -36,7 +26,6 @@ function StoreContentInner() {
   const [search, setSearch] = useState(qParam || "");
   const [activeCategory, setActiveCategory] = useState(categoryParam || "All");
   const [sort, setSort] = useState("newest");
-  const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 999999]);
   const [minRating, setMinRating] = useState(0);
   const [fileTypes, setFileTypes] = useState<string[]>([]);
@@ -49,7 +38,6 @@ function StoreContentInner() {
     setLastCategoryParam(categoryParam);
     if (categoryParam) {
       setActiveCategory(categoryParam);
-      setCurrentPage(1);
     }
   }
 
@@ -58,103 +46,59 @@ function StoreContentInner() {
     setLastQParam(qParam);
     if (qParam) {
       setSearch(qParam);
-      setCurrentPage(1);
     }
   }
 
-  const allProducts = useQuery(api.products.list, {
-    status: "published",
-  });
+  // All filtering happens in Convex — args must be present (even defaults)
+  // so that changing a filter invalidates the pagination cursor.
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.products.listPaginated,
+    {
+      search: search.trim() || undefined,
+      category: activeCategory !== "All" ? activeCategory : undefined,
+      industries: industries.length > 0 ? industries : undefined,
+      fileTypes: fileTypes.length > 0 ? fileTypes : undefined,
+      onSale: onSaleOnly || undefined,
+      featured: featuredOnly || undefined,
+      minRating: minRating > 0 ? minRating : undefined,
+      minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+      maxPrice: priceRange[1] < 999999 ? priceRange[1] : undefined,
+      sort,
+      status: "published",
+    },
+    { initialNumItems: ITEMS_PER_PAGE }
+  );
 
+  const facets = useQuery(api.products.getStoreFacets);
   const dbCategories = useQuery(api.categories.list, {});
   const categoryNames = (dbCategories ?? []).map((c) => c.name);
 
-  const isLoading = allProducts === undefined;
-  const products: StoreProduct[] = (allProducts ?? []) as StoreProduct[];
-
-  const filtered = useMemo(() => {
-    let result = [...products];
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.shortDescription.toLowerCase().includes(q) ||
-          (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)))
-      );
-    }
-
-    if (activeCategory !== "All") {
-      result = result.filter((p) => p.category === activeCategory);
-    }
-
-    if (industries.length > 0) {
-      result = result.filter((p) => industries.includes(p.industry));
-    }
-
-    if (fileTypes.length > 0) {
-      result = result.filter((p) => fileTypes.includes(p.fileType));
-    }
-
-    if (onSaleOnly) {
-      result = result.filter((p) => p.salePrice && p.salePrice < p.price);
-    }
-
-    if (featuredOnly) {
-      result = result.filter((p) => p.featured);
-    }
-
-    if (minRating > 0) {
-      result = result.filter((p) => p.rating >= minRating);
-    }
-
-    result = result.filter((p) => {
-      const price = p.salePrice ?? p.price;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
-
-    switch (sort) {
-      case "popular":
-        result.sort((a, b) => b.totalSales - a.totalSales);
-        break;
-      case "price-asc":
-        result.sort((a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price));
-        break;
-      case "price-desc":
-        result.sort((a, b) => (b.salePrice ?? b.price) - (a.salePrice ?? a.price));
-        break;
-      case "name-asc":
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "name-desc":
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      default:
-        result.sort((a, b) => b.rating - a.rating);
-    }
-
-    return result;
-  }, [products, search, activeCategory, sort, priceRange, minRating, fileTypes, onSaleOnly, featuredOnly, industries]);
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const products: StoreProduct[] = (results ?? []) as StoreProduct[];
+  const isLoading = status === "LoadingFirstPage";
+  const isLoadingMore = status === "LoadingMore";
+  const canLoadMore = status === "CanLoadMore";
 
   const reset = () => {
     setSearch("");
     setActiveCategory("All");
     setSort("newest");
-    setCurrentPage(1);
     setPriceRange([0, 999999]);
     setMinRating(0);
     setFileTypes([]);
     setOnSaleOnly(false);
     setFeaturedOnly(false);
     setIndustries([]);
+  };
+
+  const pageFacets: StoreFacets = {
+    categoryCounts: facets?.categoryCounts ?? {},
+    industryCounts: facets?.industryCounts ?? {},
+    fileTypeCounts: facets?.fileTypeCounts ?? {},
+    saleCount: facets?.saleCount ?? 0,
+    featuredCount: facets?.featuredCount ?? 0,
+    minPrice: facets?.minPrice ?? 0,
+    maxPrice: facets?.maxPrice ?? 0,
+    total: facets?.total ?? 0,
   };
 
   return (
@@ -205,7 +149,22 @@ function StoreContentInner() {
           </div>
 
             {/* Animated dashboard visual */}
-            <StoreHeroVisual />
+            <div className="hidden lg:block">
+              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <p className="text-xs text-white/50">Portfolio Performance</p>
+                    <p className="text-2xl font-bold text-white">$48,392.00</p>
+                  </div>
+                  <span className="rounded-full bg-green-500/20 text-green-300 text-xs px-3 py-1">+12.4%</span>
+                </div>
+                <div className="flex items-end gap-3 h-28">
+                  {[35, 55, 40, 65, 50, 75, 60, 85, 70, 95, 80, 100].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t-lg bg-gradient-to-t from-accent/60 to-accent/20" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -215,29 +174,28 @@ function StoreContentInner() {
         <div className="flex gap-8">
           {/* Sidebar */}
           <StoreSidebar
-            products={products}
             categories={categoryNames}
             search={search}
-            onSearchChange={(v) => { setSearch(v); setCurrentPage(1); }}
+            onSearchChange={setSearch}
             activeCategory={activeCategory}
-            onCategoryChange={(v) => { setActiveCategory(v); setCurrentPage(1); }}
+            onCategoryChange={setActiveCategory}
             sort={sort}
-            onSortChange={(v) => { setSort(v); setCurrentPage(1); }}
+            onSortChange={setSort}
             priceRange={priceRange}
-            onPriceRangeChange={(v) => { setPriceRange(v); setCurrentPage(1); }}
+            onPriceRangeChange={setPriceRange}
             minRating={minRating}
-            onMinRatingChange={(v) => { setMinRating(v); setCurrentPage(1); }}
+            onMinRatingChange={setMinRating}
             fileTypes={fileTypes}
-            onFileTypesChange={(v) => { setFileTypes(v); setCurrentPage(1); }}
+            onFileTypesChange={setFileTypes}
             onSaleOnly={onSaleOnly}
-            onOnSaleOnlyChange={(v) => { setOnSaleOnly(v); setCurrentPage(1); }}
+            onOnSaleOnlyChange={setOnSaleOnly}
             featuredOnly={featuredOnly}
-            onFeaturedOnlyChange={(v) => { setFeaturedOnly(v); setCurrentPage(1); }}
+            onFeaturedOnlyChange={setFeaturedOnly}
             industries={industries}
-            onIndustriesChange={(v) => { setIndustries(v); setCurrentPage(1); }}
+            onIndustriesChange={setIndustries}
             onReset={reset}
-            resultCount={filtered.length}
-            totalCount={products.length}
+            resultCount={products.length}
+            facets={pageFacets}
           />
 
           {/* Product Grid */}
@@ -246,15 +204,15 @@ function StoreContentInner() {
               <p className="text-sm text-muted">
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     Loading templates...
                   </span>
                 ) : (
                   <>
                     Showing{" "}
-                    <span className="font-semibold text-foreground">{paginated.length}</span> of{" "}
-                    <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
-                    template{filtered.length === 1 ? "" : "s"}
+                    <span className="font-semibold text-foreground">{products.length}</span> of{" "}
+                    <span className="font-semibold text-foreground">{pageFacets.total}</span>{" "}
+                    template{pageFacets.total === 1 ? "" : "s"}
                   </>
                 )}
               </p>
@@ -281,20 +239,20 @@ function StoreContentInner() {
                   </div>
                 ))}
               </div>
-            ) : paginated.length > 0 ? (
+            ) : products.length > 0 ? (
               <motion.div
-                key={activeCategory + search + sort + currentPage + JSON.stringify(priceRange) + minRating + fileTypes.join() + onSaleOnly + featuredOnly + industries.join()}
+                key={activeCategory + search + sort + JSON.stringify(priceRange) + minRating + fileTypes.join() + onSaleOnly + featuredOnly + industries.join()}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3"
               >
-                {paginated.map((product, i) => (
+                {products.map((product, i) => (
                   <motion.div
                     key={product._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                    transition={{ duration: 0.4, delay: (i % ITEMS_PER_PAGE) * 0.05 }}
                   >
                     <ProductCard product={product} />
                   </motion.div>
@@ -318,33 +276,22 @@ function StoreContentInner() {
               </div>
             )}
 
-            {totalPages > 1 && (
-              <Pagination className="mt-12">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={cn(currentPage <= 1 && "pointer-events-none opacity-50")}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        isActive={page === currentPage}
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      className={cn(currentPage >= totalPages && "pointer-events-none opacity-50")}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+            {canLoadMore && (
+              <div className="mt-12 flex justify-center">
+                <Button
+                  variant="outline"
+                  className="rounded-xl px-8"
+                  onClick={() => loadMore(ITEMS_PER_PAGE)}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <PackageSearch className="mr-2 h-4 w-4" />
+                  )}
+                  Load more
+                </Button>
+              </div>
             )}
           </div>
         </div>

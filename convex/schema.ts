@@ -89,7 +89,15 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_industry", ["industry"])
     .index("by_status", ["status"])
-    .index("by_featured", ["featured"]),
+    .index("by_featured", ["featured"])
+    .index("by_price", ["price"])
+    .index("by_name", ["name"])
+    .index("by_rating", ["rating"])
+    .index("by_total_sales", ["totalSales"])
+    .searchIndex("search_products", {
+      searchField: "name",
+      filterFields: ["status", "category", "industry", "fileType", "featured"],
+    }),
 
   orders: defineTable({
     orderNumber: v.string(),

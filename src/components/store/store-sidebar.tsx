@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import {
   Search,
   SlidersHorizontal,
@@ -19,13 +19,22 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { StoreProduct } from "@/components/product/product-card"
+
+export interface StoreFacets {
+  categoryCounts: Record<string, number>
+  industryCounts: Record<string, number>
+  fileTypeCounts: Record<string, number>
+  saleCount: number
+  featuredCount: number
+  minPrice: number
+  maxPrice: number
+  total: number
+}
 
 interface StoreSidebarProps {
-  products: StoreProduct[]
+  facets: StoreFacets
   categories: string[]
   search: string
   onSearchChange: (v: string) => void
@@ -47,7 +56,6 @@ interface StoreSidebarProps {
   onIndustriesChange: (v: string[]) => void
   onReset: () => void
   resultCount: number
-  totalCount: number
 }
 
 const allCategoriesBase = ["All"]
@@ -107,7 +115,7 @@ function FilterSection({
 }
 
 export function StoreSidebar({
-  products,
+  facets,
   categories: dbCategories,
   search,
   onSearchChange,
@@ -129,33 +137,11 @@ export function StoreSidebar({
   onIndustriesChange,
   onReset,
   resultCount,
-  totalCount,
 }: StoreSidebarProps) {
   const allCategories = [...allCategoriesBase, ...dbCategories]
   const [showMobile, setShowMobile] = useState(false)
 
-  const stats = useMemo(() => {
-    const categoryCounts: Record<string, number> = {}
-    const industryCounts: Record<string, number> = {}
-    const fileTypeCounts: Record<string, number> = {}
-    let saleCount = 0
-    let featuredCount = 0
-    let minPrice = Infinity
-    let maxPrice = 0
-
-    for (const p of products) {
-      categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1
-      if (p.industry) industryCounts[p.industry] = (industryCounts[p.industry] || 0) + 1
-      if (p.fileType) fileTypeCounts[p.fileType] = (fileTypeCounts[p.fileType] || 0) + 1
-      if (p.salePrice) saleCount++
-      if (p.featured) featuredCount++
-      const price = p.salePrice ?? p.price
-      if (price < minPrice) minPrice = price
-      if (price > maxPrice) maxPrice = price
-    }
-
-    return { categoryCounts, industryCounts, fileTypeCounts, saleCount, featuredCount, minPrice, maxPrice }
-  }, [products])
+  const stats = facets
 
   const activeFilters = [
     activeCategory !== "All" && { label: activeCategory, clear: () => onCategoryChange("All") },
@@ -211,7 +197,7 @@ export function StoreSidebar({
       <FilterSection title="Categories" icon={<FolderOpen className="h-4 w-4" />}>
         <div className="space-y-1">
           {allCategories.map((cat) => {
-            const count = cat === "All" ? products.length : (stats.categoryCounts[cat] || 0)
+            const count = cat === "All" ? stats.total : (stats.categoryCounts[cat] || 0)
             if (cat !== "All" && count === 0) return null
             return (
               <button
@@ -419,8 +405,8 @@ export function StoreSidebar({
           <p className="text-2xl font-bold text-primary font-heading">{resultCount}</p>
           <p className="text-xs text-muted mt-1">
             template{resultCount === 1 ? "" : "s"} found
-            {resultCount < totalCount && (
-              <span> of {totalCount}</span>
+            {resultCount < stats.total && (
+              <span> of {stats.total}</span>
             )}
           </p>
         </div>
