@@ -318,10 +318,22 @@ async function queryTransactionStatus(
 /**
  * Shared processing for callback (browser redirect) and IPN (server-to-server).
  * Returns the mapped payment status so the caller can build the right response.
+ *
+ * Idempotency: a card payment fires BOTH the browser callback and the IPN for
+ * the same orderTrackingId, and Pesapal retries failed deliveries. The order's
+ * paymentStatus is the source of truth — a transaction is processed at most
+ * once, replays are no-ops.
  */
 async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<MappedStatus> {
+  const alreadyProcessed = await ctx.runQuery(internal.webhooks.isProcessed, {
+    provider: "pesapal",
+    eventId: trackingId,
+  });
+
+  // Resolve the live status from Pesapal.
   const data = await queryTransactionStatus(ctx, trackingId);
   if (!data) return "pending";
+  const mapped = mapPesapalStatus(data.status_code, data.payment_status_description);
 
   const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
     paymentId: trackingId,
@@ -329,8 +341,16 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
   const order = payment
     ? await ctx.runQuery(internal.orders.getOrderForPayment, { id: payment.orderId })
     : null;
-  const mapped = mapPesapalStatus(data.status_code, data.payment_status_description);
 
+  // Unknown order — nothing for us to update. Answer the ping with the mapped
+  // status so callers still get the expected ack shape.
+  if (!order) return mapped;
+
+  // Already fulfilled by a prior delivery.
+  if (alreadyProcessed || order.paymentStatus === "completed") return "completed";
+
+  // Keep the payment record current but do not mark processed while pending — the
+  // payment has not settled yet.
   if (payment) {
     await ctx.runMutation(internal.payments.updateStatus, {
       id: payment._id,
@@ -339,7 +359,25 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     });
   }
 
-  if (mapped !== "completed" || !order) return mapped;
+  if (mapped !== "completed") {
+    // failed / refunded / invalid payment
+    await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+      id: order._id,
+      paymentStatus: mapped === "refunded" ? "refunded" : "failed",
+      orderStatus: "pending",
+    });
+    return mapped === "refunded" ? "refunded" : "failed";
+  }
+
+  if (mapped !== "completed") {
+    // failed / refunded / invalid payment
+    await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+      id: order._id,
+      paymentStatus: mapped === "refunded" ? "refunded" : "failed",
+      orderStatus: "pending",
+    });
+    return mapped;
+  }
 
   // SECURITY: verify the amount matches the order total before fulfilling
   const paidAmount = Number(data.amount);
@@ -408,6 +446,11 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
 
   await sendPaymentEmail(order);
 
+  await ctx.runMutation(internal.webhooks.markProcessed, {
+    provider: "pesapal",
+    eventId: trackingId,
+  });
+
   return "completed";
 }
 
@@ -425,7 +468,9 @@ export const handleCallback = httpAction(async (ctx, request) => {
 
   const mapped = await processTransaction(ctx, trackingId);
 
-  const status = mapped === "completed" || mapped === "refunded" ? mapped : "pending";
+  const status = mapped === "completed" || mapped === "refunded" || mapped === "failed"
+    ? mapped
+    : "pending";
   return new Response(null, {
     status: 302,
     headers: {
@@ -456,14 +501,7 @@ export const handleIpn = httpAction(async (ctx, request) => {
   const merchantReference = params.OrderMerchantReference || params.merchant_reference || "";
 
   try {
-    const mapped = await processTransaction(ctx, trackingId);
-    // Mark processed only for terminal states so Pesapal retries while pending.
-    if (mapped !== "pending") {
-      await ctx.runMutation(internal.webhooks.markProcessed, {
-        provider: "pesapal",
-        eventId: trackingId,
-      });
-    }
+    await processTransaction(ctx, trackingId);
     // Pesapal requires this exact JSON contract to stop retrying.
     return json(
       {
