@@ -22,7 +22,7 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 const assurances = [
   { icon: ShieldCheck, label: "Secure payment" },
   { icon: Download, label: "Instant download" },
-  { icon: RefreshCw, label: "7-day guarantee" },
+  { icon: RefreshCw, label: "4-day guarantee" },
 ];
 
 export default function FinalCTA() {

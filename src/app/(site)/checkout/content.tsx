@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Mail,
   User,
+  MapPin,
   Loader2,
   Tag,
   Globe,
@@ -30,10 +31,12 @@ import { cn } from "@/lib/utils";
 import { useCart, cartItemKey } from "@/components/layout/cart-context";
 import { useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
+import { COUNTRIES } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -141,6 +144,13 @@ export default function CheckoutContent() {
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState({
+    street: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  });
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>("pesapal");
   const [pesapalMethod, setPesapalMethod] = useState<PesapalMethod>("mtn");
   const [couponCode, setCouponCode] = useState("");
@@ -273,6 +283,13 @@ export default function CheckoutContent() {
                 : "Card"
               : "Stripe Card",
           couponCode: appliedCoupon?.code || undefined,
+          billingAddress: {
+            street: address.street.trim() || undefined,
+            city: address.city.trim() || undefined,
+            state: address.state.trim() || undefined,
+            country: address.country.trim() || undefined,
+            postalCode: address.postalCode.trim() || undefined,
+          },
         }),
       });
 
@@ -486,6 +503,83 @@ export default function CheckoutContent() {
                       className="h-11"
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/70 shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06]">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </span>
+                    Billing Address
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="street">Street address</Label>
+                    <Input
+                      id="street"
+                      placeholder="Street address, P.O. Box"
+                      value={address.street}
+                      onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      placeholder="Kampala"
+                      value={address.city}
+                      onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State / Region</Label>
+                    <Input
+                      id="state"
+                      placeholder="Central Region"
+                      value={address.state}
+                      onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal code</Label>
+                    <Input
+                      id="postalCode"
+                      placeholder="256"
+                      value={address.postalCode}
+                      onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Select
+                      value={address.country}
+                      onValueChange={(v) => {
+                        if (v) setAddress((a) => ({ ...a, country: v }));
+                      }}
+                    >
+                      <SelectTrigger id="country" className="h-11">
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted sm:col-span-2">
+                    Your address helps us understand where our customers are so we can tailor our
+                    templates and support to your region.
+                  </p>
                 </CardContent>
               </Card>
 
@@ -798,7 +892,7 @@ export default function CheckoutContent() {
                   </p>
                   <p className="flex items-center gap-2.5 text-xs text-muted">
                     <RotateCcw className="h-4 w-4 text-secondary" />
-                    7-day money-back guarantee
+                    4-day money-back guarantee
                   </p>
                 </div>
 

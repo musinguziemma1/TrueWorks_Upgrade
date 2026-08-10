@@ -40,6 +40,16 @@ export const getByOrderId = query({
   },
 });
 
+export const getByOrderIdInternal = internalQuery({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("payments")
+      .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+      .collect();
+  },
+});
+
 export const getByPaymentId = internalQuery({
   args: { paymentId: v.string() },
   handler: async (ctx, args) => {

@@ -34,6 +34,7 @@ import {
   MessageSquare,
   ClipboardList,
   KeyRound,
+  RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -90,6 +91,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Analytics", href: "/admin/analytics", icon: <BarChart3 className="h-4 w-4" /> },
       { label: "Payments", href: "/admin/payments", icon: <Wallet className="h-4 w-4" />, adminOnly: true },
+      { label: "Refunds", href: "/admin/returns", icon: <RotateCcw className="h-4 w-4" />, adminOnly: true },
       { label: "Reports", href: "/admin/reports", icon: <FileBarChart className="h-4 w-4" />, adminOnly: true },
     ],
   },

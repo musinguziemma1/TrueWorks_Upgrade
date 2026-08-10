@@ -91,19 +91,25 @@ export default function OrderDetailLoader() {
   const existingReturn = useQuery(
     api.returns.listMine,
   );
+  const refundPolicy = useQuery(api.returns.getRefundPolicy);
   const createReturn = useMutation(api.returns.create);
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [returnReasons, setReturnReasons] = useState<Record<number, string>>({});
   const [returnNotes, setReturnNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [now] = useState(() => Date.now());
 
   const hasReturnRequest = existingReturn?.some((r) => r.orderId === id);
+
+  const withinWindow =
+    order && refundPolicy && now - order._creationTime <= refundPolicy.windowMs;
 
   const canReturn =
     order &&
     order.paymentStatus === "completed" &&
     (order.orderStatus === "completed" || order.orderStatus === "processing") &&
-    !hasReturnRequest;
+    !hasReturnRequest &&
+    withinWindow;
 
   async function handleReturnRequest() {
     if (!order) return;
@@ -314,6 +320,11 @@ export default function OrderDetailLoader() {
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Request Return / Refund
                 </Button>
+                <p className="mt-3 text-center text-xs text-muted-foreground">
+                  {refundPolicy
+                    ? `Available within ${refundPolicy.windowDays} days of purchase. Requests are reviewed and approved by our team.`
+                    : "Requests are reviewed and approved by our team."}
+                </p>
               </CardContent>
             </Card>
           )}
@@ -329,6 +340,7 @@ export default function OrderDetailLoader() {
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Select the items you want to return and provide a reason for each.
+                  Your request will be reviewed by our team.
                 </p>
                 {order.items.map((item, i) => (
                   <div key={i} className="rounded-lg border border-border p-3 space-y-2">

@@ -143,7 +143,7 @@ function StoreContentInner() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
                   ✓
                 </span>
-                7-day Guarantee
+                4-day Guarantee
               </span>
             </div>
           </div>

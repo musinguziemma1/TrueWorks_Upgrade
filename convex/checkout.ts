@@ -21,19 +21,31 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     const body = await request.json();
-    const { items, customerEmail, customerName, paymentMethod, couponCode } = body;
+    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress } = body;
 
     let country = "";
     let region = "";
     let city = "";
-    if (ip && ip !== "unknown") {
+    let street = "";
+    let postalCode = "";
+    // Customer-entered address wins for geographic tracking; IP geolocation is
+    // only a fallback when the customer does not supply an address.
+    if (billingAddress && typeof billingAddress === "object") {
+      const addr = billingAddress as Record<string, unknown>;
+      country = typeof addr.country === "string" ? addr.country : "";
+      region = typeof addr.state === "string" ? addr.state : "";
+      city = typeof addr.city === "string" ? addr.city : "";
+      street = typeof addr.street === "string" ? addr.street : "";
+      postalCode = typeof addr.postalCode === "string" ? addr.postalCode : "";
+    }
+    if ((!country || !city) && ip && ip !== "unknown") {
       try {
         const geoRes = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,regionName,city`);
         const geo = await geoRes.json();
         if (geo.status === "success") {
-          country = geo.country || "";
-          region = geo.regionName || "";
-          city = geo.city || "";
+          if (!country) country = geo.country || "";
+          if (!region) region = geo.regionName || "";
+          if (!city) city = geo.city || "";
         }
       } catch {
         // Geolocation failure should not block checkout
@@ -134,6 +146,11 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     const total = Math.max(0, subtotal - discountAmount);
     const orderNumber = `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
+    const billing =
+      street || city || region || country || postalCode
+        ? { street, city, state: region, country, postalCode }
+        : undefined;
+
     const orderId = await ctx.runMutation(internal.orders.createInternal, {
       orderNumber,
       customerEmail,
@@ -152,6 +169,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       country: country || undefined,
       region: region || undefined,
       city: city || undefined,
+      billingAddress: billing,
     });
 
     await ctx.runMutation(internal.customers.upsertPublic, {

@@ -191,11 +191,12 @@ export default function AnalyticsPage() {
   }, [paymentMethods])
 
   const geoChartData = useMemo(() => {
-    return (geoData ?? []).map((g: { country: string; orders: number; revenue: number; regions?: { name: string; count: number }[] }) => ({
+    return (geoData ?? []).map((g: { country: string; orders: number; revenue: number; regions?: { name: string; count: number }[]; cities?: { name: string; count: number }[] }) => ({
       country: g.country,
       orders: g.orders,
       revenue: g.revenue,
       regions: g.regions,
+      cities: g.cities,
     }))
   }, [geoData])
 
@@ -460,7 +461,7 @@ export default function AnalyticsPage() {
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Globe className="h-10 w-10 text-muted-foreground/30 mb-3" />
                   <p className="text-sm text-muted-foreground">No geographic data yet.</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">Orders with IP data will show regional breakdowns here.</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Customer billing addresses and IP data will show regional and city breakdowns here.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -483,6 +484,15 @@ export default function AnalyticsPage() {
                             {g.regions.slice(0, 3).map((r) => (
                               <div key={r.name} className="text-xs text-muted-foreground/70">
                                 {r.name}: {r.count} order{r.count !== 1 ? "s" : ""}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {g.cities && g.cities.length > 0 && (
+                          <div className="ml-6 mt-1 space-y-0.5">
+                            {g.cities.slice(0, 4).map((c) => (
+                              <div key={c.name} className="text-xs text-muted-foreground/70">
+                                {c.name}: {c.count} order{c.count !== 1 ? "s" : ""}
                               </div>
                             ))}
                           </div>

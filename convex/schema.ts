@@ -124,6 +124,13 @@ export default defineSchema({
     country: v.optional(v.string()),
     region: v.optional(v.string()),
     city: v.optional(v.string()),
+    billingAddress: v.optional(v.object({
+      street: v.optional(v.string()),
+      city: v.optional(v.string()),
+      state: v.optional(v.string()),
+      country: v.optional(v.string()),
+      postalCode: v.optional(v.string()),
+    })),
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
       url: v.string(),
@@ -455,6 +462,9 @@ export default defineSchema({
     ),
     notes: v.optional(v.string()),
     adminNotes: v.optional(v.string()),
+    approvedAt: v.optional(v.number()),
+    refundedAt: v.optional(v.number()),
+    providerResult: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

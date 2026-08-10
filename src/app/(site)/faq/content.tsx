@@ -45,9 +45,9 @@ const faqCategories = [
     id: "refunds",
     name: "Refunds & Exchanges",
     items: [
-      { q: "What is your refund policy?", a: "We offer a 7-day satisfaction guarantee. If a template does not meet your needs, contact us and we will make it right or issue a full refund." },
-      { q: "How do I request a refund?", a: "Email us at hello@trueworksgroup.com or use our Contact form within 7 days of purchase. Include your order number and reason." },
-      { q: "Can I exchange a template for another?", a: "Yes, we can arrange exchanges within 7 days of purchase. Contact us with your order details." },
+      { q: "What is your refund policy?", a: "We offer a 4-day satisfaction guarantee. If a template does not meet your needs, request a return from your order within 4 days of purchase and we will make it right or issue a full refund." },
+      { q: "How do I request a refund?", a: "Go to your order in your account and click \"Request Return / Refund\" within 4 days of purchase. Our team reviews each request." },
+      { q: "Can I exchange a template for another?", a: "Yes, we can arrange exchanges within 4 days of purchase. Contact us with your order details." },
     ],
   },
   {

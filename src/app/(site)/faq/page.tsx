@@ -55,7 +55,7 @@ export default function FaqPage() {
         name: "What is your refund policy?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "We offer a 7-day refund policy. If you're not satisfied with your purchase, contact us within 7 days for a full refund.",
+          text: "We offer a 4-day refund policy. If you're not satisfied with your purchase, request a return from your order within 4 days for a full refund.",
         },
       },
       {

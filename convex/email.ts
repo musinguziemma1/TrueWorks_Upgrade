@@ -400,6 +400,50 @@ export const sendSubscriberWelcome = internalAction({
   },
 });
 
+export const sendRefundEmail = internalAction({
+  args: {
+    to: v.string(),
+    customerName: v.string(),
+    orderNumber: v.string(),
+    amount: v.number(),
+    reason: v.optional(v.string()),
+    type: v.union(v.literal("processed"), v.literal("rejected")),
+  },
+  handler: async (_ctx, args) => {
+    if (args.type === "rejected") {
+      const html = baseTemplate(`
+        <h2>Refund Request Declined</h2>
+        <p>Hi ${escapeHtml(args.customerName)},</p>
+        <p>We're sorry, but your refund request for order <strong>${escapeHtml(args.orderNumber)}</strong> was not approved.</p>
+        ${args.reason ? `<p><strong>Reason provided:</strong> ${escapeHtml(args.reason)}</p>` : ""}
+        <p>If you have any questions about this decision, please contact us at hello@trueworksgroup.com and we'd be happy to help.</p>
+      `);
+      const sent = await sendEmail({
+        to: args.to,
+        subject: `Refund Request Update - ${String(args.orderNumber).slice(0, 64)}`,
+        html,
+      });
+      return { sent };
+    }
+
+    const html = baseTemplate(`
+      <h2>Refund Processed</h2>
+      <p>Hi ${escapeHtml(args.customerName)},</p>
+      <p>Your refund of <strong>$${Number(args.amount).toFixed(2)}</strong> for order <strong>${escapeHtml(args.orderNumber)}</strong> has been processed.</p>
+      ${args.reason ? `<p><strong>Reason:</strong> ${escapeHtml(args.reason)}</p>` : ""}
+      <p>The refund will appear on your statement within 5-10 business days.</p>
+      <p>If you have any questions, please contact us at hello@trueworksgroup.com</p>
+    `);
+
+    const sent = await sendEmail({
+      to: args.to,
+      subject: `Refund Processed - ${String(args.orderNumber).slice(0, 64)}`,
+      html,
+    });
+    return { sent };
+  },
+});
+
 export const sendCampaignEmails = internalAction({
   args: {
     campaignId: v.id("campaigns"),

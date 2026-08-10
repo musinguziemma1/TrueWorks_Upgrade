@@ -127,6 +127,13 @@ const orderCreateArgs = {
   country: v.optional(v.string()),
   region: v.optional(v.string()),
   city: v.optional(v.string()),
+  billingAddress: v.optional(v.object({
+    street: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    country: v.optional(v.string()),
+    postalCode: v.optional(v.string()),
+  })),
   notes: v.optional(v.string()),
 };
 
@@ -150,6 +157,13 @@ async function insertOrder(ctx: MutationCtx, args: {
   country?: string;
   region?: string;
   city?: string;
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
   notes?: string;
 }) {
   const now = Date.now();
@@ -360,14 +374,17 @@ export const geoBreakdown = query({
     let all = await ctx.db.query("orders").collect();
     if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
     if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
-    const countryData = new Map<string, { orders: number; revenue: number; regions: Map<string, number> }>();
+    const countryData = new Map<string, { orders: number; revenue: number; regions: Map<string, number>; cities: Map<string, number> }>();
     for (const o of all) {
       const country = o.country || "Unknown";
-      const existing = countryData.get(country) ?? { orders: 0, revenue: 0, regions: new Map() };
+      const existing = countryData.get(country) ?? { orders: 0, revenue: 0, regions: new Map(), cities: new Map() };
       existing.orders++;
       if (o.paymentStatus === "completed") existing.revenue += o.total;
       if (o.region) {
         existing.regions.set(o.region, (existing.regions.get(o.region) ?? 0) + 1);
+      }
+      if (o.city) {
+        existing.cities.set(o.city, (existing.cities.get(o.city) ?? 0) + 1);
       }
       countryData.set(country, existing);
     }
@@ -377,6 +394,9 @@ export const geoBreakdown = query({
         orders: data.orders,
         revenue: data.revenue,
         regions: Array.from(data.regions.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count),
+        cities: Array.from(data.cities.entries())
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count),
       }))

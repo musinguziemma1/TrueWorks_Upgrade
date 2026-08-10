@@ -29,8 +29,8 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 const summary = [
   {
     icon: Clock,
-    title: "7-day Window",
-    description: "Request a refund within 7 days of purchase.",
+    title: "4-day Window",
+    description: "Request a refund within 4 days of purchase.",
   },
   {
     icon: RefreshCw,
@@ -54,13 +54,13 @@ const eligible = [
 const notEligible = [
   "You simply changed your mind after downloading the files",
   "You purchased the wrong template for your use case (we encourage contacting us first)",
-  "Refund request submitted more than 7 days after purchase",
+  "Refund request submitted more than 4 days after purchase",
   "Product has been used in published reports or distributed internally",
 ];
 
 const process = [
-  { step: "1", title: "Email Us", description: "Send your order number and reason to hello@trueworksgroup.com within 7 days of purchase." },
-  { step: "2", title: "We Review", description: "Our team reviews your request within 1 business day and confirms eligibility." },
+  { step: "1", title: "Request in Your Account", description: "Go to your order and click \"Request Return / Refund\" within 4 days of purchase." },
+  { step: "2", title: "We Review", description: "Our team reviews your request and confirms eligibility." },
   { step: "3", title: "Refund Issued", description: "Approved refunds are returned to your original payment method within 5–10 business days." },
 ];
 
@@ -75,7 +75,7 @@ export default function RefundPolicyContent() {
             Refund Policy
           </span>
           <h1 className="mt-6 font-heading text-4xl font-semibold leading-tight text-white sm:text-5xl">
-            7-day Satisfaction Guarantee
+            4-day Satisfaction Guarantee
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-white/75">
             We stand behind every template. If something isn&apos;t right, we&apos;ll make it right.
