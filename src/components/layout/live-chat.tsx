@@ -4,7 +4,8 @@ import Script from "next/script";
 
 /**
  * Tawk.to live chat widget integration.
- * Uses Next.js Script component for optimal loading.
+ * Loads the official Tawk embed script via Next.js Script (afterInteractive)
+ * so it only runs after the page hydrates.
  */
 export function LiveChat() {
   const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID;
@@ -15,20 +16,8 @@ export function LiveChat() {
   return (
     <Script
       id="tawk-chat"
+      src={`https://embed.tawk.to/${propertyId}/${widgetId}`}
       strategy="afterInteractive"
-      dangerouslySetInnerHTML={{
-        __html: `
-          var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-          (function(){
-          var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-          s1.async=true;
-          s1.src='https://embed.tawk.to/${propertyId}/${widgetId}';
-          s1.charset='UTF-8';
-          s1.setAttribute('crossorigin','*');
-          s0.parentNode.insertBefore(s1,s0);
-          })();
-        `,
-      }}
     />
   );
 }
