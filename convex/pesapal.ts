@@ -1,4 +1,4 @@
-﻿import { httpAction, internalQuery, internalMutation, ActionCtx } from "./_generated/server";
+﻿import { internalQuery, internalMutation, ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
@@ -136,7 +136,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-export const initiatePayment = httpAction(async (ctx, request) => {
+export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   // Rate limit: max 5 payment initiation attempts per IP per 10 minutes
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -248,7 +248,7 @@ export const initiatePayment = httpAction(async (ctx, request) => {
     // SECURITY: Don't leak internal error details
     return json({ error: "Payment initiation failed" }, 500);
   }
-});
+};
 
 interface PaymentOrder {
   _id: Id<"orders">;
@@ -455,7 +455,7 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
 }
 
 /** Browser redirect callback (GET). Redirects the customer to the storefront. */
-export const handleCallback = httpAction(async (ctx, request) => {
+export const handleCallback = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const url = new URL(request.url);
   const trackingId =
     url.searchParams.get("OrderTrackingId") || url.searchParams.get("order_tracking_id") || "";
@@ -477,10 +477,10 @@ export const handleCallback = httpAction(async (ctx, request) => {
       Location: `${SITE_URL}/order-confirmation?order=${encodeURIComponent(merchantReference)}&status=${status}`,
     },
   });
-});
+};
 
 /** IPN endpoint (server-to-server). Acknowledges in the JSON shape Pesapal expects. */
-export const handleIpn = httpAction(async (ctx, request) => {
+export const handleIpn = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const url = new URL(request.url);
   const params: Record<string, string> = {};
   for (const [k, val] of url.searchParams) params[k] = val;
@@ -523,4 +523,4 @@ export const handleIpn = httpAction(async (ctx, request) => {
       500
     );
   }
-});
+};

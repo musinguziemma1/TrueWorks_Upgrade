@@ -1,7 +1,7 @@
-import { httpAction } from "./_generated/server";
+import { ActionCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
-export const createCheckoutOrder = httpAction(async (ctx, request) => {
+export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   try {
     // Rate limit: max 10 checkout attempts per IP per 10 minutes
     const ip =
@@ -212,4 +212,4 @@ export const createCheckoutOrder = httpAction(async (ctx, request) => {
     // SECURITY: Never leak internal error details
     return new Response(JSON.stringify({ error: "Checkout failed" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
-});
+};

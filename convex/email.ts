@@ -1,4 +1,4 @@
-import { httpAction, internalAction } from "./_generated/server";
+import { internalAction, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 
@@ -130,7 +130,7 @@ function baseTemplate(content: string): string {
 </html>`;
 }
 
-export const sendOrderConfirmation = httpAction(async (ctx, request) => {
+export const sendOrderConfirmation = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -162,9 +162,9 @@ export const sendOrderConfirmation = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
-export const sendDownloadReady = httpAction(async (ctx, request) => {
+export const sendDownloadReady = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -204,9 +204,9 @@ export const sendDownloadReady = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
-export const sendPaymentFailed = httpAction(async (ctx, request) => {
+export const sendPaymentFailed = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -235,9 +235,9 @@ export const sendPaymentFailed = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
-export const sendRefundConfirmation = httpAction(async (ctx, request) => {
+export const sendRefundConfirmation = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -260,9 +260,9 @@ export const sendRefundConfirmation = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
-export const sendWelcomeEmail = httpAction(async (ctx, request) => {
+export const sendWelcomeEmail = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -290,7 +290,7 @@ export const sendWelcomeEmail = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
 export const sendSubscriberWelcome = internalAction({
   args: {
@@ -444,7 +444,7 @@ export const sendCampaignEmails = internalAction({
   },
 });
 
-export const sendNewsletter = httpAction(async (ctx, request) => {
+export const sendNewsletter = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -462,7 +462,7 @@ export const sendNewsletter = httpAction(async (ctx, request) => {
   });
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
-});
+};
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",

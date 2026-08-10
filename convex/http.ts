@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
+import { httpAction, ActionCtx } from "./_generated/server";
 import { api } from "./_generated/api";
 import { Webhook } from "svix";
 import { internal } from "./_generated/api";
@@ -18,18 +18,21 @@ import {
 const http = httpRouter();
 
 /**
- * Wraps an httpAction with performance timing and error logging.
+ * Wraps an HTTP route handler with performance timing and error logging.
  * Logs slow requests (>1s) and all errors to the audit trail.
+ * Handlers are plain functions; `httpAction()` is applied at route registration.
  */
-function withAuditTiming(wrappedAction: ReturnType<typeof httpAction>) {
-  return httpAction(async (ctx, req) => {
+type HttpHandler = (ctx: ActionCtx, request: Request) => Promise<Response>;
+
+function withAuditTiming(handler: HttpHandler): HttpHandler {
+  return async (ctx, req) => {
     const start = Date.now();
     const path = new URL(req.url).pathname;
     let response: Response;
     let error: Error | undefined;
 
     try {
-      response = await (wrappedAction as any)(ctx, req);
+      response = await handler(ctx, req);
     } catch (e) {
       error = e instanceof Error ? e : new Error(String(e));
       // SECURITY: Never leak internal error messages to clients
@@ -73,7 +76,7 @@ function withAuditTiming(wrappedAction: ReturnType<typeof httpAction>) {
     }
 
     return response;
-  });
+  };
 }
 
 http.route({
@@ -210,73 +213,73 @@ http.route({
 http.route({
   path: "/pesapal/initiate",
   method: "POST",
-  handler: withAuditTiming(initiatePayment),
+  handler: httpAction(withAuditTiming(initiatePayment)),
 });
 
 http.route({
   path: "/pesapal-callback",
   method: "GET",
-  handler: withAuditTiming(handleCallback),
+  handler: httpAction(withAuditTiming(handleCallback)),
 });
 
 http.route({
   path: "/pesapal/ipn",
   method: "POST",
-  handler: withAuditTiming(handleIpn),
+  handler: httpAction(withAuditTiming(handleIpn)),
 });
 
 http.route({
   path: "/checkout",
   method: "POST",
-  handler: withAuditTiming(createCheckoutOrder),
+  handler: httpAction(withAuditTiming(createCheckoutOrder)),
 });
 
 http.route({
   path: "/email/order-confirmation",
   method: "POST",
-  handler: withAuditTiming(sendOrderConfirmation),
+  handler: httpAction(withAuditTiming(sendOrderConfirmation)),
 });
 
 http.route({
   path: "/email/download-ready",
   method: "POST",
-  handler: withAuditTiming(sendDownloadReady),
+  handler: httpAction(withAuditTiming(sendDownloadReady)),
 });
 
 http.route({
   path: "/email/payment-failed",
   method: "POST",
-  handler: withAuditTiming(sendPaymentFailed),
+  handler: httpAction(withAuditTiming(sendPaymentFailed)),
 });
 
 http.route({
   path: "/email/refund",
   method: "POST",
-  handler: withAuditTiming(sendRefundConfirmation),
+  handler: httpAction(withAuditTiming(sendRefundConfirmation)),
 });
 
 http.route({
   path: "/email/welcome",
   method: "POST",
-  handler: withAuditTiming(sendWelcomeEmail),
+  handler: httpAction(withAuditTiming(sendWelcomeEmail)),
 });
 
 http.route({
   path: "/email/newsletter",
   method: "POST",
-  handler: withAuditTiming(sendNewsletter),
+  handler: httpAction(withAuditTiming(sendNewsletter)),
 });
 
 http.route({
   path: "/stripe/create-payment-intent",
   method: "POST",
-  handler: withAuditTiming(createPaymentIntent),
+  handler: httpAction(withAuditTiming(createPaymentIntent)),
 });
 
 http.route({
   path: "/stripe/webhook",
   method: "POST",
-  handler: withAuditTiming(handleStripeWebhook),
+  handler: httpAction(withAuditTiming(handleStripeWebhook)),
 });
 
 // ---------------------------------------------------------------------------
@@ -300,7 +303,7 @@ async function requireApiKey(ctx: any, req: Request): Promise<boolean> {
   }
 }
 
-const publicCatalogQuery = httpAction(async (ctx, req) => {
+const publicCatalogQuery = async (ctx: ActionCtx, req: Request): Promise<Response> => {
   const url = new URL(req.url);
   if (req.method === "GET") {
     if (!(await requireApiKey(ctx, req))) {
@@ -328,12 +331,12 @@ const publicCatalogQuery = httpAction(async (ctx, req) => {
     return json({ count: rows.length, products: rows });
   }
   return json({ error: "Method not allowed" }, 405);
-});
+};
 
 http.route({
   path: "/api/v1/products",
   method: "GET",
-  handler: withAuditTiming(publicCatalogQuery),
+  handler: httpAction(withAuditTiming(publicCatalogQuery)),
 });
 
 export default http;

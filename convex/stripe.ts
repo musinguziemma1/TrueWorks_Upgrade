@@ -1,4 +1,4 @@
-import { httpAction } from "./_generated/server";
+import { ActionCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
@@ -129,7 +129,7 @@ async function verifyStripeSignature(
   return JSON.parse(payload) as Record<string, unknown>;
 }
 
-export const createPaymentIntent = httpAction(async (ctx, req) => {
+export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise<Response> => {
   // Rate limit: max 5 payment initiation attempts per IP per 10 minutes
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -224,9 +224,9 @@ export const createPaymentIntent = httpAction(async (ctx, req) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+};
 
-export const handleStripeWebhook = httpAction(async (ctx, req) => {
+export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise<Response> => {
   if (!STRIPE_WEBHOOK_SECRET) {
     return new Response("Internal error", { status: 500 });
   }
@@ -407,4 +407,4 @@ export const handleStripeWebhook = httpAction(async (ctx, req) => {
   }
 
   return new Response("ok", { status: 200 });
-});
+};
