@@ -1,5 +1,6 @@
 import { ActionCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   try {
@@ -75,7 +76,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       // match a valid tier on the product — never trust a client-sent price.
       let price = product.salePrice ?? product.price;
       if (item.tier && product.pricingTiers && product.pricingTiers.length > 0) {
-        const tier = product.pricingTiers.find((t: any) => t.name === item.tier);
+        const tier = product.pricingTiers.find((t) => t.name === item.tier);
         if (!tier) {
           return new Response(JSON.stringify({ error: `Invalid tier for ${product.name}` }), { status: 400, headers: { "Content-Type": "application/json" } });
         }
@@ -88,7 +89,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       const isBundle = product.bundleProductIds && product.bundleProductIds.length > 0;
       if (isBundle) {
         for (const memberId of product.bundleProductIds!) {
-          const member = await ctx.runQuery(api.products.getById, { id: memberId as any });
+          const member = await ctx.runQuery(api.products.getById, { id: memberId as Id<"products"> });
           if (!member || member.status !== "published") {
             return new Response(JSON.stringify({ error: `Bundle contains an unavailable product` }), { status: 400, headers: { "Content-Type": "application/json" } });
           }
@@ -208,7 +209,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       total,
       discountAmount,
     }), { status: 200, headers: { "Content-Type": "application/json" } });
-  } catch (err) {
+  } catch {
     // SECURITY: Never leak internal error details
     return new Response(JSON.stringify({ error: "Checkout failed" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }

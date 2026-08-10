@@ -49,7 +49,13 @@ function withAuditTiming(handler: HttpHandler): HttpHandler {
 
     if (isError || isSlow) {
       try {
-        const level = error ? "error" : status >= 500 ? "critical" : status >= 400 ? "warning" : "info";
+        const level: "error" | "critical" | "warning" | "info" = error
+          ? "error"
+          : status >= 500
+            ? "critical"
+            : status >= 400
+              ? "warning"
+              : "info";
         await ctx.runMutation(api.auditLogs.log, {
           action: `http.${req.method.toLowerCase()}`,
           entityType: "http",
@@ -59,8 +65,8 @@ function withAuditTiming(handler: HttpHandler): HttpHandler {
             : isSlow
               ? `${req.method} ${path} — ${status} (${latencyMs}ms)`
               : `${req.method} ${path} — ${status} error`,
-          level: level as any,
-          source: "http" as any,
+          level,
+          source: "http",
           latencyMs,
           metadata: {
             method: req.method,
@@ -117,8 +123,8 @@ http.route({
           entityType: "http",
           entityId: "/clerk-webhook",
           summary: "POST /clerk-webhook — Invalid signature",
-          level: "warning" as any,
-          source: "webhook" as any,
+          level: "warning",
+          source: "webhook",
           latencyMs,
         });
       } catch {}
@@ -198,8 +204,8 @@ http.route({
           entityType: "http",
           entityId: "/clerk-webhook",
           summary: `POST /clerk-webhook — ${type} (${latencyMs}ms)`,
-          level: "info" as any,
-          source: "webhook" as any,
+          level: "info",
+          source: "webhook",
           latencyMs,
           metadata: { clerkEvent: type },
         });
@@ -293,7 +299,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function requireApiKey(ctx: any, req: Request): Promise<boolean> {
+async function requireApiKey(ctx: ActionCtx, req: Request): Promise<boolean> {
   const key = req.headers.get("x-api-key") ?? "";
   if (!key) return false;
   try {
@@ -314,7 +320,7 @@ const publicCatalogQuery = async (ctx: ActionCtx, req: Request): Promise<Respons
     const products = await ctx.runQuery(api.products.list, {
       category: category === "all" ? undefined : category,
     });
-    const rows = (products ?? []).slice(0, limit).map((p: any) => ({
+    const rows = (products ?? []).slice(0, limit).map((p) => ({
       id: p._id,
       name: p.name,
       slug: p.slug,

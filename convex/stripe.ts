@@ -10,10 +10,13 @@ const EMAIL_BASE = process.env.NEXT_PUBLIC_CONVEX_URL ?? "";
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
-async function sendPaymentEmail(order: any, items: any[]) {
+async function sendPaymentEmail(
+  order: { customerEmail?: string; customerName?: string; orderNumber?: string },
+  items: Array<{ productName?: string; name?: string; quantity?: number; price?: number }>
+) {
   if (!EMAIL_API_SECRET || !EMAIL_BASE) return;
   try {
-    const itemList = items.map((i: any) => ({
+    const itemList = items.map((i) => ({
       name: i.productName || i.name || "Product",
       quantity: i.quantity,
       price: i.price,
@@ -28,7 +31,7 @@ async function sendPaymentEmail(order: any, items: any[]) {
         customerEmail: order.customerEmail,
         customerName: order.customerName || "Customer",
         orderNumber: order.orderNumber,
-        productName: itemList.map((i: any) => i.name).join(", "),
+        productName: itemList.map((i) => i.name).join(", "),
         downloadUrl: `${SITE_URL}/account/downloads`,
       }),
     });
@@ -47,17 +50,6 @@ async function stripePost(path: string, params?: Record<string, string>) {
       ...(body ? {} : {}),
     },
     body,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Stripe API error ${res.status}`);
-  }
-  return res.json();
-}
-
-async function stripeGet(path: string) {
-  const res = await fetch(`${STRIPE_API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -217,7 +209,7 @@ export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch {
     // SECURITY: Never leak internal error details
     return new Response(JSON.stringify({ error: "Payment creation failed" }), {
       status: 500,
@@ -241,7 +233,7 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
   let event: Record<string, unknown>;
   try {
     event = await verifyStripeSignature(payload, sig, STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
+  } catch {
     // SECURITY: Don't leak signature verification details
     return new Response("Invalid signature", { status: 400 });
   }
