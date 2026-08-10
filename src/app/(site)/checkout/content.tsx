@@ -38,6 +38,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type PaymentProvider = "pesapal" | "stripe";
@@ -162,6 +169,8 @@ export default function CheckoutContent() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [convexOrderId, setConvexOrderId] = useState<string | null>(null);
+  const [pesapalDialogOpen, setPesapalDialogOpen] = useState(false);
+  const [pesapalRedirectUrl, setPesapalRedirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     track("reach_checkout", { value: totalPrice });
@@ -328,7 +337,9 @@ export default function CheckoutContent() {
             if (convexClient) {
               convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
             }
-            window.location.href = pesapalResult.redirectUrl;
+            // Open the Pesapal payment page in a popup dialog instead of a full-page redirect
+            setPesapalRedirectUrl(pesapalResult.redirectUrl);
+            setPesapalDialogOpen(true);
           } else {
             throw new Error(pesapalResult.error || "Failed to initialize Pesapal payment");
           }
@@ -362,6 +373,46 @@ export default function CheckoutContent() {
     toast.error("Payment failed", { description: msg });
   };
 
+  const pesapalPaymentDialog = (
+    <Dialog
+      open={pesapalDialogOpen}
+      onOpenChange={(open) => {
+        setPesapalDialogOpen(open);
+        if (!open && orderId) {
+          router.push(`/order-confirmation?order=${orderId}&status=pending`);
+        }
+      }}
+    >
+      <DialogContent className="flex h-[85vh] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogHeader className="border-b border-border px-5 py-3">
+          <DialogTitle>Complete Your Payment</DialogTitle>
+          <DialogDescription>
+            You&apos;ll be returned to the confirmation page once your payment is confirmed.
+          </DialogDescription>
+        </DialogHeader>
+        {pesapalRedirectUrl && (
+          <iframe
+            src={pesapalRedirectUrl}
+            title="Pesapal payment"
+            className="min-h-0 flex-1 border-0 bg-white"
+            allow="payment"
+            allowFullScreen
+          />
+        )}
+        <div className="border-t border-border px-5 py-3">
+          <a
+            href={pesapalRedirectUrl ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted underline hover:text-foreground"
+          >
+            Trouble viewing the payment page? Open it in a new tab
+          </a>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (items.length === 0) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center bg-surface">
@@ -384,6 +435,7 @@ export default function CheckoutContent() {
             </Button>
           </Link>
         </div>
+        {pesapalPaymentDialog}
       </div>
     );
   }
@@ -904,6 +956,8 @@ export default function CheckoutContent() {
           </div>
         </form>
       </div>
+
+      {pesapalPaymentDialog}
     </div>
   );
 }

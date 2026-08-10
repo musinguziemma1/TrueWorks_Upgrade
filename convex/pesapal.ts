@@ -16,6 +16,28 @@ const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
 
 const TOKEN_TTL = 4 * 60 * 1000; // Pesapal tokens are valid for ~5 minutes
 
+// Pesapal's billing_address.country_code requires ISO 3166-1 alpha-2. Orders
+// store the full country name (from the checkout form or geo lookup), so map
+// the names we can produce back to alpha-2 codes. Unknown countries fall back
+// to "UG" so initiation never fails on this field.
+const COUNTRY_NAME_TO_ALPHA2: Record<string, string> = {
+  Uganda: "UG", Kenya: "KE", Tanzania: "TZ", Rwanda: "RW", Burundi: "BI",
+  "South Sudan": "SS", Nigeria: "NG", Ghana: "GH", "South Africa": "ZA",
+  Egypt: "EG", Ethiopia: "ET", Morocco: "MA", "United States": "US",
+  "United Kingdom": "GB", Canada: "CA", Australia: "AU", Germany: "DE",
+  France: "FR", Netherlands: "NL", Sweden: "SE", Norway: "NO", Denmark: "DK",
+  Finland: "FI", Switzerland: "CH", Belgium: "BE", Austria: "AT",
+  Ireland: "IE", Portugal: "PT", Spain: "ES", Italy: "IT", Poland: "PL",
+  "Czech Republic": "CZ", India: "IN", "United Arab Emirates": "AE",
+  "Saudi Arabia": "SA", China: "CN", Japan: "JP", Singapore: "SG",
+  Malaysia: "MY", Brazil: "BR", Mexico: "MX",
+};
+
+function toCountryCode(country: string | undefined): string {
+  if (!country) return "UG";
+  return COUNTRY_NAME_TO_ALPHA2[country] ?? "UG";
+}
+
 /** Access-token settings keys in the shared `settings` table. */
 const SETTING_TOKEN = "pesapalToken";
 const SETTING_TOKEN_EXPIRY = "pesapalTokenExpiry";
@@ -203,7 +225,7 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
         city: "",
         state: "",
         postal_code: "",
-        country_code: order.country || "UG",
+        country_code: toCountryCode(order.country),
       },
     };
 
