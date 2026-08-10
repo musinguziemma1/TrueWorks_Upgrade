@@ -1,5 +1,5 @@
-﻿import { internalQuery, internalMutation, ActionCtx } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { internalQuery, internalMutation, ActionCtx } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
@@ -242,10 +242,54 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
       );
     }
 
-    // SECURITY: Don't leak Pesapal API details to client
+    // SECURITY: Don't leak Pesapal API details to client, but log them for diagnosis
+    const pesapalError = data?.error;
+    const pesapalMessage =
+      pesapalError && typeof pesapalError === "object" && "message" in pesapalError
+        ? String((pesapalError as { message?: unknown }).message)
+        : typeof pesapalError === "string" && pesapalError
+          ? pesapalError
+          : String(data?.message ?? "Pesapal did not return an order tracking ID");
+    console.error(`[pesapal] SubmitOrderRequest rejected for ${order.orderNumber}: ${pesapalMessage}`);
+    try {
+      await ctx.runMutation(api.auditLogs.log, {
+        action: "pesapal.initiate.rejected",
+        entityType: "payment",
+        entityId: order.orderNumber,
+        summary: `Pesapal rejected order ${order.orderNumber}: ${pesapalMessage}`,
+        level: "error",
+        source: "action",
+        metadata: {
+          orderId,
+          orderNumber: order.orderNumber,
+          amount: serverAmount,
+          currency: currency || "USD",
+          pesapalError: data?.error ?? null,
+        },
+      });
+    } catch {
+      // Audit logging failure must not change the response
+    }
+
     return json({ error: "Failed to initiate payment" }, 500);
-  } catch {
-    // SECURITY: Don't leak internal error details
+  } catch (err) {
+    // SECURITY: Don't leak internal error details, but log them for diagnosis
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[pesapal] initiatePayment error for order ${orderId}: ${detail}`);
+    try {
+      await ctx.runMutation(api.auditLogs.log, {
+        action: "pesapal.initiate.error",
+        entityType: "payment",
+        entityId: String(orderId ?? "unknown"),
+        summary: `Pesapal initiation error for order ${orderId}: ${detail}`,
+        level: "error",
+        source: "action",
+        metadata: { orderId, detail },
+      });
+    } catch {
+      // Audit logging failure must not change the response
+    }
+
     return json({ error: "Payment initiation failed" }, 500);
   }
 };
