@@ -5,7 +5,7 @@ import { v } from "convex/values";
 
 const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY ?? "";
 const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET ?? "";
-const PESAPAL_BASE_URL = process.env.PESAPAL_BASE_URL ?? "https://www.pesapal.com/api";
+const PESAPAL_BASE_URL = process.env.PESAPAL_BASE_URL ?? "https://pay.pesapal.com/v3/api";
 const PESAPAL_TOKEN_URL = process.env.PESAPAL_TOKEN_URL ?? `${PESAPAL_BASE_URL}/Auth/RequestToken`;
 const PESAPAL_SUBMIT_URL = process.env.PESAPAL_SUBMIT_URL ?? `${PESAPAL_BASE_URL}/Transactions/SubmitOrderRequest`;
 const PESAPAL_IPN_REGISTER_URL =
