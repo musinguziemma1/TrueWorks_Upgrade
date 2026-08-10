@@ -200,7 +200,8 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_key", ["key"])
-    .index("by_productId", ["productId"]),
+    .index("by_productId", ["productId"])
+    .index("by_orderId", ["orderId"]),
 
   reviews: defineTable({
     productId: v.id("products"),

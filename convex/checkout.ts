@@ -154,13 +154,6 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       city: city || undefined,
     });
 
-    if (couponCode) {
-      const couponResult = await ctx.runQuery(api.coupons.validate, { code: couponCode });
-      if (couponResult.valid && couponResult.coupon) {
-        await ctx.runMutation(internal.coupons.incrementUsage, { id: couponResult.coupon._id });
-      }
-    }
-
     await ctx.runMutation(internal.customers.upsertPublic, {
       email: customerEmail,
       name: customerName,

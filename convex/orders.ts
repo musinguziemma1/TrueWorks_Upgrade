@@ -159,16 +159,6 @@ async function insertOrder(ctx: MutationCtx, args: {
     updatedAt: now,
   });
 
-  for (const item of args.items) {
-    const product = await ctx.db.get(item.productId);
-    if (product) {
-      await ctx.db.patch(item.productId, {
-        totalSales: product.totalSales + item.quantity,
-        updatedAt: now,
-      });
-    }
-  }
-
   return orderId;
 }
 

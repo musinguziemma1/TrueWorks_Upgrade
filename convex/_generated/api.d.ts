@@ -25,6 +25,7 @@ import type * as customers from "../customers.js";
 import type * as downloads from "../downloads.js";
 import type * as email from "../email.js";
 import type * as emailTemplates from "../emailTemplates.js";
+import type * as fulfillment from "../fulfillment.js";
 import type * as gdpr from "../gdpr.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   downloads: typeof downloads;
   email: typeof email;
   emailTemplates: typeof emailTemplates;
+  fulfillment: typeof fulfillment;
   gdpr: typeof gdpr;
   http: typeof http;
   invitations: typeof invitations;

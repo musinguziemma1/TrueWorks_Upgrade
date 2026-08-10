@@ -327,6 +327,27 @@ async function sendPaymentEmail(order: PaymentOrder) {
   }
 }
 
+async function sendRefundEmail(order: PaymentOrder) {
+  if (!EMAIL_API_SECRET || !CONVEX_SITE_URL) return;
+  try {
+    await fetch(`${CONVEX_SITE_URL}/email/refund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-email-secret": EMAIL_API_SECRET,
+      },
+      body: JSON.stringify({
+        customerEmail: order.customerEmail,
+        customerName: order.customerName || "Customer",
+        orderNumber: order.orderNumber,
+        amount: order.total,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to send refund email:", e);
+  }
+}
+
 type MappedStatus = "pending" | "completed" | "failed" | "refunded";
 
 function mapPesapalStatus(statusCode: unknown, statusDesc: unknown): MappedStatus {
@@ -403,24 +424,41 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     });
   }
 
-  if (mapped !== "completed") {
-    // failed / refunded / invalid payment
+  if (mapped === "refunded") {
+    // REVERSED payment — undo fulfillment and roll back settled stats.
+    await ctx.runMutation(internal.fulfillment.adjustSales, {
+      items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      delta: -1,
+    });
+    await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
+      email: order.customerEmail,
+      amount: order.total,
+      delta: -1,
+    });
+    if (order.couponCode) {
+      await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
+        code: order.couponCode,
+        delta: -1,
+      });
+    }
+    await ctx.runMutation(internal.fulfillment.revokeFulfillment, { orderId: order._id });
     await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
       id: order._id,
-      paymentStatus: mapped === "refunded" ? "refunded" : "failed",
+      paymentStatus: "refunded",
       orderStatus: "pending",
     });
-    return mapped === "refunded" ? "refunded" : "failed";
+    await sendRefundEmail(order);
+    return "refunded";
   }
 
   if (mapped !== "completed") {
-    // failed / refunded / invalid payment
+    // failed / invalid payment
     await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
       id: order._id,
-      paymentStatus: mapped === "refunded" ? "refunded" : "failed",
+      paymentStatus: "failed",
       orderStatus: "pending",
     });
-    return mapped;
+    return "failed";
   }
 
   // SECURITY: verify the amount matches the order total before fulfilling
@@ -475,6 +513,23 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     id: order._id,
     orderStatus: "completed",
   });
+
+  // Settled payment — now count the sale, customer lifetime stats and coupon use.
+  await ctx.runMutation(internal.fulfillment.adjustSales, {
+    items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+    delta: 1,
+  });
+  await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
+    email: order.customerEmail,
+    amount: order.total,
+    delta: 1,
+  });
+  if (order.couponCode) {
+    await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
+      code: order.couponCode,
+      delta: 1,
+    });
+  }
 
   await ctx.runMutation(internal.analytics.recordRevenue, {
     timestamp: order.createdAt,

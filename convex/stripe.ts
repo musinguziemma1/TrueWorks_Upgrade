@@ -40,6 +40,32 @@ async function sendPaymentEmail(
   }
 }
 
+async function sendRefundEmail(order: {
+  customerEmail?: string;
+  customerName?: string;
+  orderNumber?: string;
+  total?: number;
+}) {
+  if (!EMAIL_API_SECRET || !EMAIL_BASE) return;
+  try {
+    await fetch(`${EMAIL_BASE}/email/refund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-email-secret": EMAIL_API_SECRET,
+      },
+      body: JSON.stringify({
+        customerEmail: order.customerEmail,
+        customerName: order.customerName || "Customer",
+        orderNumber: order.orderNumber,
+        amount: order.total,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to send refund email:", e);
+  }
+}
+
 async function stripePost(path: string, params?: Record<string, string>) {
   const body = params ? new URLSearchParams(params).toString() : undefined;
   const res = await fetch(`${STRIPE_API_BASE}${path}`, {
@@ -338,6 +364,23 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
           paymentId: pi.id as string,
         });
 
+        // Settled payment — count the sale, customer lifetime stats and coupon use.
+        await ctx.runMutation(internal.fulfillment.adjustSales, {
+          items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          delta: 1,
+        });
+        await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
+          email: order.customerEmail,
+          amount: order.total ?? 0,
+          delta: 1,
+        });
+        if (order.couponCode) {
+          await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
+            code: order.couponCode,
+            delta: 1,
+          });
+        }
+
         await ctx.runMutation(internal.analytics.recordRevenue, {
           timestamp: order.createdAt,
           revenue: order.total ?? 0,
@@ -395,6 +438,58 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
           eventId,
         });
       }
+    }
+  } else if (eventType === "charge.refunded") {
+    const paymentIntentId = (dataObject.object?.payment_intent as string) ?? "";
+    if (paymentIntentId) {
+      const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+        paymentId: paymentIntentId,
+      });
+
+      if (payment) {
+        const order = await ctx.runQuery(internal.orders.getOrderForPayment, {
+          id: payment.orderId,
+        });
+
+        if (order) {
+          await ctx.runMutation(internal.payments.updateStatus, {
+            id: payment._id,
+            status: "refunded",
+            metadata: { ...payment.metadata, refunded: true },
+          });
+
+          // Refunded — roll back settled stats and revoke fulfillment.
+          await ctx.runMutation(internal.fulfillment.adjustSales, {
+            items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+            delta: -1,
+          });
+          await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
+            email: order.customerEmail,
+            amount: order.total ?? 0,
+            delta: -1,
+          });
+          if (order.couponCode) {
+            await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
+              code: order.couponCode,
+              delta: -1,
+            });
+          }
+          await ctx.runMutation(internal.fulfillment.revokeFulfillment, { orderId: order._id });
+          await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+            id: order._id,
+            paymentStatus: "refunded",
+            orderStatus: "pending",
+          });
+          await sendRefundEmail(order);
+        }
+      }
+    }
+
+    if (eventId) {
+      await ctx.runMutation(internal.webhooks.markProcessed, {
+        provider: "stripe",
+        eventId,
+      });
     }
   }
 
