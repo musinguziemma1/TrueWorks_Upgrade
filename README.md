@@ -3,7 +3,7 @@
 We build Business Operating Systems that help organizations operate better,
 decide faster, and grow stronger.
 
-**Website:** [trueworksug.com](https://trueworksug.com)  
+**Website:** [trueworksgroup.com](https://trueworksgroup.com)  
 **Phase:** 1 — Digital Products Store (Launch Version)  
 **Version:** 0.1.0
 

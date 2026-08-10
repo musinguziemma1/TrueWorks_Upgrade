@@ -509,7 +509,7 @@ const pagesSeed = [
     title: "Contact Us",
     slug: "contact",
     content:
-      "<p>Reach out to our support team at support@trueworks.example.com or through the contact form.</p>",
+      "<p>Reach out to our support team at hello@trueworksgroup.com or through the contact form.</p>",
     type: "page" as const,
     excerpt: "Get in touch with the TrueWorks team.",
     coverImage: undefined,
@@ -542,7 +542,7 @@ const settingsSeed = [
   { key: "siteName", value: "TrueWorks" },
   { key: "siteDescription", value: "Premium spreadsheet templates and dashboards for modern teams." },
   { key: "currency", value: "USD" },
-  { key: "supportEmail", value: "support@trueworks.example.com" },
+  { key: "supportEmail", value: "hello@trueworksgroup.com" },
   { key: "featuredProductSlugs", value: ["hospital-kpi-dashboard", "financial-model-bundle", "project-portfolio-tracker"] },
 ];
 
