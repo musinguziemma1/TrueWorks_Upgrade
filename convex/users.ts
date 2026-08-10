@@ -4,9 +4,6 @@ import { MutationCtx, QueryCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { auditLog } from "./lib/audit";
 
-const DEFAULT_ADMIN_EMAILS = ["musinguzie612@gmail.com"];
-const SUPERADMIN_EMAILS = ["musinguzie612@gmail.com"];
-
 const ROLE_HIERARCHY: Record<string, number> = {
   superadmin: 5,
   owner: 4,
@@ -15,18 +12,42 @@ const ROLE_HIERARCHY: Record<string, number> = {
   viewer: 1,
 };
 
+/**
+ * Admin email allowlist comes exclusively from the ADMIN_EMAILS env var
+ * (comma-separated). Hardcoded defaults are intentionally removed so the
+ * allowlist is not baked into the source.
+ */
 function getAdminEmails(): string[] {
-  const env = process.env.ADMIN_EMAILS;
-  const fromEnv = env
-    ? env.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
-    : [];
+  const env = process.env.ADMIN_EMAILS ?? "";
   return Array.from(
-    new Set([...DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase()), ...fromEnv])
+    new Set(
+      env
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+    )
   );
+}
+
+/**
+ * Superadmin email allowlist comes exclusively from the SUPERADMIN_EMAILS env
+ * var (comma-separated). Falls back to the admin allowlist so a single env var
+ * is enough to bootstrap a superadmin.
+ */
+function getSuperAdminEmails(): string[] {
+  const superEmails = (process.env.SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return Array.from(new Set([...getAdminEmails(), ...superEmails]));
 }
 
 export function isAdminEmail(email: string): boolean {
   return getAdminEmails().includes(email.toLowerCase());
+}
+
+export function isSuperAdminEmail(email: string): boolean {
+  return getSuperAdminEmails().includes(email.toLowerCase());
 }
 
 async function findUserByIdentity(ctx: QueryCtx | MutationCtx) {
@@ -239,8 +260,8 @@ export const upsertFromClerk = internalMutation({
 
     const now = Date.now();
     const adminEmail = isAdminEmail(args.email);
-    const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(args.email.toLowerCase());
-    const adminRole = isSuperAdminEmail ? "superadmin" : "admin";
+    const isSuperAdmin = isSuperAdminEmail(args.email);
+    const adminRole = isSuperAdmin ? "superadmin" : "admin";
 
     // Check for pending invitation to determine role
     let invitationRole: string | undefined;
@@ -632,8 +653,8 @@ export const seedAdmin = mutation({
 
     const now = Date.now();
     const tokenIdentifier = identity.tokenIdentifier;
-    const isSuperAdminEmail = identityEmail.length > 0 && SUPERADMIN_EMAILS.includes(identityEmail);
-    const assignedRole = isSuperAdminEmail ? "superadmin" : "admin";
+    const isSuperAdmin = identityEmail.length > 0 && isSuperAdminEmail(identityEmail);
+    const assignedRole = isSuperAdmin ? "superadmin" : "admin";
     // Store the verified identity email, not args.email (which is attacker-controlled).
     const storedEmail = identityEmail || (args.email ?? "").toLowerCase();
     const id = await ctx.db.insert("users", {

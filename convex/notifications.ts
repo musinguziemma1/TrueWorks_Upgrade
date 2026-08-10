@@ -53,6 +53,7 @@ export const create = mutation({
 export const markRead = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(args.id, { read: true });
   },
 });
@@ -60,6 +61,7 @@ export const markRead = mutation({
 export const markAllRead = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const unread = await ctx.db
       .query("notifications")
       .withIndex("by_read", (q) => q.eq("read", false))
@@ -74,6 +76,7 @@ export const markAllRead = mutation({
 export const clear = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("notifications").collect();
     for (const n of all) {
       await ctx.db.delete(n._id);
@@ -85,6 +88,7 @@ export const clear = mutation({
 export const remove = mutation({
   args: { id: v.id("notifications") },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });

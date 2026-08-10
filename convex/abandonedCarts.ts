@@ -1,6 +1,7 @@
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 export const track = mutation({
   args: {
@@ -18,6 +19,11 @@ export const track = mutation({
     if (args.items.length === 0) return;
 
     const email = args.email.toLowerCase().trim();
+    // Rate limit: max 10 abandoned-cart track calls per email per 10 minutes.
+    // Prevents flooding the abandonedCarts table or triggering recovery emails
+    // for arbitrary addresses.
+    await checkRateLimit(ctx, "abandoned-cart-track", email, 10, 600_000);
+
     const totalValue = args.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     // Check if there's an existing unrecovered cart for this email

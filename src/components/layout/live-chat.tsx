@@ -7,8 +7,8 @@ import Script from "next/script";
  * Uses Next.js Script component for optimal loading.
  */
 export function LiveChat() {
-  const propertyId = "6a7618b0c010c21d4b631999";
-  const widgetId = "1jvel0slm";
+  const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID;
+  const widgetId = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID;
 
   if (!propertyId || !widgetId) return null;
 
