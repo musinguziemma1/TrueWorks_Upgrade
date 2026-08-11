@@ -18,6 +18,7 @@ export function LiveChat() {
       id="tawk-chat"
       src={`https://embed.tawk.to/${propertyId}/${widgetId}`}
       strategy="afterInteractive"
+      crossOrigin="anonymous"
     />
   );
 }
