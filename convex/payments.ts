@@ -1,10 +1,20 @@
-import { internalMutation, internalQuery, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
 
 type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Infer the gateway provider from an order's stored payment id / method. */
+function inferProvider(opts: { paymentId?: string; paymentMethod?: string }): string {
+  const pid = opts.paymentId ?? "";
+  if (pid.startsWith("pi_") || pid.startsWith("pay_") || pid.startsWith("sub_")) return "stripe";
+  if (pid) return "pesapal";
+  const method = (opts.paymentMethod ?? "").toLowerCase();
+  if (method.includes("momo") || method.includes("pesa")) return "pesapal";
+  return "manual";
+}
 
 /** Resolve a start cutoff from an explicit timestamp or a trailing-days window. */
 function resolveStartDate(startDate?: number, days?: number): number | undefined {
@@ -133,6 +143,144 @@ export const updateStatus = internalMutation({
   },
 });
 
+/**
+ * Upsert a payment row by gateway payment id so callbacks/webhooks always have
+ * a record to update even if the row creation at checkout was skipped.
+ */
+export const upsertFromOrder = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    paymentId: v.string(),
+    provider: v.string(),
+    status: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded")),
+    amount: v.number(),
+    currency: v.string(),
+    customerEmail: v.string(),
+    customerName: v.string(),
+    method: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("payments")
+      .withIndex("by_paymentId", (q) => q.eq("paymentId", args.paymentId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        method: args.method ?? existing.method,
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    }
+    const now = Date.now();
+    return await ctx.db.insert("payments", {
+      orderId: args.orderId,
+      paymentId: args.paymentId,
+      provider: args.provider,
+      method: args.method ?? "card",
+      amount: args.amount,
+      currency: args.currency,
+      status: args.status,
+      customerEmail: args.customerEmail,
+      customerName: args.customerName,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+/**
+ * Admin-only: make the payments table mirror the orders table (the source of
+ * truth). Creates missing rows for settled/failed orders, syncs stale statuses,
+ * and reports orphaned payment rows. Re-runnable whenever drift appears.
+ */
+export const reconcileFromOrders = mutation({
+  args: {
+    removeOrphans: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) throw new Error("Unauthorized");
+
+    const orders = await ctx.db.query("orders").collect();
+    const payments = await ctx.db.query("payments").collect();
+
+    const byOrder = new Map<string, (typeof payments)[number]>();
+    for (const p of payments) {
+      const key = p.orderId as string;
+      const existing = byOrder.get(key);
+      if (!existing || existing.status === "pending") byOrder.set(key, p);
+    }
+
+    let created = 0;
+    let updated = 0;
+    let unchanged = 0;
+    let pendingSkipped = 0;
+
+    const now = Date.now();
+    for (const o of orders) {
+      if (o.paymentStatus === "pending") {
+        pendingSkipped++;
+        continue;
+      }
+      const canonical = byOrder.get(o._id as string);
+      if (!canonical) {
+        const paymentId = o.paymentId ?? o.orderNumber;
+        await ctx.db.insert("payments", {
+          orderId: o._id,
+          paymentId,
+          provider: inferProvider({ paymentId, paymentMethod: o.paymentMethod }),
+          method: o.paymentMethod || "card",
+          amount: o.total,
+          currency: "USD",
+          status: o.paymentStatus,
+          customerEmail: o.customerEmail,
+          customerName: o.customerName,
+          metadata: { reconciled: true },
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt,
+        });
+        created++;
+        continue;
+      }
+      const patch: Record<string, unknown> = {};
+      if (canonical.status !== o.paymentStatus) patch.status = o.paymentStatus;
+      if (!canonical.paymentId && o.paymentId) patch.paymentId = o.paymentId;
+      if (!canonical.method) patch.method = o.paymentMethod || "card";
+      if (!canonical.customerEmail) patch.customerEmail = o.customerEmail;
+      if (!canonical.customerName) patch.customerName = o.customerName;
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(canonical._id, { ...patch, updatedAt: now });
+        updated++;
+      } else {
+        unchanged++;
+      }
+    }
+
+    const orderIds = new Set(orders.map((o) => o._id));
+    let orphaned = 0;
+    let removedOrphans = 0;
+    for (const p of payments) {
+      if (!orderIds.has(p.orderId)) {
+        orphaned++;
+        if (args.removeOrphans) {
+          await ctx.db.delete(p._id);
+          removedOrphans++;
+        }
+      }
+    }
+
+    return {
+      ordersScanned: orders.length,
+      created,
+      updated,
+      unchanged,
+      pendingSkipped,
+      orphaned,
+      removedOrphans,
+    };
+  },
+});
+
 export const stats = query({
   args: {
     startDate: v.optional(v.number()),
@@ -177,7 +325,8 @@ export const stats = query({
 
       if (p.status === "completed") {
         completed++;
-        revenueByCurrency[p.currency] = (revenueByCurrency[p.currency] ?? 0) + p.amount;
+        const currency = (p.currency || "USD").toUpperCase();
+        revenueByCurrency[currency] = (revenueByCurrency[currency] ?? 0) + p.amount;
         const dayStart = Math.floor(p.createdAt / dayMs) * dayMs;
         const bucket = trendMap.get(dayStart) ?? { revenue: 0, count: 0 };
         bucket.revenue += p.amount;
@@ -204,7 +353,7 @@ export const stats = query({
       : 0;
 
     const completedInPrimary = all.filter(
-      (p) => p.status === "completed" && p.currency === primaryCurrency
+      (p) => p.status === "completed" && (p.currency || "USD").toUpperCase() === primaryCurrency
     );
     const avgOrderValue = completedInPrimary.length > 0
       ? Math.round(

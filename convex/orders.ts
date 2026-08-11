@@ -77,6 +77,20 @@ export const getOrderForPayment = internalQuery({
 });
 
 /**
+ * Internal query to resolve an order by its gateway payment id.
+ * Used as a fallback when a payment row is missing for a callback.
+ */
+export const getOrderByPaymentId = internalQuery({
+  args: { paymentId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("orders")
+      .withIndex("by_paymentId", (q) => q.eq("paymentId", args.paymentId))
+      .first();
+  },
+});
+
+/**
  * Internal mutation to update order status from payment callbacks.
  * No auth required — called from HTTP actions.
  */

@@ -422,12 +422,34 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
   if (!data) return "pending";
   const mapped = mapPesapalStatus(data.status_code, data.payment_status_description);
 
-  const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+  let payment = await ctx.runQuery(internal.payments.getByPaymentId, {
     paymentId: trackingId,
   });
-  const order = payment
+  let order = payment
     ? await ctx.runQuery(internal.orders.getOrderForPayment, { id: payment.orderId })
     : null;
+
+  // Fallback: the payment row may be missing — resolve the order by its stored
+  // payment id and recreate the row so the record stays in sync.
+  if (!order) {
+    order = await ctx.runQuery(internal.orders.getOrderByPaymentId, { paymentId: trackingId });
+    if (order) {
+      await ctx.runMutation(internal.payments.upsertFromOrder, {
+        orderId: order._id,
+        paymentId: trackingId,
+        provider: "pesapal",
+        status: "pending",
+        amount: order.total,
+        currency: "USD",
+        customerEmail: order.customerEmail,
+        customerName: order.customerName,
+        method: order.paymentMethod,
+      });
+      payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+        paymentId: trackingId,
+      });
+    }
+  }
 
   // Unknown order — nothing for us to update. Answer the ping with the mapped
   // status so callers still get the expected ack shape.

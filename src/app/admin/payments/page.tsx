@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
-import { Radio } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Radio, RefreshCw } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
-import { useQuery } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { usePaymentsState } from "./use-payments-state"
 import { StatCards } from "./_components/stat-cards"
@@ -20,6 +20,25 @@ export default function PaymentsPage() {
   const { setTotal } = state
 
   const stats = useQuery(api.payments.stats, { days: state.days })
+
+  const reconcile = useMutation(api.payments.reconcileFromOrders)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
+
+  const handleSync = async () => {
+    setSyncing(true)
+    setSyncMessage(null)
+    try {
+      const res = await reconcile({})
+      setSyncMessage(
+        `Synced with orders — ${res.created} created, ${res.updated} updated, ${res.orphaned} orphaned`
+      )
+    } catch {
+      setSyncMessage("Sync failed")
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const data =
     useQuery(api.payments.list, {
@@ -57,10 +76,24 @@ export default function PaymentsPage() {
               <Radio className="h-3.5 w-3.5 text-emerald-600" />
               Live data
             </span>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-60"
+              title="Rebuild payment records from the orders table"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync with orders"}
+            </button>
             <ExportButton state={state} disabled={loadingStats && loadingData} />
           </div>
         }
       />
+
+      {syncMessage && (
+        <p className="text-xs text-muted-foreground">{syncMessage}</p>
+      )}
 
       <StatCards stats={stats} loading={loadingStats} />
 

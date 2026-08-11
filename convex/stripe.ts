@@ -308,9 +308,28 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
         return new Response("Amount mismatch", { status: 400 });
       }
 
-      const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+      let payment = await ctx.runQuery(internal.payments.getByPaymentId, {
         paymentId: pi.id as string,
       });
+
+      // Missing payment row (e.g. row creation at checkout was skipped): create
+      // it from the order so the record stays in sync with the transaction.
+      if (!payment) {
+        await ctx.runMutation(internal.payments.upsertFromOrder, {
+          orderId,
+          paymentId: pi.id as string,
+          provider: "stripe",
+          status: "completed",
+          amount: order.total,
+          currency: ((pi.currency as string) ?? "usd").toUpperCase(),
+          customerEmail: order.customerEmail,
+          customerName: order.customerName,
+          method: order.paymentMethod,
+        });
+        payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+          paymentId: pi.id as string,
+        });
+      }
 
       if (payment) {
         await ctx.runMutation(internal.payments.updateStatus, {
@@ -406,9 +425,29 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
   } else if (eventType === "payment_intent.payment_failed") {
     const orderId = metadata.orderId as Id<"orders"> | undefined;
     if (orderId) {
-      const payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+      let payment = await ctx.runQuery(internal.payments.getByPaymentId, {
         paymentId: pi.id as string,
       });
+
+      if (!payment) {
+        const order = await ctx.runQuery(internal.orders.getOrderForPayment, { id: orderId });
+        if (order) {
+          await ctx.runMutation(internal.payments.upsertFromOrder, {
+            orderId,
+            paymentId: pi.id as string,
+            provider: "stripe",
+            status: "failed",
+            amount: order.total,
+            currency: ((pi.currency as string) ?? "usd").toUpperCase(),
+            customerEmail: order.customerEmail,
+            customerName: order.customerName,
+            method: order.paymentMethod,
+          });
+          payment = await ctx.runQuery(internal.payments.getByPaymentId, {
+            paymentId: pi.id as string,
+          });
+        }
+      }
 
       if (payment) {
         const lastError = (pi.last_payment_error ?? {}) as Record<string, unknown>;
