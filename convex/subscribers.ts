@@ -27,6 +27,38 @@ export const listActive = query({
   },
 });
 
+/**
+ * Paginated subscriber list with search + active filter for the admin page.
+ * Kept separate from `list` (array shape) so existing dashboards keep working.
+ */
+export const listPage = query({
+  args: {
+    search: v.optional(v.string()),
+    activeOnly: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return { subscribers: [], total: 0 };
+    let all = await ctx.db.query("subscribers").collect();
+    if (args.activeOnly) all = all.filter((s) => s.active);
+    if (args.search) {
+      const l = args.search.toLowerCase();
+      all = all.filter(
+        (s) =>
+          s.email.toLowerCase().includes(l) ||
+          (s.name ?? "").toLowerCase().includes(l) ||
+          (s.source ?? "").toLowerCase().includes(l)
+      );
+    }
+    all.sort((a, b) => b.createdAt - a.createdAt);
+    const total = all.length;
+    const offset = args.offset ?? 0;
+    const limit = args.limit ?? 50;
+    return { subscribers: all.slice(offset, offset + limit), total };
+  },
+});
+
 export const create = mutation({
   args: {
     email: v.string(),

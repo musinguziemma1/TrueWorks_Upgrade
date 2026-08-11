@@ -40,6 +40,7 @@ const statusColorMap: Record<string, string> = {
   published: "bg-blue-50 text-blue-700 border-blue-200",
   live: "bg-blue-50 text-blue-700 border-blue-200",
   sent: "bg-blue-50 text-blue-700 border-blue-200",
+  sending: "bg-sky-50 text-sky-700 border-sky-200",
   "in progress": "bg-blue-50 text-blue-700 border-blue-200",
   shipped: "bg-blue-50 text-blue-700 border-blue-200",
   // Purple

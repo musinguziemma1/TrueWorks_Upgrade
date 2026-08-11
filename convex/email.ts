@@ -1,6 +1,7 @@
 import { internalAction, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
@@ -444,6 +445,54 @@ export const sendRefundEmail = internalAction({
   },
 });
 
+interface ActiveSubscriber {
+  _id: Id<"subscribers">;
+  email: string;
+  name?: string;
+}
+
+interface CampaignDoc {
+  _id: Id<"campaigns">;
+  content?: string;
+  subject?: string;
+  status?: string;
+  sentCount?: number;
+}
+
+/**
+ * Build per-recipient campaign HTML: injects a tracking pixel, rewrites anchor
+ * links through the click-tracking redirect, and substitutes subscriber vars.
+ * Returns a plain HTML fragment wrapped in the shared base template.
+ */
+function buildCampaignHtml(
+  campaign: CampaignDoc,
+  subscriber: ActiveSubscriber,
+  trackingBase: string
+): string {
+  let content = String(campaign.content ?? "");
+
+  // Personalization for newsletter recipients.
+  const subscriberName = escapeHtml(subscriber.name ?? "");
+  content = content
+    .replace(/\{\{subscriberName\}\}/g, subscriberName)
+    .replace(/\{\{name\}\}/g, subscriberName);
+
+  if (trackingBase) {
+    const c = encodeURIComponent(campaign._id as unknown as string);
+    const s = encodeURIComponent(subscriber._id as unknown as string);
+    // Redirect links through the click tracker (double-quoted hrefs).
+    content = content.replace(
+      /<a([^>]*?)\s+href="(https?:\/\/[^"]+)"/gi,
+      (_match, attrs: string, href: string) =>
+        `<a${attrs} href="${trackingBase}/track-click?c=${c}&s=${s}&u=${encodeURIComponent(href)}"`
+    );
+    // Invisible tracking pixel for open rate.
+    content += `<img src="${trackingBase}/track-open?c=${c}&s=${s}" alt="" width="1" height="1" style="display:none" />`;
+  }
+
+  return baseTemplate(content);
+}
+
 export const sendCampaignEmails = internalAction({
   args: {
     campaignId: v.id("campaigns"),
@@ -453,22 +502,33 @@ export const sendCampaignEmails = internalAction({
     if (!campaign) return { sent: 0, failed: 0 };
 
     const active = await ctx.runQuery(api.subscribers.listActive);
-    if (active.length === 0) return { sent: 0, failed: 0 };
+    if (active.length === 0) {
+      await ctx.runMutation(api.campaigns.markSentInternal, {
+        id: args.campaignId,
+        sentCount: 0,
+      });
+      return { sent: 0, failed: 0 };
+    }
 
-    const html = baseTemplate(String(campaign.content ?? ""));
+    // Tracking endpoints are served from the Convex HTTP site URL.
+    const trackingBase = (
+      process.env.CONVEX_SITE_URL ??
+      process.env.NEXT_PUBLIC_CONVEX_SITE_URL ??
+      ""
+    ).replace(/\/$/, "");
 
     let sent = 0;
     let failed = 0;
 
-    // Send in batches of 50 to avoid Resend rate limits
+    // Send in batches of 50 to avoid Resend rate limits.
     for (let i = 0; i < active.length; i += 50) {
       const batch = active.slice(i, i + 50);
       const results = await Promise.allSettled(
-        batch.map((sub: { email: string; name?: string }) =>
+        batch.map((sub: ActiveSubscriber) =>
           sendEmail({
             to: sub.email,
             subject: String(campaign.subject ?? "").slice(0, 128),
-            html,
+            html: buildCampaignHtml(campaign, sub, trackingBase),
           })
         )
       );
@@ -487,6 +547,68 @@ export const sendCampaignEmails = internalAction({
     return { sent, failed };
   },
 });
+
+/** Minimal base64 decode for the tracking pixel (no Buffer dependency). */
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+const TRANSPARENT_GIF = base64ToBytes(
+  "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+);
+
+/**
+ * HTTP: 1x1 transparent pixel that records a campaign open (deduped per
+ * subscriber) and always answers with a valid GIF so tracking is invisible.
+ */
+export const trackOpen = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const url = new URL(request.url);
+  const campaignId = url.searchParams.get("c") ?? "";
+  const subscriberId = url.searchParams.get("s") ?? "";
+  if (campaignId && subscriberId) {
+    try {
+      await ctx.runMutation(internal.campaigns.recordOpen, {
+        campaignId: campaignId as Id<"campaigns">,
+        subscriberId: subscriberId as Id<"subscribers">,
+      });
+    } catch {
+      // Tracking must never break the email render or request.
+    }
+  }
+  return new Response(new Uint8Array(TRANSPARENT_GIF), {
+    status: 200,
+    headers: {
+      "Content-Type": "image/gif",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
+};
+
+/**
+ * HTTP: records a campaign click (deduped per subscriber) and redirects the
+ * user to the original destination link.
+ */
+export const trackClick = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const url = new URL(request.url);
+  const campaignId = url.searchParams.get("c") ?? "";
+  const subscriberId = url.searchParams.get("s") ?? "";
+  const target = url.searchParams.get("u") ?? "";
+  if (campaignId && subscriberId) {
+    try {
+      await ctx.runMutation(internal.campaigns.recordClick, {
+        campaignId: campaignId as Id<"campaigns">,
+        subscriberId: subscriberId as Id<"subscribers">,
+      });
+    } catch {
+      // Tracking must never break the redirect.
+    }
+  }
+  const location = /^https?:\/\//i.test(target) ? target : "/";
+  return new Response(null, { status: 302, headers: { Location: location } });
+};
 
 export const sendNewsletter = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);

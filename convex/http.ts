@@ -13,6 +13,8 @@ import {
   sendRefundConfirmation,
   sendWelcomeEmail,
   sendNewsletter,
+  trackOpen,
+  trackClick,
 } from "./email";
 
 const http = httpRouter();
@@ -274,6 +276,18 @@ http.route({
   path: "/email/newsletter",
   method: "POST",
   handler: httpAction(withAuditTiming(sendNewsletter)),
+});
+
+http.route({
+  path: "/email/track-open",
+  method: "GET",
+  handler: httpAction(withAuditTiming(trackOpen)),
+});
+
+http.route({
+  path: "/email/track-click",
+  method: "GET",
+  handler: httpAction(withAuditTiming(trackClick)),
 });
 
 http.route({

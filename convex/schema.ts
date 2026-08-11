@@ -489,7 +489,7 @@ export default defineSchema({
     name: v.string(),
     subject: v.string(),
     content: v.string(),
-    status: v.union(v.literal("draft"), v.literal("scheduled"), v.literal("sent")),
+    status: v.union(v.literal("draft"), v.literal("scheduled"), v.literal("sending"), v.literal("sent")),
     scheduledAt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     sentCount: v.number(),
@@ -500,6 +500,15 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"]),
+
+  emailEvents: defineTable({
+    campaignId: v.id("campaigns"),
+    subscriberId: v.id("subscribers"),
+    type: v.union(v.literal("open"), v.literal("click")),
+    createdAt: v.number(),
+  })
+    .index("by_campaign_subscriber", ["campaignId", "subscriberId"])
+    .index("by_campaign_type", ["campaignId", "type"]),
 
   abandonedCarts: defineTable({
     email: v.string(),

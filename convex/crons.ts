@@ -11,4 +11,12 @@ crons.interval(
   {}
 );
 
+// Scheduled campaigns are released every 5 minutes when their send time hits.
+crons.interval(
+  "send-scheduled-campaigns",
+  { minutes: 5 },
+  internal.campaignScheduler.sendDueScheduled,
+  {}
+);
+
 export default crons;
