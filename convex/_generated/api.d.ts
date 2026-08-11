@@ -38,6 +38,7 @@ import type * as orderEmails from "../orderEmails.js";
 import type * as orders from "../orders.js";
 import type * as pages from "../pages.js";
 import type * as payments from "../payments.js";
+import type * as paymentsExport from "../paymentsExport.js";
 import type * as pesapal from "../pesapal.js";
 import type * as products from "../products.js";
 import type * as rateLimit from "../rateLimit.js";
@@ -93,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   orders: typeof orders;
   pages: typeof pages;
   payments: typeof payments;
+  paymentsExport: typeof paymentsExport;
   pesapal: typeof pesapal;
   products: typeof products;
   rateLimit: typeof rateLimit;
