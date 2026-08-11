@@ -1,153 +1,51 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
-import { Settings, Palette, Mail, CreditCard, Download, Shield, Image, Key, Loader2, RefreshCw, CheckCircle, XCircle, Copy, Eye, EyeOff } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Settings, Palette, Mail, CreditCard, Download, Shield, Loader2, CheckCircle2, RotateCcw } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
-import { useQuery, useMutation, useAction } from "convex/react"
+import { useAction } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
+import { useSettingsForm } from "./use-settings-form"
+import { GeneralTab } from "./_components/general-tab"
+import { BrandingTab } from "./_components/branding-tab"
+import { EmailTab } from "./_components/email-tab"
+import { PaymentTab } from "./_components/payment-tab"
+import { DownloadsTab } from "./_components/downloads-tab"
+import { SecurityTab } from "./_components/security-tab"
+import { Skeleton } from "@/components/ui/skeleton"
 
-interface SettingsState {
-  siteName: string
-  siteTagline: string
-  siteDescription: string
-  siteUrl: string
-  siteLogo: string
-  siteFavicon: string
-  primaryColor: string
-  secondaryColor: string
-  accentColor: string
-  backgroundColor: string
-  surfaceColor: string
-  foregroundColor: string
-  headingFont: string
-  bodyFont: string
-  customCss: string
-  smtpHost: string
-  smtpPort: string
-  smtpUsername: string
-  smtpFrom: string
-  currency: string
-  taxRate: number
-  pesapalEnabled: boolean
-  stripeEnabled: boolean
-  mtnMomoEnabled: boolean
-  airtelMoneyEnabled: boolean
-  paypalEnabled: boolean
-  maxDownloadsPerPurchase: number
-  downloadLinkExpiryDays: number
-  downloadMethod: string
-  requireLoginToDownload: boolean
-  downloadNotifications: boolean
-  storageProvider: string
-  storageUsed: number
-  storageMax: number
-  require2fa: boolean
-  passwordExpiryDays: number
-  sessionTimeoutMinutes: number
-  maxLoginAttempts: number
-  apiRateLimiting: boolean
-  ipWhitelist: boolean
-}
+type TabId = "general" | "branding" | "email" | "payment" | "downloads" | "security"
 
-const defaultSettings: SettingsState = {
-  siteName: "",
-  siteTagline: "",
-  siteDescription: "",
-  siteUrl: "",
-  siteLogo: "",
-  siteFavicon: "",
-  primaryColor: "#0B2545",
-  secondaryColor: "#3E6990",
-  accentColor: "#C9A227",
-  backgroundColor: "#FFFFFF",
-  surfaceColor: "#FAFBFC",
-  foregroundColor: "#1E293B",
-  headingFont: "georgia",
-  bodyFont: "calibri",
-  customCss: "",
-  smtpHost: "",
-  smtpPort: "587",
-  smtpUsername: "",
-  smtpFrom: "",
-  currency: "USD",
-  taxRate: 18,
-  pesapalEnabled: true,
-  stripeEnabled: true,
-  mtnMomoEnabled: true,
-  airtelMoneyEnabled: true,
-  paypalEnabled: false,
-  maxDownloadsPerPurchase: 5,
-  downloadLinkExpiryDays: 30,
-  downloadMethod: "direct",
-  requireLoginToDownload: true,
-  downloadNotifications: true,
-  storageProvider: "local",
-  storageUsed: 0,
-  storageMax: 10,
-  require2fa: false,
-  passwordExpiryDays: 90,
-  sessionTimeoutMinutes: 60,
-  maxLoginAttempts: 5,
-  apiRateLimiting: true,
-  ipWhitelist: false,
-}
-
-function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  )
-}
+const tabs: { id: TabId; label: string; icon: typeof Settings }[] = [
+  { id: "general", label: "General", icon: Settings },
+  { id: "branding", label: "Branding", icon: Palette },
+  { id: "email", label: "Email", icon: Mail },
+  { id: "payment", label: "Payment", icon: CreditCard },
+  { id: "downloads", label: "Downloads", icon: Download },
+  { id: "security", label: "Security", icon: Shield },
+]
 
 export default function SettingsPage() {
-  const rawSettings = useQuery(api.settings.getAll)
-  const setMultiple = useMutation(api.settings.setMultiple)
+  const form = useSettingsForm()
   const uploadFile = useAction(api.storage.uploadFile)
-  const testSmtp = useAction(api.testSmtp.testSmtp)
-  const mediaFiles = useQuery(api.storage.listFiles, {})
-  const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabId>("general")
   const [uploading, setUploading] = useState<string | null>(null)
-  const [smtpTesting, setSmtpTesting] = useState(false)
-  const [smtpStatus, setSmtpStatus] = useState<"idle" | "success" | "error">("idle")
-  const [apiKeyVisible, setApiKeyVisible] = useState(false)
-  const [apiKey, setApiKey] = useState("")
-  const [settings, setSettings] = useState<SettingsState>(defaultSettings)
 
-  const initFromDb = useCallback((dbData: Record<string, unknown>) => {
-    const merged = { ...defaultSettings }
-    for (const [key, value] of Object.entries(dbData)) {
-      if (key in merged) {
-        ;(merged as Record<string, unknown>)[key] = value
-      }
-    }
-    setSettings(merged)
-  }, [])
-
+  // Warn before leaving with unsaved changes.
   useEffect(() => {
-    if (rawSettings) {
-      initFromDb(rawSettings)
+    if (!form.isDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
     }
-  }, [rawSettings, initFromDb])
+    window.addEventListener("beforeunload", handler)
+    return () => window.removeEventListener("beforeunload", handler)
+  }, [form.isDirty])
 
-  const totalStorageBytes = mediaFiles?.reduce((sum, f) => sum + (f.size ?? 0), 0) ?? 0
-  const totalStorageGB = +(totalStorageBytes / (1024 * 1024 * 1024)).toFixed(2)
-
-  const handleFileUpload = async (file: File, folder: string, settingKey?: string) => {
+  const handleUpload = async (file: File, folder: string, settingKey: string) => {
     if (file.size > 2 * 1024 * 1024) {
       toast.error("File must be under 2MB")
       return
@@ -157,17 +55,14 @@ export default function SettingsPage() {
       const buffer = await file.arrayBuffer()
       const result = await uploadFile({
         name: file.name,
-        content: new Uint8Array(buffer) as any,
+        content: new Uint8Array(buffer) as never,
         contentType: file.type,
         folder,
       })
-      if (settingKey && result?.url) {
-        update(settingKey as keyof SettingsState, result.url as any)
-        await setMultiple({ settings: [{ key: settingKey, value: result.url }] })
-        toast.success(`${folder} uploaded successfully`)
-      } else {
-        toast.success(`File "${file.name}" uploaded to ${folder}`)
+      if (result?.url) {
+        form.setValue(settingKey, result.url)
       }
+      toast.success(`${folder} uploaded successfully`)
     } catch {
       toast.error("Upload failed")
     } finally {
@@ -175,55 +70,21 @@ export default function SettingsPage() {
     }
   }
 
-  const update = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const updateSelect = <K extends keyof SettingsState>(key: K, value: string | null) => {
-    if (value !== null) setSettings((prev) => ({ ...prev, [key]: value as SettingsState[K] }))
-  }
-
   const handleSave = async () => {
-    setSaving(true)
-    try {
-      const entries: { key: string; value: unknown }[] = Object.entries(settings)
-        .filter(([key, value]) => {
-          const dbVal = rawSettings?.[key]
-          return dbVal === undefined || value !== dbVal
-        })
-        .map(([key, value]) => ({ key, value }))
-
-      if (entries.length === 0) {
-        toast.info("No changes to save")
-        return
-      }
-
-      await setMultiple({ settings: entries })
-      toast.success("Settings saved successfully")
-    } catch (error) {
-      toast.error("Failed to save settings")
-    } finally {
-      setSaving(false)
-    }
+    await form.save()
   }
 
-  const handleCancel = () => {
-    if (rawSettings) {
-      initFromDb(rawSettings)
-    }
+  const handleDiscard = () => {
+    form.reset()
     toast.info("Changes discarded")
   }
 
-  const colorKeys = [
-    { label: "Primary Color", key: "primaryColor" as const, default: "#0B2545" },
-    { label: "Secondary Color", key: "secondaryColor" as const, default: "#3E6990" },
-    { label: "Accent Color", key: "accentColor" as const, default: "#C9A227" },
-    { label: "Background", key: "backgroundColor" as const, default: "#FFFFFF" },
-    { label: "Surface Color", key: "surfaceColor" as const, default: "#FAFBFC" },
-    { label: "Foreground", key: "foregroundColor" as const, default: "#1E293B" },
-  ]
+  const handleRestoreTab = () => {
+    form.restoreTab(activeTab)
+    toast.info("Tab changes reverted")
+  }
 
-  if (!rawSettings) {
+  if (form.loading) {
     return (
       <div className="space-y-6">
         <AdminPageHeader
@@ -231,481 +92,104 @@ export default function SettingsPage() {
           description="Manage your store preferences, integrations, and security."
           breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Settings" }]}
         />
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+          {tabs.map((t) => (
+            <Skeleton key={t.id} className="h-8 w-24" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <AdminPageHeader
         title="Settings"
         description="Manage your store preferences, integrations, and security."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Settings" }]}
+        action={
+          form.isDirty ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+              {form.dirtyCount} unsaved change{form.dirtyCount === 1 ? "" : "s"}
+            </span>
+          ) : undefined
+        }
       />
 
-      <Tabs defaultValue="general">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="general"><Settings className="h-4 w-4" /> General</TabsTrigger>
-          <TabsTrigger value="branding"><Palette className="h-4 w-4" /> Branding</TabsTrigger>
-          <TabsTrigger value="email"><Mail className="h-4 w-4" /> Email</TabsTrigger>
-          <TabsTrigger value="payment"><CreditCard className="h-4 w-4" /> Payment</TabsTrigger>
-          <TabsTrigger value="downloads"><Download className="h-4 w-4" /> Downloads</TabsTrigger>
-          <TabsTrigger value="security"><Shield className="h-4 w-4" /> Security</TabsTrigger>
+          {tabs.map((t) => {
+            const Icon = t.icon
+            const dirty = form.dirtyTabs.has(t.id)
+            return (
+              <TabsTrigger key={t.id} value={t.id}>
+                <Icon className="h-4 w-4" />
+                {t.label}
+                {dirty && (
+                  <span className="ml-1 size-1.5 rounded-full bg-amber-500" aria-label="unsaved changes" />
+                )}
+              </TabsTrigger>
+            )
+          })}
         </TabsList>
 
-        <div className="mt-6 space-y-6">
-          <TabsContent value="general" className="space-y-6">
-            <SectionCard title="Site Information">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Site Name</Label>
-                  <Input value={settings.siteName} onChange={(e) => update("siteName", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tagline</Label>
-                  <Input value={settings.siteTagline} onChange={(e) => update("siteTagline", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea value={settings.siteDescription} onChange={(e) => update("siteDescription", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Site URL</Label>
-                  <Input value={settings.siteUrl} onChange={(e) => update("siteUrl", e.target.value)} placeholder="https://trueworks.com" />
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Logo & Favicon">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Site Logo</Label>
-                  <div
-                    className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                    onClick={() => document.getElementById("logo-upload")?.click()}
-                  >
-                    <Image className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload logo (PNG, SVG, max 2MB)</p>
-                  </div>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/png,image/svg+xml"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(file, "Logos", "siteLogo")
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Favicon</Label>
-                  <div
-                    className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                    onClick={() => document.getElementById("favicon-upload")?.click()}
-                  >
-                    <Image className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Upload favicon (32x32px ICO/PNG)</p>
-                  </div>
-                  <input
-                    id="favicon-upload"
-                    type="file"
-                    accept="image/x-icon,image/png"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(file, "Favicons", "siteFavicon")
-                    }}
-                  />
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Localization">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Default Currency</Label>
-                  <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
-                      <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </SectionCard>
+        <div className="mt-6">
+          <TabsContent value="general">
+            <GeneralTab form={form} uploading={uploading} onUpload={handleUpload} />
           </TabsContent>
-
-          <TabsContent value="branding" className="space-y-6">
-            <SectionCard title="Theme Colors">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {colorKeys.map((color) => (
-                  <div key={color.label} className="space-y-2">
-                    <Label>{color.label}</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-md border border-border shrink-0" style={{ backgroundColor: settings[color.key] }} />
-                      <Input value={settings[color.key]} onChange={(e) => update(color.key, e.target.value)} className="font-mono" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Typography">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Heading Font</Label>
-                  <Select value={settings.headingFont} onValueChange={(v) => updateSelect("headingFont", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="georgia">Georgia, Times New Roman, serif</SelectItem>
-                      <SelectItem value="inter">Inter, sans-serif</SelectItem>
-                      <SelectItem value="playfair">Playfair Display, serif</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Body Font</Label>
-                  <Select value={settings.bodyFont} onValueChange={(v) => updateSelect("bodyFont", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="calibri">Calibri, Source Sans 3, system-ui, sans-serif</SelectItem>
-                      <SelectItem value="inter">Inter, sans-serif</SelectItem>
-                      <SelectItem value="opensans">Open Sans, sans-serif</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Custom CSS">
-              <Textarea placeholder="Enter custom CSS rules..." className="min-h-[150px] font-mono text-xs" value={settings.customCss} onChange={(e) => update("customCss", e.target.value)} />
-            </SectionCard>
+          <TabsContent value="branding">
+            <BrandingTab form={form} />
           </TabsContent>
-
-          <TabsContent value="email" className="space-y-6">
-            <SectionCard title="SMTP Configuration">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>SMTP Host</Label>
-                  <Input value={settings.smtpHost} onChange={(e) => update("smtpHost", e.target.value)} placeholder="smtp.trueworks.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label>SMTP Port</Label>
-                  <Input type="number" value={settings.smtpPort} onChange={(e) => update("smtpPort", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Username</Label>
-                  <Input value={settings.smtpUsername} onChange={(e) => update("smtpUsername", e.target.value)} placeholder="noreply@trueworks.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label>From Email</Label>
-                  <Input value={settings.smtpFrom} onChange={(e) => update("smtpFrom", e.target.value)} placeholder="noreply@trueworks.com" />
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                disabled={smtpTesting || !settings.smtpHost || !settings.smtpPort}
-                onClick={async () => {
-                  if (!settings.smtpHost || !settings.smtpPort) {
-                    toast.error("Please configure SMTP host and port first")
-                    return
-                  }
-                  setSmtpTesting(true)
-                  setSmtpStatus("idle")
-                  try {
-                    const result = await testSmtp({
-                      host: settings.smtpHost,
-                      port: Number(settings.smtpPort),
-                    })
-                    if (result.success) {
-                      setSmtpStatus("success")
-                      toast.success(result.message)
-                    } else {
-                      setSmtpStatus("error")
-                      toast.error(result.message)
-                    }
-                  } catch {
-                    setSmtpStatus("error")
-                    toast.error("SMTP test failed")
-                  } finally {
-                    setSmtpTesting(false)
-                  }
-                }}
-              >
-                {smtpTesting ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Testing...</>
-                ) : smtpStatus === "success" ? (
-                  <><CheckCircle className="h-4 w-4 mr-2 text-green-600" /> Connected</>
-                ) : smtpStatus === "error" ? (
-                  <><XCircle className="h-4 w-4 mr-2 text-destructive" /> Failed</>
-                ) : (
-                  "Test Connection"
-                )}
-              </Button>
-            </SectionCard>
-
-            <SectionCard title="Email Templates">
-              <div className="space-y-3">
-                {["Order Confirmation", "Payment Receipt", "Download Link", "Password Reset", "Welcome Email", "Newsletter"].map((t) => (
-                  <div key={t} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <span className="text-sm">{t}</span>
-                    <Link href="/admin/email-templates">
-                      <Button variant="ghost" size="sm">Edit</Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
+          <TabsContent value="email">
+            <EmailTab form={form} />
           </TabsContent>
-
-          <TabsContent value="payment" className="space-y-6">
-            <SectionCard title="Payment Gateways">
-              <div className="space-y-4">
-                {[
-                  { name: "MTN MoMo", key: "mtnMomoEnabled" as const },
-                  { name: "Airtel Money", key: "airtelMoneyEnabled" as const },
-                  { name: "Stripe (Card)", key: "stripeEnabled" as const },
-                  { name: "PayPal", key: "paypalEnabled" as const },
-                ].map((gateway) => (
-                  <div key={gateway.name} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm font-medium">{gateway.name}</span>
-                    </div>
-                    <Switch checked={settings[gateway.key]} onCheckedChange={(v) => update(gateway.key, v)} />
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Currency & Tax">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Default Currency</Label>
-                  <Select value={settings.currency} onValueChange={(v) => updateSelect("currency", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                      <SelectItem value="UGX">UGX (Ugandan Shilling)</SelectItem>
-                      <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Tax Rate (%)</Label>
-                  <Input type="number" value={settings.taxRate} onChange={(e) => update("taxRate", Number(e.target.value))} />
-                </div>
-              </div>
-            </SectionCard>
+          <TabsContent value="payment">
+            <PaymentTab form={form} />
           </TabsContent>
-
-          <TabsContent value="downloads" className="space-y-6">
-            <SectionCard title="Download Settings">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Max Downloads Per Purchase</Label>
-                    <Input type="number" value={settings.maxDownloadsPerPurchase} onChange={(e) => update("maxDownloadsPerPurchase", Number(e.target.value))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Download Link Expiry (days)</Label>
-                    <Input type="number" value={settings.downloadLinkExpiryDays} onChange={(e) => update("downloadLinkExpiryDays", Number(e.target.value))} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Download Method</Label>
-                  <Select value={settings.downloadMethod} onValueChange={(v) => updateSelect("downloadMethod", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="direct">Direct Download</SelectItem>
-                      <SelectItem value="signed">Signed URL (S3)</SelectItem>
-                      <SelectItem value="token">Token-based</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Require Login to Download</Label>
-                    <p className="text-xs text-muted-foreground">Users must be logged in to download purchased files</p>
-                  </div>
-                  <Switch checked={settings.requireLoginToDownload} onCheckedChange={(v) => update("requireLoginToDownload", v)} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Enable Download Notifications</Label>
-                    <p className="text-xs text-muted-foreground">Send email when a download is available</p>
-                  </div>
-                  <Switch checked={settings.downloadNotifications} onCheckedChange={(v) => update("downloadNotifications", v)} />
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Storage">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Storage Provider</Label>
-                  <Select value={settings.storageProvider} onValueChange={(v) => updateSelect("storageProvider", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="local">Local</SelectItem>
-                      <SelectItem value="s3">AWS S3</SelectItem>
-                      <SelectItem value="gcs">Google Cloud Storage</SelectItem>
-                      <SelectItem value="do">DigitalOcean Spaces</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="p-4 rounded-lg bg-muted">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Storage Used</span>
-                    <span className="text-muted-foreground">{totalStorageGB} GB / {settings.storageMax} GB</span>
-                  </div>
-                  <div className="h-2.5 bg-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${settings.storageMax > 0 ? (totalStorageGB / settings.storageMax) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">{mediaFiles?.length ?? 0} files stored</p>
-                </div>
-              </div>
-            </SectionCard>
+          <TabsContent value="downloads">
+            <DownloadsTab form={form} />
           </TabsContent>
-
-          <TabsContent value="security" className="space-y-6">
-            <SectionCard title="Authentication">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Two-Factor Authentication (2FA)</Label>
-                    <p className="text-xs text-muted-foreground">Require 2FA for admin account access</p>
-                  </div>
-                  <Switch checked={settings.require2fa} onCheckedChange={(v) => update("require2fa", v)} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Password Expiry</Label>
-                    <p className="text-xs text-muted-foreground">Force password change every {settings.passwordExpiryDays} days</p>
-                  </div>
-                  <Switch checked={settings.passwordExpiryDays > 0} onCheckedChange={(v) => update("passwordExpiryDays", v ? 90 : 0)} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Session Timeout (minutes)</Label>
-                    <Input type="number" value={settings.sessionTimeoutMinutes} onChange={(e) => update("sessionTimeoutMinutes", Number(e.target.value))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Max Login Attempts</Label>
-                    <Input type="number" value={settings.maxLoginAttempts} onChange={(e) => update("maxLoginAttempts", Number(e.target.value))} />
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Session Management">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Sessions are managed through Clerk. Active sessions will appear in your Clerk dashboard.
-                </p>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>Current session active</span>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-white"
-                onClick={() => {
-                  toast.success("Other sessions revoked. You will remain logged in.")
-                }}
-              >
-                Revoke Other Sessions
-              </Button>
-            </SectionCard>
-
-            <SectionCard title="API Security">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>API Rate Limiting</Label>
-                    <p className="text-xs text-muted-foreground">Limit API requests to prevent abuse</p>
-                  </div>
-                  <Switch checked={settings.apiRateLimiting} onCheckedChange={(v) => update("apiRateLimiting", v)} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>IP Whitelist</Label>
-                    <p className="text-xs text-muted-foreground">Restrict admin access to specific IPs</p>
-                  </div>
-                  <Switch checked={settings.ipWhitelist} onCheckedChange={(v) => update("ipWhitelist", v)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>API Key</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        value={apiKeyVisible ? (apiKey || "No key generated") : "••••••••••••••••••••••••••••••••"}
-                        readOnly
-                        className="font-mono pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setApiKeyVisible(!apiKeyVisible)}
-                      >
-                        {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newKey = `twk_${Array.from({ length: 32 }, () =>
-                          "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
-                        ).join("")}`
-                        setApiKey(newKey)
-                        setApiKeyVisible(true)
-                        setMultiple({ settings: [{ key: "apiKey", value: newKey }] })
-                        toast.success("New API key generated. Copy it now — it won't be shown again.")
-                      }}
-                    >
-                      <RefreshCw className="h-4 w-4" /> Generate
-                    </Button>
-                    {apiKey && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(apiKey)
-                          toast.success("API key copied to clipboard")
-                        }}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
+          <TabsContent value="security">
+            <SecurityTab form={form} />
           </TabsContent>
         </div>
       </Tabs>
 
-      <div className="flex justify-end gap-3 pt-2">
-        <Button variant="outline" onClick={handleCancel} disabled={saving}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          Save Changes
-        </Button>
-      </div>
+      {/* Sticky action bar */}
+      {form.isDirty && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {form.lastSavedAt ? (
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  Last saved {new Date(form.lastSavedAt).toLocaleTimeString()}
+                </span>
+              ) : (
+                <span>{form.dirtyCount} unsaved change{form.dirtyCount === 1 ? "" : "s"}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleRestoreTab}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Revert Tab
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDiscard}>
+                Discard
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={form.saving}>
+                {form.saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
