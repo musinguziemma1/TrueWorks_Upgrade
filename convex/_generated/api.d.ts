@@ -11,6 +11,7 @@
 import type * as abandonedCarts from "../abandonedCarts.js";
 import type * as analytics from "../analytics.js";
 import type * as analyticsEvents from "../analyticsEvents.js";
+import type * as auditLogExport from "../auditLogExport.js";
 import type * as auditLogs from "../auditLogs.js";
 import type * as campaigns from "../campaigns.js";
 import type * as cartRecovery from "../cartRecovery.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   abandonedCarts: typeof abandonedCarts;
   analytics: typeof analytics;
   analyticsEvents: typeof analyticsEvents;
+  auditLogExport: typeof auditLogExport;
   auditLogs: typeof auditLogs;
   campaigns: typeof campaigns;
   cartRecovery: typeof cartRecovery;

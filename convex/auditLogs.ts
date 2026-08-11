@@ -3,6 +3,17 @@ import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 
+type AuditLogLevel = "info" | "warning" | "error" | "critical";
+type AuditLogSource = "mutation" | "query" | "http" | "webhook" | "action" | "scheduler";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Resolve a start cutoff from an explicit timestamp or a trailing-days window. */
+function resolveStartDate(startDate?: number, days?: number): number | undefined {
+  if (days && days > 0) return Date.now() - days * DAY_MS;
+  return startDate;
+}
+
 /**
  * Log an audit event. This is the primary entry point for all audit logging.
  * Auto-resolves the actor from the auth context.
@@ -89,7 +100,9 @@ export const list = query({
     search: v.optional(v.string()),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    days: v.optional(v.number()),
     level: v.optional(v.string()),
+    levels: v.optional(v.array(v.string())),
     source: v.optional(v.string()),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
@@ -99,8 +112,10 @@ export const list = query({
 
     let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
 
-    if (args.startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
+    const startDate = resolveStartDate(args.startDate, args.days);
+
+    if (startDate) {
+      q = q.filter((q) => q.gte(q.field("createdAt"), startDate));
     }
     if (args.endDate) {
       q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
@@ -117,18 +132,21 @@ export const list = query({
       );
     }
     if (args.level) {
-      q = q.filter((q) => q.eq(q.field("level"), args.level as any));
+      q = q.filter((q) => q.eq(q.field("level"), args.level as AuditLogLevel));
     }
     if (args.source) {
-      q = q.filter((q) => q.eq(q.field("source"), args.source as any));
+      q = q.filter((q) => q.eq(q.field("source"), args.source as AuditLogSource));
     }
 
     const all = await q.order("desc").collect();
 
     let filtered = all;
+    if (args.levels?.length) {
+      filtered = filtered.filter((l) => args.levels!.includes(l.level ?? "info"));
+    }
     if (args.search) {
       const s = args.search.toLowerCase();
-      filtered = all.filter(
+      filtered = filtered.filter(
         (log) =>
           log.summary.toLowerCase().includes(s) ||
           log.actorEmail.toLowerCase().includes(s) ||
@@ -148,26 +166,31 @@ export const list = query({
 });
 
 /**
- * Get audit log statistics — includes performance and error breakdowns.
+ * Get audit log statistics — includes performance and error breakdowns,
+ * daily activity trend, and slow-operation highlights.
  */
 export const stats = query({
   args: {
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) {
       return {
         total: 0, byAction: {}, byEntity: {}, byActor: {}, recentActivity: [],
         byLevel: {}, bySource: {}, errorCount: 0, warningCount: 0,
-        avgLatencyMs: 0, p95LatencyMs: 0, slowOpsCount: 0,
+        avgLatencyMs: 0, p50LatencyMs: 0, p95LatencyMs: 0, p99LatencyMs: 0,
+        slowOpsCount: 0, slowOps: [], trend: [],
       };
     }
 
     let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
 
-    if (args.startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
+    const startDate = resolveStartDate(args.startDate, args.days);
+
+    if (startDate) {
+      q = q.filter((q) => q.gte(q.field("createdAt"), startDate));
     }
     if (args.endDate) {
       q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
@@ -187,6 +210,10 @@ export const stats = query({
     let latencyCount = 0;
     const latencies: number[] = [];
     let slowOpsCount = 0;
+
+    // Daily activity buckets (UTC day start → count) for the trend chart.
+    const dayMs = 24 * 60 * 60 * 1000;
+    const trendMap = new Map<number, number>();
 
     for (const log of logs) {
       byAction[log.action] = (byAction[log.action] || 0) + 1;
@@ -208,15 +235,51 @@ export const stats = query({
         latencies.push(log.latencyMs);
         if (log.latencyMs > 2000) slowOpsCount++;
       }
+
+      const dayStart = Math.floor(log.createdAt / dayMs) * dayMs;
+      trendMap.set(dayStart, (trendMap.get(dayStart) ?? 0) + 1);
     }
 
-    // Calculate p95 latency
+    // Calculate percentiles
     latencies.sort((a, b) => a - b);
-    const p95Index = Math.floor(latencies.length * 0.95);
-    const p95LatencyMs = latencies.length > 0 ? latencies[p95Index] : 0;
+    const percentile = (p: number) =>
+      latencies.length > 0
+        ? latencies[Math.min(Math.floor(latencies.length * p), latencies.length - 1)]
+        : 0;
+    const p50LatencyMs = percentile(0.5);
+    const p95LatencyMs = percentile(0.95);
+    const p99LatencyMs = percentile(0.99);
     const avgLatencyMs = latencyCount > 0 ? Math.round(totalLatency / latencyCount) : 0;
 
     const recentActivity = logs.slice(0, 20);
+
+    // Top slow operations by latency, capped at 20.
+    const slowOps = logs
+      .filter((l) => l.latencyMs != null)
+      .sort((a, b) => (b.latencyMs ?? 0) - (a.latencyMs ?? 0))
+      .slice(0, 20)
+      .map((l) => ({
+        _id: l._id,
+        action: l.action,
+        entityType: l.entityType,
+        entityId: l.entityId,
+        summary: l.summary,
+        latencyMs: l.latencyMs,
+        level: l.level,
+        source: l.source,
+        createdAt: l.createdAt,
+        actorEmail: l.actorEmail,
+        actorName: l.actorName,
+        actorId: l.actorId,
+        changes: l.changes,
+        metadata: l.metadata,
+        stackTrace: l.stackTrace,
+        ipAddress: l.ipAddress,
+      }));
+
+    const trend = [...trendMap.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([timestamp, count]) => ({ timestamp, count }));
 
     return {
       total: logs.length,
@@ -229,8 +292,12 @@ export const stats = query({
       errorCount,
       warningCount,
       avgLatencyMs,
+      p50LatencyMs,
       p95LatencyMs,
+      p99LatencyMs,
       slowOpsCount,
+      slowOps,
+      trend,
     };
   },
 });
