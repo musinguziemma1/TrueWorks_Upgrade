@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { api } from "@convex/_generated/api";
 import { convexServer } from "@/lib/convex-server";
 import ProductDetail from "./content";
+
+// Product detail pages are served from cache for 5 minutes to keep cold
+// requests fast; a product edit can nudge revalidation via on-demand revalidate.
+export const revalidate = 300;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 
 type Props = { params: Promise<{ slug: string }> };
 
-async function getProduct(slug: string) {
+// Dedupe the metadata + page reads into a single server-side Convex call per
+// request.
+const getProduct = cache(async (slug: string) => {
   if (!convexServer) return null;
   try {
     return await convexServer.query(api.products.getBySlug, { slug });
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

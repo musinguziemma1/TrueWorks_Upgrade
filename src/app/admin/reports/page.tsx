@@ -54,15 +54,17 @@ type ReportId = (typeof REPORTS)[number]["id"];
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("This Month");
 
+  // Bound the orders read to the selected range so the scan stays small; the
+  // client-side `since` filter below remains as a safety net.
+  const since = rangeStart(dateRange);
   const products = useQuery(api.products.list, { status: "published" });
-  const orders = useQuery(api.orders.list, {});
+  const orders = useQuery(api.orders.list, { startDate: since });
   const customers = useQuery(api.customers.list, {});
   const downloads = useQuery(api.downloads.listAll, {});
   const coupons = useQuery(api.coupons.list, {});
   const subscribers = useQuery(api.subscribers.list, {});
 
   // Filter orders by date range
-  const since = rangeStart(dateRange);
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
     return orders.filter((o) => o._creationTime >= since);
@@ -82,7 +84,7 @@ export default function ReportsPage() {
   const exportReport = (reportId: ReportId) => {
     const stamp = new Date().toISOString().slice(0, 10);
     let csv = "";
-    let filename = `${reportId}-report-${stamp}`;
+    const filename = `${reportId}-report-${stamp}`;
 
     switch (reportId) {
       case "sales":

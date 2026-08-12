@@ -32,41 +32,33 @@ export default async function AdminRootLayout({ children }: { children: React.Re
     token = null
   }
 
-  // STEP 1: Sync the user record first — patches tokenIdentifier/clerkId
-  // to match the current JWT before any queries run.
-  if (token) {
-    try {
-      const cu = await currentUser()
-      if (cu) {
-        await fetchMutation(
-          api.users.syncMyAccount,
-          {
-            clerkId: cu.id,
-            email: cu.emailAddresses?.[0]?.emailAddress ?? "",
-            name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || undefined,
-            avatar: cu.imageUrl || undefined,
-          },
-          { token }
-        )
-      }
-    } catch {
-      // Ignore sync errors — seedAdmin below will handle new users
-    }
-  }
+  // Resolve the current Clerk user exactly once — currentUser() is a network
+  // round trip and the original code called it twice (sync + seed).
+  const cu = token ? await currentUser().catch(() => null) : null
 
-  // STEP 2: Now fetch the user record (should exist after sync)
   let convexRole: string | null = null
   let convexStatus: string | null = null
 
-  if (token) {
-    try {
-      const u = await fetchQuery(api.users.current, {}, { token })
-      convexRole = u?.role ?? null
-      convexStatus = u?.status ?? null
-    } catch {
-      convexRole = null
-      convexStatus = null
-    }
+  if (token && cu) {
+    // Run the account sync and the role/status read in parallel instead of
+    // serially. getCurrentUser falls back to clerkId/email lookups, so it
+    // returns the record even if syncMyAccount's tokenIdentifier patch has not
+    // landed yet.
+    const [, current] = await Promise.all([
+      fetchMutation(
+        api.users.syncMyAccount,
+        {
+          clerkId: cu.id,
+          email: cu.emailAddresses?.[0]?.emailAddress ?? "",
+          name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || undefined,
+          avatar: cu.imageUrl || undefined,
+        },
+        { token }
+      ).catch(() => null),
+      fetchQuery(api.users.current, {}, { token }).catch(() => null),
+    ])
+    convexRole = current?.role ?? null
+    convexStatus = current?.status ?? null
   }
 
   // Block suspended users
@@ -77,22 +69,19 @@ export default async function AdminRootLayout({ children }: { children: React.Re
   const hasAdminAccess = isAllowedRole(claimsRole) || isAllowedRole(convexRole) || isAdminEmail(claimsEmail)
 
   // STEP 3: If still no Convex role, try seedAdmin for new users
-  if (!hasAdminAccess && token) {
+  if (!hasAdminAccess && token && cu) {
     try {
-      const cu = await currentUser()
-      if (cu) {
-        await fetchMutation(
-          api.users.seedAdmin,
-          {
-            clerkId: cu.id,
-            email: cu.emailAddresses?.[0]?.emailAddress ?? "",
-            name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || undefined,
-            avatar: cu.imageUrl || undefined,
-          },
-          { token }
-        )
-        convexRole = "admin"
-      }
+      await fetchMutation(
+        api.users.seedAdmin,
+        {
+          clerkId: cu.id,
+          email: cu.emailAddresses?.[0]?.emailAddress ?? "",
+          name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || undefined,
+          avatar: cu.imageUrl || undefined,
+        },
+        { token }
+      )
+      convexRole = "admin"
     } catch {
       // Not eligible for admin promotion
     }

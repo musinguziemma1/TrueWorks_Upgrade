@@ -1,14 +1,12 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   ShoppingCart,
   Package,
@@ -16,24 +14,19 @@ import {
   Download,
   Users,
   Mail,
-  Percent,
   BarChart3,
   Star,
   Clock,
   ShoppingBag,
-  CreditCard,
-  PieChart,
   Activity,
   Monitor,
   CalendarDays,
-  FileDown,
   ArrowRight,
   Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { formatPrice } from "@/lib/utils"
 
 const AdminRevenueChart = dynamic(
@@ -47,9 +40,6 @@ const AdminRevenueChart = dynamic(
     ),
   }
 )
-
-const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#94A3B8"]
-const PIE_COLORS = ["#0B2545", "#3E6990", "#C9A227"]
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -70,11 +60,16 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminDashboard() {
   const { user } = useUser();
 
-  const orderStats = useQuery(api.orders.stats)
-  const productStats = useQuery(api.products.stats)
-  const recentOrders = useQuery(api.orders.list, {})
-  const subscribers = useQuery(api.subscribers.list, {})
-  const analyticsSummary = useQuery(api.analytics.summary, {})
+  const dash = useQuery(api.dashboard.summary)
+
+  const orderStats = dash?.orderStats
+  const productStats = dash?.productStats
+  const recentOrders = dash?.recentOrders ?? []
+  const totalSubscribers = dash?.subscriberCount ?? 0
+  const analyticsSummary = {
+    totalDownloads: dash?.totalDownloads ?? 0,
+    dailyData: dash?.dailyRevenue ?? [],
+  }
 
   const today = useMemo(() => {
     return new Date().toLocaleDateString("en-GB", {
@@ -85,7 +80,7 @@ export default function AdminDashboard() {
     })
   }, [])
 
-  const isLoading = orderStats === undefined || productStats === undefined
+  const isLoading = dash === undefined
 
   if (isLoading) {
     return (
@@ -100,10 +95,9 @@ export default function AdminDashboard() {
   const pendingOrders = orderStats?.pending ?? 0
   const completedOrders = orderStats?.completed ?? 0
   const totalProducts = productStats?.total ?? 0
-  const publishedProducts = productStats?.published ?? 0
-  const totalSubscribers = subscribers?.length ?? 0
+const publishedProducts = productStats?.published ?? 0
 
-  const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
+const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
   const revenueChartData = revenueData.map((d) => ({
     month: d.date.slice(5),
     revenue: d.revenue,

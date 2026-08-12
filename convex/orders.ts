@@ -13,9 +13,38 @@ export const list = query({
     search: v.optional(v.string()),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
+    const limit = args.limit ?? 100;
+
+    // Fast path: no filters at all means "most recent N", which the createdAt
+    // index serves directly without scanning the whole table. The dashboard
+    // uses this for its "Recent Orders" panel.
+    if (!args.paymentStatus && !args.orderStatus && !args.search && !args.startDate && !args.endDate) {
+      return await ctx.db
+        .query("orders")
+        .withIndex("by_createdAt", (q) => q)
+        .order("desc")
+        .take(limit);
+    }
+
+    // Date-only range: serve straight from the createdAt index instead of
+    // scanning then filtering in JavaScript.
+    if (!args.paymentStatus && !args.orderStatus && !args.search) {
+      return await ctx.db
+        .query("orders")
+        .withIndex("by_createdAt", (q) =>
+          (args.startDate ? q.gte("createdAt", args.startDate) : q).lte(
+            "createdAt",
+            args.endDate ?? Number.MAX_SAFE_INTEGER
+          )
+        )
+        .order("desc")
+        .take(limit);
+    }
+
     const q = args.paymentStatus
       ? ctx.db.query("orders").withIndex("by_paymentStatus", (q) =>
           q.eq("paymentStatus", args.paymentStatus as "pending" | "completed" | "failed" | "refunded")
@@ -39,7 +68,7 @@ export const list = query({
       );
     }
 
-    return results.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
+    return results.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
   },
 });
 
@@ -338,9 +367,15 @@ export const paymentMethodBreakdown = query({
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    let all = await ctx.db.query("orders").collect();
-    if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
-    if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
+    const all = await ctx.db
+      .query("orders")
+      .withIndex("by_createdAt", (q) =>
+        (args.startDate ? q.gte("createdAt", args.startDate) : q).lte(
+          "createdAt",
+          args.endDate ?? Number.MAX_SAFE_INTEGER
+        )
+      )
+      .collect();
     const counts = new Map<string, number>();
     for (const o of all) {
       const key = o.paymentMethod || "Unknown";
@@ -385,9 +420,15 @@ export const geoBreakdown = query({
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    let all = await ctx.db.query("orders").collect();
-    if (args.startDate) all = all.filter((o) => o.createdAt >= args.startDate!);
-    if (args.endDate) all = all.filter((o) => o.createdAt <= args.endDate!);
+    const all = await ctx.db
+      .query("orders")
+      .withIndex("by_createdAt", (q) =>
+        (args.startDate ? q.gte("createdAt", args.startDate) : q).lte(
+          "createdAt",
+          args.endDate ?? Number.MAX_SAFE_INTEGER
+        )
+      )
+      .collect();
     const countryData = new Map<string, { orders: number; revenue: number; regions: Map<string, number>; cities: Map<string, number> }>();
     for (const o of all) {
       const country = o.country || "Unknown";
