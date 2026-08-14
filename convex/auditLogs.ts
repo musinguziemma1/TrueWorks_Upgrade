@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 type AuditLogLevel = "info" | "warning" | "error" | "critical";
 type AuditLogSource = "mutation" | "query" | "http" | "webhook" | "action" | "scheduler";
@@ -145,7 +146,7 @@ export const list = query({
       filtered = filtered.filter((l) => args.levels!.includes(l.level ?? "info"));
     }
     if (args.search) {
-      const s = args.search.toLowerCase();
+      const s = sanitizeSearch(args.search).toLowerCase();
       filtered = filtered.filter(
         (log) =>
           log.summary.toLowerCase().includes(s) ||

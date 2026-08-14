@@ -1,6 +1,7 @@
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
+import { sanitizeSearch } from "./lib/sanitize";
 
 type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
 
@@ -55,7 +56,7 @@ export const list = query({
     if (args.method) all = all.filter((p) => p.method === args.method);
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       all = all.filter(
         (p) =>
           p.paymentId.toLowerCase().includes(lower) ||

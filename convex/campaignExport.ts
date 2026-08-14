@@ -1,6 +1,7 @@
 import { action, internalQuery, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { sanitizeSearch } from "./lib/sanitize";
 
 const EXPORT_MAX_ROWS = 10_000;
 
@@ -43,7 +44,7 @@ export const listForExport = internalQuery({
     let all = await ctx.db.query("campaigns").order("desc").collect();
     if (args.status) all = all.filter((c) => c.status === args.status);
     if (args.search) {
-      const l = args.search.toLowerCase();
+      const l = sanitizeSearch(args.search).toLowerCase();
       all = all.filter(
         (c) =>
           c.name.toLowerCase().includes(l) ||

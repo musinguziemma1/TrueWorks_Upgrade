@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   "/refund-policy",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/sso-callback(.*)",
   "/pesapal-callback(.*)",
   "/api/checkout(.*)",
   "/api/pesapal(.*)",

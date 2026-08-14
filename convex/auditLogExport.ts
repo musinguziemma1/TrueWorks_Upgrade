@@ -1,6 +1,7 @@
 import { action, internalQuery, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { sanitizeSearch } from "./lib/sanitize";
 
 const EXPORT_MAX_ROWS = 10_000;
 
@@ -82,7 +83,7 @@ export const listForExport = internalQuery({
 
     let rows = all;
     if (args.search) {
-      const s = args.search.toLowerCase();
+      const s = sanitizeSearch(args.search).toLowerCase();
       rows = all.filter(
         (log) =>
           log.summary.toLowerCase().includes(s) ||

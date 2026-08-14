@@ -16,7 +16,7 @@ export const list = query({
       return all.filter((c) => c.newsletterSubscribed === args.newsletterSubscribed);
     }
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       const all = await ctx.db.query("customers").collect();
       return all.filter((c) =>
         c.name.toLowerCase().includes(lower) ||

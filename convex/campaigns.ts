@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { requireAdmin, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent";
 
@@ -25,7 +26,7 @@ export const list = query({
     let all = await ctx.db.query("campaigns").order("desc").collect();
     if (args.status) all = all.filter((c) => c.status === args.status);
     if (args.search) {
-      const l = args.search.toLowerCase();
+      const l = sanitizeSearch(args.search).toLowerCase();
       all = all.filter(
         (c) =>
           c.name.toLowerCase().includes(l) ||

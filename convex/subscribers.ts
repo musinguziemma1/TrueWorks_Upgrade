@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 export const list = query({
   args: {
@@ -43,7 +44,7 @@ export const listPage = query({
     let all = await ctx.db.query("subscribers").collect();
     if (args.activeOnly) all = all.filter((s) => s.active);
     if (args.search) {
-      const l = args.search.toLowerCase();
+      const l = sanitizeSearch(args.search).toLowerCase();
       all = all.filter(
         (s) =>
           s.email.toLowerCase().includes(l) ||

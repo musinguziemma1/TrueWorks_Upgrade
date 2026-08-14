@@ -4,6 +4,7 @@ import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 export const listMine = query({
   args: {},
@@ -181,7 +182,7 @@ export const listAll = query({
     );
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       return enriched.filter(
         (d) =>
           d.email.toLowerCase().includes(lower) ||

@@ -2,6 +2,7 @@ import { internalMutation, mutation, query, internalQuery } from "./_generated/s
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 /**
  * License keys for license-gated products.
@@ -86,7 +87,7 @@ export const listAll = query({
     if (!(await requireAdminSilent(ctx))) return [];
     let rows = await ctx.db.query("licenses").order("desc").take(500);
     if (args.search) {
-      const q = args.search.toLowerCase();
+      const q = sanitizeSearch(args.search).toLowerCase();
       rows = rows.filter(
         (r) => r.email.toLowerCase().includes(q) || r.key.toLowerCase().includes(q) || r.productName.toLowerCase().includes(q)
       );
