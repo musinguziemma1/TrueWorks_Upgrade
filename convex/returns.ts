@@ -6,6 +6,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 /**
  * Refund policy. Customers may request a refund only within this window after
@@ -18,6 +19,30 @@ export const REFUND_WINDOW_MS = REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 export const getRefundPolicy = query({
   args: {},
   handler: async () => ({ windowDays: REFUND_WINDOW_DAYS, windowMs: REFUND_WINDOW_MS }),
+});
+
+/** Admin KPI counts across all return requests (page-independent). */
+export const adminStats = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, pending: 0, approved: 0, completed: 0, rejected: 0, pendingValue: 0 };
+    }
+    const all = await ctx.db
+      .query("returns")
+      .order("desc")
+      .collect();
+    const pending = all.filter((r) => r.status === "pending");
+    const value = pending.reduce((sum, r) => sum + r.items.reduce((s, i) => s + (i.price ?? 0) * (i.quantity ?? 1), 0), 0);
+    return {
+      total: all.length,
+      pending: pending.length,
+      approved: all.filter((r) => r.status === "approved").length,
+      completed: all.filter((r) => r.status === "completed").length,
+      rejected: all.filter((r) => r.status === "rejected").length,
+      pendingValue: value,
+    };
+  },
 });
 
 export const listMine = query({
@@ -122,6 +147,58 @@ export const adminList = query({
         };
       })
     );
+  },
+});
+
+/**
+ * Admin list with server-side search + status filter and manual pagination.
+ * Returns the page plus `total` so the UI can show counts and a Load More.
+ */
+export const adminListPage = query({
+  args: {
+    search: v.optional(v.string()),
+    status: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { page: [], total: 0 };
+    }
+    const status =
+      args.status === "pending" || args.status === "approved" || args.status === "rejected" || args.status === "completed"
+        ? args.status
+        : undefined;
+    const base = ctx.db.query("returns");
+    const q = status ? base.withIndex("by_status", (idx) => idx.eq("status", status)) : base;
+    const all = await q.order("desc").collect();
+
+    const term = sanitizeSearch(args.search).toLowerCase();
+    const matched = term
+      ? all.filter(
+          (r) =>
+            r.orderNumber.toLowerCase().includes(term) ||
+            r.customerEmail.toLowerCase().includes(term) ||
+            r.customerName.toLowerCase().includes(term)
+        )
+      : all;
+
+    const offset = args.offset ?? 0;
+    const limit = Math.min(args.limit ?? 20, 100);
+    const slice = matched.slice(offset, offset + limit);
+    const rows = await Promise.all(
+      slice.map(async (r) => {
+        const order = await ctx.db.get(r.orderId);
+        const orderedAt = order?.createdAt ?? r._creationTime;
+        return {
+          ...r,
+          orderCreatedAt: orderedAt,
+          refundDeadline: orderedAt + REFUND_WINDOW_MS,
+          windowExpired: Date.now() > orderedAt + REFUND_WINDOW_MS,
+        };
+      })
+    );
+    return { page: rows, total: matched.length };
   },
 });
 

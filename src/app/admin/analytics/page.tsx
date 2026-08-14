@@ -27,7 +27,13 @@ import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
 const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
-const chartConfig = { value: { label: "Value", color: "#0B2545" } }
+const chartConfig = {
+  revenue: { label: "Revenue", color: "#0B2545" },
+  orders: { label: "Orders", color: "#0B2545" },
+  visitors: { label: "Visitors", color: "#3E6990" },
+  pageViews: { label: "Page Views", color: "#C9A227" },
+  downloads: { label: "Downloads", color: "#34D399" },
+}
 
 function getDateRangeFilter(range: string) {
   const now = new Date()
@@ -70,14 +76,21 @@ function getDateRangeFilter(range: string) {
   return { startDate, endDate: today, startTimestamp, endTimestamp: now.getTime() }
 }
 
-function MetricCard({ icon, label, value, sub }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string
+function MetricCard({ icon, label, value, sub, delta }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string; delta?: number
 }) {
+  const deltaColor = delta === undefined ? "" : delta >= 0 ? "text-emerald-600" : "text-red-600"
+  const deltaArrow = delta === undefined ? "" : delta >= 0 ? "▲" : "▼"
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
+          {delta !== undefined && (
+            <span className={`text-[11px] font-semibold ${deltaColor}`}>
+              {deltaArrow} {Math.abs(delta).toFixed(1)}%
+            </span>
+          )}
         </div>
         <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
         <p className="text-xl font-bold text-[#0B2545]">{value}</p>
@@ -87,16 +100,42 @@ function MetricCard({ icon, label, value, sub }: {
   )
 }
 
+function pctDelta(current: number, previous: number): number | undefined {
+  if (!previous) return current ? 100 : 0
+  return ((current - previous) / previous) * 100
+}
+
+function getPreviousRange(range: string, current: ReturnType<typeof getDateRangeFilter>) {
+  const now = new Date(current.startTimestamp)
+  const end = new Date(current.endTimestamp)
+  const duration = end.getTime() - now.getTime()
+  const prevEndTs = now.getTime() - 1
+  const prevStartTs = prevEndTs - duration
+  const iso = (ts: number) => {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  }
+  if (range === "All Time" || current.startTimestamp === 0) {
+    return { startDate: "", endDate: current.endDate }
+  }
+  return { startDate: iso(prevStartTs), endDate: iso(prevEndTs) }
+}
+
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("This Year")
   const analyticsRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
 
   const filter = useMemo(() => getDateRangeFilter(dateRange), [dateRange])
+  const prevFilter = useMemo(() => getPreviousRange(dateRange, filter), [dateRange, filter])
 
   const summary = useQuery(api.analytics.summary, {
     startDate: filter.startDate || undefined,
     endDate: filter.endDate || undefined,
+  })
+  const prevSummary = useQuery(api.analytics.summary, {
+    startDate: prevFilter.startDate || undefined,
+    endDate: prevFilter.endDate || undefined,
   })
   const products = useQuery(api.products.list, { status: "published" })
   const orders = useQuery(api.orders.list, {
@@ -123,6 +162,7 @@ export default function AnalyticsPage() {
 
   const loading =
     summary === undefined ||
+    prevSummary === undefined ||
     products === undefined ||
     orders === undefined ||
     paymentMethods === undefined ||
@@ -163,6 +203,7 @@ export default function AnalyticsPage() {
   const ltvTotal = ltvSegments?.reduce((sum: number, s: { label: string; count: number }) => sum + s.count, 0) ?? 0
 
   const safeSummary = summary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }
+  const safePrev = prevSummary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }
   const avgOrderValue = totalOrdersCount > 0 ? safeSummary.totalRevenue / totalOrdersCount : 0
   const conversionRate = safeSummary.totalVisitors > 0
     ? ((totalOrdersCount / safeSummary.totalVisitors) * 100).toFixed(1)
@@ -170,6 +211,16 @@ export default function AnalyticsPage() {
   const revenuePerVisitor = safeSummary.totalVisitors > 0
     ? formatPrice(safeSummary.totalRevenue / safeSummary.totalVisitors)
     : formatPrice(0)
+
+  const prevOrdersCount = safePrev.totalOrders ?? 0
+
+  const deltas = {
+    revenue: pctDelta(safeSummary.totalRevenue, safePrev.totalRevenue),
+    orders: pctDelta(totalOrdersCount, prevOrdersCount),
+    downloads: pctDelta(safeSummary.totalDownloads, safePrev.totalDownloads),
+    visitors: pctDelta(safeSummary.totalVisitors, safePrev.totalVisitors),
+    pageViews: pctDelta(safeSummary.totalPageViews, safePrev.totalPageViews),
+  }
 
   const revenueData = useMemo(() => {
     return (safeSummary.dailyData ?? []).map((d: { date: string; revenue: number; orders: number; downloads: number; visitors: number; pageViews: number }) => ({
@@ -325,11 +376,11 @@ export default function AnalyticsPage() {
 
       <div ref={analyticsRef} className="space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} />
-          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={totalOrdersCount.toLocaleString()} />
-          <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} />
-          <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} />
-          <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} />
+          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} delta={deltas.revenue} />
+          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={totalOrdersCount.toLocaleString()} delta={deltas.orders} />
+          <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} delta={deltas.downloads} />
+          <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} delta={deltas.visitors} />
+          <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} delta={deltas.pageViews} />
           <MetricCard icon={<TrendingUp className="h-5 w-5" />} label="Conv. Rate" value={`${conversionRate}%`} sub={`${formatPrice(avgOrderValue)} avg order`} />
         </div>
 
@@ -337,7 +388,7 @@ export default function AnalyticsPage() {
           <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Avg Order Value" value={formatPrice(avgOrderValue)} />
           <MetricCard icon={<ArrowUpRight className="h-5 w-5" />} label="Revenue / Visitor" value={revenuePerVisitor} />
           <MetricCard icon={<Package className="h-5 w-5" />} label="Products Sold" value={productPerformance.reduce((s, p) => s + p.totalSales, 0).toLocaleString()} />
-          <MetricCard icon={<Users className="h-5 w-5" />} label="Unique Visitors" value={safeSummary.totalVisitors.toLocaleString()} />
+          <MetricCard icon={<Users className="h-5 w-5" />} label="Refunds" value={(orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded").length.toLocaleString() ?? "0"} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

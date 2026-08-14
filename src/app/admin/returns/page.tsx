@@ -67,6 +67,10 @@ function daysLeft(deadline: number) {
   return Math.ceil(ms / (24 * 60 * 60 * 1000));
 }
 
+function refundTotal(row: ReturnRow): number {
+  return row.items.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 1), 0);
+}
+
 type ReturnRow = Doc<"returns"> & {
   orderCreatedAt: number;
   refundDeadline: number;
@@ -80,30 +84,30 @@ export default function AdminReturnsPage() {
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [decision, setDecision] = useState<"approve" | "reject">("approve");
   const [adminNotes, setAdminNotes] = useState("");
+  const [offset, setOffset] = useState(0);
 
-  const returns = useQuery(
-    api.returns.adminList,
-    statusFilter !== "all" ? { status: statusFilter } : {}
-  ) as ReturnRow[] | undefined;
+  const PAGE_SIZE = 20;
+
+  const pageData = useQuery(api.returns.adminListPage, {
+    search: search.trim() || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    limit: PAGE_SIZE,
+    offset,
+  });
+  const rows = (pageData?.page ?? []) as ReturnRow[];
+  const totalCount = pageData?.total ?? 0;
+  const isInitialLoading = pageData === undefined;
+  const canLoadMore = rows.length < totalCount;
   const review = useMutation(api.returns.review);
 
-  const isLoading = returns === undefined;
-  const rows = (returns ?? []).filter((r) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.orderNumber.toLowerCase().includes(q) ||
-      r.customerEmail.toLowerCase().includes(q) ||
-      r.customerName.toLowerCase().includes(q)
-    );
-  });
-
+  const returnStats = useQuery(api.returns.adminStats);
   const stats = {
-    total: returns?.length ?? 0,
-    pending: returns?.filter((r) => r.status === "pending").length ?? 0,
-    approved: returns?.filter((r) => r.status === "approved").length ?? 0,
-    completed: returns?.filter((r) => r.status === "completed").length ?? 0,
-    rejected: returns?.filter((r) => r.status === "rejected").length ?? 0,
+    total: returnStats?.total ?? 0,
+    pending: returnStats?.pending ?? 0,
+    approved: returnStats?.approved ?? 0,
+    completed: returnStats?.completed ?? 0,
+    rejected: returnStats?.rejected ?? 0,
+    pendingValue: returnStats?.pendingValue ?? 0,
   };
 
   const handleReview = async () => {
@@ -132,13 +136,14 @@ export default function AdminReturnsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Pending", value: stats.pending, color: "text-amber-600" },
           { label: "Approved", value: stats.approved, color: "text-green-600" },
           { label: "Completed", value: stats.completed, color: "text-slate-600" },
           { label: "Rejected", value: stats.rejected, color: "text-red-600" },
+          { label: "Pending Value", value: fmtMoney(stats.pendingValue), color: "text-[#0B2545]" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
@@ -160,11 +165,11 @@ export default function AdminReturnsPage() {
                 <Input
                   placeholder="Search by order, email, customer..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setOffset(0); }}
                   className="pl-9 md:w-72"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v ?? "all"); setOffset(0); }}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -180,7 +185,7 @@ export default function AdminReturnsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isInitialLoading ? (
             <div className="py-12 text-center text-muted">Loading refund requests...</div>
           ) : rows.length === 0 ? (
             <EmptyState
@@ -193,12 +198,14 @@ export default function AdminReturnsPage() {
               }
             />
           ) : (
-            <Table>
-              <TableHeader>
+            <>
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Order</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Items</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Deadline</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -227,6 +234,9 @@ export default function AdminReturnsPage() {
                       <TableCell className="text-sm text-muted">
                         {r.items.map((i) => i.productName).join(", ")}
                       </TableCell>
+                      <TableCell className="text-sm font-medium whitespace-nowrap">
+                        {fmtMoney(refundTotal(r))}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={r.status} />
                       </TableCell>
@@ -237,9 +247,16 @@ export default function AdminReturnsPage() {
                             Expired
                           </Badge>
                         ) : left !== null ? (
-                          <span className="text-xs text-muted">
-                            {left} day{left === 1 ? "" : "s"} left
-                          </span>
+                          left <= 1 ? (
+                            <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {left} day{left === 1 ? "" : "s"} left
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted">
+                              {left} day{left === 1 ? "" : "s"} left · {fmtDate(r.refundDeadline)}
+                            </span>
+                          )
                         ) : (
                           <span className="text-xs text-muted">{fmtDate(r.refundDeadline)}</span>
                         )}
@@ -289,6 +306,18 @@ export default function AdminReturnsPage() {
                 })}
               </TableBody>
             </Table>
+            {canLoadMore && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOffset((o) => o + PAGE_SIZE)}
+                >
+                  Load more ({Math.min(PAGE_SIZE, totalCount - rows.length)})
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -389,6 +418,15 @@ export default function AdminReturnsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {(() => {
+              const row = rows.find((r) => r._id === decisionId as never)
+              return row ? (
+                <p className="text-sm bg-surface border border-border rounded-md px-3 py-2">
+                  <span className="text-muted">Refund amount: </span>
+                  <span className="font-semibold text-foreground">{fmtMoney(refundTotal(row))}</span>
+                </p>
+              ) : null
+            })()}
             <p className="text-sm text-muted">
               {decision === "approve"
                 ? "Approving will refund the money to the original payment method (where supported), revoke access to the order, and roll back sales and customer stats."

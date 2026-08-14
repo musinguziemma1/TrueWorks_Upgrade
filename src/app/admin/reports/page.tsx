@@ -26,16 +26,30 @@ function fmtDate(ts: number) {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+function fmtMoney(n: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
+}
+
 function rangeStart(range: string): number {
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
+  const now = new Date();
+  const at = (y: number, m: number, d = 1) => new Date(y, m, d).getTime();
   switch (range) {
-    case "Today": return now - day;
-    case "This Week": return now - 7 * day;
-    case "This Month": return now - 30 * day;
-    case "This Quarter": return now - 90 * day;
-    case "This Year": return now - 365 * day;
-    default: return 0;
+    case "Today":
+      return at(now.getFullYear(), now.getMonth(), now.getDate());
+    case "This Week": {
+      const day = now.getDay(); // 0 = Sunday
+      return at(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    }
+    case "This Month":
+      return at(now.getFullYear(), now.getMonth());
+    case "This Quarter": {
+      const qStart = Math.floor(now.getMonth() / 3) * 3;
+      return at(now.getFullYear(), qStart);
+    }
+    case "This Year":
+      return at(now.getFullYear(), 0);
+    default:
+      return 0;
   }
 }
 
@@ -50,6 +64,34 @@ const REPORTS = [
 ] as const;
 
 type ReportId = (typeof REPORTS)[number]["id"];
+
+function rowCountFor(
+  id: ReportId,
+  sources: {
+    orders: unknown[];
+    products?: { length: number } | null;
+    customers?: { length: number } | null;
+    downloads?: { length: number } | null;
+    coupons?: { length: number } | null;
+    subscribers?: { length: number } | null;
+  }
+): number {
+  switch (id) {
+    case "sales":
+    case "revenue":
+      return sources.orders.length;
+    case "products":
+      return sources.products?.length ?? 0;
+    case "customers":
+      return sources.customers?.length ?? 0;
+    case "downloads":
+      return sources.downloads?.length ?? 0;
+    case "coupons":
+      return sources.coupons?.length ?? 0;
+    case "marketing":
+      return sources.subscribers?.length ?? 0;
+  }
+}
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("This Month");
@@ -76,7 +118,7 @@ export default function ReportsPage() {
     return {
       orders: filteredOrders.length,
       revenue,
-      avgOrderValue: completed.length > 0 ? Math.round(revenue / completed.length) : 0,
+      avgOrderValue: completed.length > 0 ? revenue / completed.length : 0,
       refunded: filteredOrders.filter((o) => o.paymentStatus === "refunded").length,
     };
   }, [filteredOrders]);
@@ -223,34 +265,48 @@ export default function ReportsPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label="Orders (period)" value={String(stats.orders)} icon={ShoppingCart} />
-            <SummaryCard label="Revenue (USD)" value={stats.revenue.toLocaleString()} icon={DollarSign} />
-            <SummaryCard label="Avg Order (USD)" value={stats.avgOrderValue.toLocaleString()} icon={BarChart3} />
+            <SummaryCard label="Revenue (USD)" value={fmtMoney(stats.revenue)} icon={DollarSign} />
+            <SummaryCard label="Avg Order (USD)" value={fmtMoney(stats.avgOrderValue)} icon={BarChart3} />
             <SummaryCard label="Refunded" value={String(stats.refunded)} icon={Percent} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {REPORTS.map((report) => (
-              <Card key={report.id} className="hover:shadow-card transition-shadow overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="p-5">
-                    <div className={`w-12 h-12 rounded-xl ${report.lightColor} ${report.textColor} flex items-center justify-center mb-4`}>
-                      <report.icon className="h-6 w-6" />
+            {REPORTS.map((report) => {
+              const rowCount = rowCountFor(report.id, {
+                orders: filteredOrders,
+                products,
+                customers,
+                downloads,
+                coupons,
+                subscribers,
+              })
+              return (
+                <Card key={report.id} className="hover:shadow-card transition-shadow overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="p-5">
+                      <div className={`w-12 h-12 rounded-xl ${report.lightColor} ${report.textColor} flex items-center justify-center mb-4`}>
+                        <report.icon className="h-6 w-6" />
+                      </div>
+                      <h3 className="font-semibold text-primary mb-1">{report.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-4">{report.description}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={rowCount === 0}
+                        className="w-full gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50 disabled:pointer-events-none"
+                        onClick={() => exportReport(report.id)}
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5" /> Download CSV
+                      </Button>
+                      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                        {rowCount > 0 ? `${rowCount.toLocaleString()} rows` : "No data in range"}
+                      </p>
                     </div>
-                    <h3 className="font-semibold text-primary mb-1">{report.title}</h3>
-                    <p className="text-xs text-muted-foreground mb-4">{report.description}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                      onClick={() => exportReport(report.id)}
-                    >
-                      <FileSpreadsheet className="h-3.5 w-3.5" /> Download CSV
-                    </Button>
-                  </div>
-                  <div className={`h-1 w-full ${report.color}`} />
-                </CardContent>
-              </Card>
-            ))}
+                    <div className={`h-1 w-full ${report.color}`} />
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </>
       )}
