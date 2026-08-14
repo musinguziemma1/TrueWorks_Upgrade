@@ -2,6 +2,9 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch, sanitizeText, pickFromWhitelist } from "./lib/sanitize";
+
+const RESOURCE_STATUS = ["draft", "published", "archived"] as const;
 
 export const list = query({
   args: {
@@ -12,16 +15,17 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
+    const status = pickFromWhitelist(sanitizeText(args.status), RESOURCE_STATUS, "published");
     const q = args.category
-      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", args.category!))
+      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", sanitizeText(args.category!)))
       : args.status
-      ? ctx.db.query("resources").withIndex("by_status", (q) => q.eq("status", args.status as "draft" | "published" | "archived"))
+      ? ctx.db.query("resources").withIndex("by_status", (q) => q.eq("status", status))
       : args.featured !== undefined
       ? ctx.db.query("resources").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
       : ctx.db.query("resources");
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       const all = await q.collect();
       return all.filter((r) =>
         r.title.toLowerCase().includes(lower) ||
@@ -42,7 +46,7 @@ export const listPublished = query({
   },
   handler: async (ctx, args) => {
     const q = args.category
-      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", args.category!))
+      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", sanitizeText(args.category!)))
       : args.featured !== undefined
       ? ctx.db.query("resources").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
       : ctx.db.query("resources").withIndex("by_status", (q) => q.eq("status", "published"));
@@ -54,7 +58,7 @@ export const listPublished = query({
     }
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       results = results.filter((r) =>
         r.title.toLowerCase().includes(lower) ||
         r.description.toLowerCase().includes(lower) ||

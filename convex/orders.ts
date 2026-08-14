@@ -5,6 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { getCurrentUser, requireAdmin, requireAdminSilent } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 export const list = query({
   args: {
@@ -60,7 +61,7 @@ export const list = query({
     if (args.endDate) results = results.filter((o) => o.createdAt <= args.endDate!);
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       results = results.filter((o) =>
         o.orderNumber.toLowerCase().includes(lower) ||
         o.customerName.toLowerCase().includes(lower) ||

@@ -10,6 +10,17 @@ import {
 import { Doc, Id, type DataModel } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
+import { sanitizeSearch, sanitizeText, pickFromWhitelist } from "./lib/sanitize";
+
+const PRODUCT_STATUS = ["draft", "published", "archived"] as const;
+const PRODUCT_SORT = [
+  "newest",
+  "popular",
+  "price-asc",
+  "price-desc",
+  "name-asc",
+  "name-desc",
+] as const;
 
 type ProductsInfo = NamedTableInfo<DataModel, "products">;
 
@@ -54,21 +65,26 @@ export const list = query({
   handler: async (ctx, args) => {
     const isAdmin = await requireAdminSilent(ctx);
 
-    // SECURITY: Non-admins can only see published products
-    const status = isAdmin ? args.status : "published";
+    // SECURITY: Non-admins can only see published products. Admin-supplied
+    // status is normalized against the whitelist so arbitrary strings are
+    // rejected rather than interpreted.
+    const rawStatus = sanitizeText(args.status);
+    const status = isAdmin
+      ? pickFromWhitelist(rawStatus, PRODUCT_STATUS, "published")
+      : "published";
 
     const q = args.category
-      ? ctx.db.query("products").withIndex("by_category", (q) => q.eq("category", args.category!))
+      ? ctx.db.query("products").withIndex("by_category", (q) => q.eq("category", sanitizeText(args.category!)))
       : args.industry
-      ? ctx.db.query("products").withIndex("by_industry", (q) => q.eq("industry", args.industry!))
+      ? ctx.db.query("products").withIndex("by_industry", (q) => q.eq("industry", sanitizeText(args.industry!)))
       : status
-      ? ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", status as "draft" | "published" | "archived"))
+      ? ctx.db.query("products").withIndex("by_status", (q) => q.eq("status", status))
       : args.featured !== undefined
       ? ctx.db.query("products").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
       : ctx.db.query("products");
 
     if (args.search) {
-      const lower = args.search.toLowerCase();
+      const lower = sanitizeSearch(args.search).toLowerCase();
       const all = await q.collect();
       const filtered = all.filter((p) =>
         p.name.toLowerCase().includes(lower) ||
@@ -147,13 +163,17 @@ export const listPaginated = query({
   },
   handler: async (ctx, args) => {
     const isAdmin = await requireAdminSilent(ctx);
-    const status = (isAdmin ? args.status ?? "published" : "published") as "published" | "draft" | "archived";
+    const status = isAdmin
+      ? pickFromWhitelist(sanitizeText(args.status), PRODUCT_STATUS, "published")
+      : "published";
 
     const buildConds = (qb: FilterBuilder<ProductsInfo>): Expression<boolean>[] => {
       const c: Expression<boolean>[] = [];
-      if (args.category) c.push(qb.eq(qb.field("category"), args.category));
-      if (args.industries?.length) c.push(qb.or(...args.industries.map((i) => qb.eq(qb.field("industry"), i))));
-      if (args.fileTypes?.length) c.push(qb.or(...args.fileTypes.map((f) => qb.eq(qb.field("fileType"), f))));
+      if (args.category) c.push(qb.eq(qb.field("category"), sanitizeText(args.category)));
+      if (args.industries?.length)
+        c.push(qb.or(...args.industries.map((i) => qb.eq(qb.field("industry"), sanitizeText(i)))));
+      if (args.fileTypes?.length)
+        c.push(qb.or(...args.fileTypes.map((f) => qb.eq(qb.field("fileType"), sanitizeText(f)))));
       if (args.onSale)
         c.push(qb.and(qb.neq(qb.field("salePrice"), undefined), qb.lt(qb.field("salePrice"), qb.field("price"))));
       if (args.featured) c.push(qb.eq(qb.field("featured"), true));
@@ -177,8 +197,8 @@ export const listPaginated = query({
 
     const baseQuery = () => ctx.db.query("products");
 
-    const searchTerm = args.search?.trim();
-    const sort = args.sort ?? "newest";
+    const searchTerm = sanitizeSearch(args.search);
+    const sort = pickFromWhitelist(args.sort, PRODUCT_SORT, "newest");
     const useStatusIndex = sort === "newest";
     const order = (useStatusIndex
       ? "desc"

@@ -34,6 +34,7 @@ import type * as gdpr from "../gdpr.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_audit from "../lib/audit.js";
+import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as licenses from "../licenses.js";
 import type * as mediaFiles from "../mediaFiles.js";
 import type * as notifications from "../notifications.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   invitations: typeof invitations;
   "lib/audit": typeof lib_audit;
+  "lib/sanitize": typeof lib_sanitize;
   licenses: typeof licenses;
   mediaFiles: typeof mediaFiles;
   notifications: typeof notifications;

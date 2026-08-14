@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 
 export const list = query({
   args: {
