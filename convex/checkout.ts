@@ -20,8 +20,30 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       return new Response(JSON.stringify({ error: "Too many attempts. Please try again later." }), { status: 429, headers: { "Content-Type": "application/json" } });
     }
 
+    // SECURITY: The customer must be signed in to complete checkout. The
+    // Convex token from the Authorization header (Clerk "convex" template)
+    // resolves to the user identity below. The order's email is bound to this
+    // identity, never to client-supplied values.
+    let identity = null;
+    try {
+      identity = await ctx.auth.getUserIdentity();
+    } catch {
+      identity = null;
+    }
+    if (!identity || !identity.email) {
+      return new Response(JSON.stringify({ error: "You must be signed in to complete checkout" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+
     const body = await request.json();
     const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress } = body;
+
+    // The submitted email must match the authenticated user's email. This
+    // prevents creating orders on behalf of another account.
+    if (typeof customerEmail === "string" && customerEmail.toLowerCase() !== identity.email.toLowerCase()) {
+      return new Response(JSON.stringify({ error: "Checkout email must match your signed-in account" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    }
+    const verifiedEmail = identity.email;
+    const verifiedName = (typeof customerName === "string" && customerName.trim()) || identity.name || "Customer";
 
     let country = "";
     let region = "";
@@ -58,7 +80,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     if (items.length > 50) {
       return new Response(JSON.stringify({ error: "Too many items (max 50)" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
-    if (!customerEmail || !customerName) {
+    if (!verifiedEmail || !verifiedName) {
       return new Response(JSON.stringify({ error: "Customer information required" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
 
@@ -153,8 +175,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
 
     const orderId = await ctx.runMutation(internal.orders.createInternal, {
       orderNumber,
-      customerEmail,
-      customerName,
+      customerEmail: verifiedEmail,
+      customerName: verifiedName,
       items: orderItems,
       subtotal,
       tax: 0,
@@ -173,14 +195,14 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     });
 
     await ctx.runMutation(internal.customers.upsertPublic, {
-      email: customerEmail,
-      name: customerName,
+      email: verifiedEmail,
+      name: verifiedName,
     });
 
     await ctx.runMutation(internal.notifications.createPublic, {
       type: "order",
       title: "New Order Received",
-      message: `Order ${orderNumber} from ${customerName} for ${total.toLocaleString()}`,
+      message: `Order ${orderNumber} from ${verifiedName} for ${total.toLocaleString()}`,
       link: `/admin/orders`,
     });
 
@@ -198,8 +220,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
           },
           body: JSON.stringify({
             orderNumber,
-            customerEmail,
-            customerName,
+            customerEmail: verifiedEmail,
+            customerName: verifiedName,
             items: orderItems.map((item) => ({
               name: item.productName,
               quantity: item.quantity,

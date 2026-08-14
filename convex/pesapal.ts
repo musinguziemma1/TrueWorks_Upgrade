@@ -176,14 +176,25 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
   }
 
   const body = await request.json().catch(() => null);
-  const { orderId, currency, method, customerEmail, customerName, phone, description } =
+  const { orderId, currency, method, phone, description } =
     typeof body === "object" && body ? body : {};
 
-  if (!orderId || !customerEmail) {
+  if (!orderId) {
     return json({ error: "Missing required fields" }, 400);
   }
 
   try {
+    // SECURITY: The customer must be signed in and the order must belong to them.
+    let identity = null;
+    try {
+      identity = await ctx.auth.getUserIdentity();
+    } catch {
+      identity = null;
+    }
+    if (!identity || !identity.email) {
+      return json({ error: "You must be signed in to pay" }, 401);
+    }
+
     const token = await getPesapalToken(ctx);
     const order = await ctx.runQuery(internal.orders.getOrderForPayment, {
       id: orderId as Id<"orders">,
@@ -191,9 +202,15 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
     if (!order) {
       return json({ error: "Order not found" }, 404);
     }
+    if (order.customerEmail.toLowerCase() !== identity.email.toLowerCase()) {
+      return json({ error: "This order does not belong to your account" }, 403);
+    }
     if (order.paymentStatus === "completed") {
       return json({ error: "Order already paid" }, 400);
     }
+
+    const customerEmail = order.customerEmail;
+    const customerName = order.customerName;
 
     // SECURITY: server-side total — ignore client-supplied amount
     const serverAmount = order.total;

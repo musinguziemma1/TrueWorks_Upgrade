@@ -1,5 +1,5 @@
 import { ActionCtx } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
@@ -172,21 +172,42 @@ export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise
   }
 
   const body = await req.json();
-  const { orderId, currency, customerEmail, customerName } = body;
+  const { orderId, currency } = body;
 
-  if (!orderId || !customerEmail) {
+  if (!orderId) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // SECURITY: Look up the order server-side to get the real amount.
-  // Never trust client-supplied amounts.
-  const order = await ctx.runQuery(api.orders.getByIdInternal, { id: orderId });
+  // SECURITY: The customer must be signed in and the order must belong to them.
+  // The Convex token in the Authorization header resolves to the user identity.
+  let identity = null;
+  try {
+    identity = await ctx.auth.getUserIdentity();
+  } catch {
+    identity = null;
+  }
+  if (!identity || !identity.email) {
+    return new Response(JSON.stringify({ error: "You must be signed in to pay" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // SECURITY: Look up the order server-side to get the real amount and verify
+  // ownership. Never trust client-supplied amounts.
+  const order = await ctx.runQuery(internal.orders.getOrderForPayment, { id: orderId });
   if (!order) {
     return new Response(JSON.stringify({ error: "Order not found" }), {
       status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (order.customerEmail.toLowerCase() !== identity.email.toLowerCase()) {
+    return new Response(JSON.stringify({ error: "This order does not belong to your account" }), {
+      status: 403,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -198,7 +219,8 @@ export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise
     });
   }
 
-  // Use the order's total (in cents) — ignore any client-supplied amount
+  // Use the order's total (in cents) and the order's customer — ignore any
+  // client-supplied amount or email.
   const amountInCents = Math.round(order.total * 100);
 
   try {
@@ -206,10 +228,10 @@ export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise
       amount: String(amountInCents),
       currency: currency || "usd",
       "metadata[orderId]": orderId,
-      "metadata[customerEmail]": customerEmail,
-      "metadata[customerName]": customerName || order.customerName || "",
+      "metadata[customerEmail]": order.customerEmail,
+      "metadata[customerName]": order.customerName || "",
       description: `TrueWorks Order ${order.orderNumber}`,
-      "receipt_email": customerEmail,
+      "receipt_email": order.customerEmail,
     };
 
     const pi = await stripePost("/payment_intents", params);
@@ -222,8 +244,8 @@ export const createPaymentIntent = async (ctx: ActionCtx, req: Request): Promise
       amount: amountInCents / 100,
       currency: currency || "usd",
       status: "pending",
-      customerEmail,
-      customerName: customerName || order.customerName || "",
+      customerEmail: order.customerEmail,
+      customerName: order.customerName || "",
       metadata: { clientSecret: pi.client_secret },
     });
 

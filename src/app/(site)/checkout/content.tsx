@@ -19,6 +19,7 @@ import {
   Globe,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   Elements,
   PaymentElement,
@@ -147,6 +148,8 @@ export default function CheckoutContent() {
   const router = useRouter();
   const { track } = useAnalytics();
   const { items, totalItems, totalPrice, clearCart } = useCart();
+  const { isLoaded: authLoaded, isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -175,6 +178,31 @@ export default function CheckoutContent() {
   useEffect(() => {
     track("reach_checkout", { value: totalPrice });
   }, [track, totalPrice]);
+
+  // Prefill contact fields from the signed-in user.
+  useEffect(() => {
+    if (!user) return;
+    const primaryEmail = user.primaryEmailAddress?.emailAddress ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (primaryEmail && !email) setEmail(primaryEmail);
+    if (user.firstName && !firstName) setFirstName(user.firstName);
+    if (user.lastName && !lastName) setLastName(user.lastName);
+  }, [user, email, firstName, lastName]);
+
+  const getConvexToken = async (): Promise<string | null> => {
+    try {
+      return await getToken({ template: "convex" });
+    } catch {
+      return null;
+    }
+  };
+
+  const authHeaders = async (): Promise<Record<string, string>> => {
+    const token = await getConvexToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
+  };
 
   const discountAmount = appliedCoupon?.discount ?? 0;
   const displayTotal = Math.max(0, totalPrice - discountAmount);
@@ -230,13 +258,10 @@ export default function CheckoutContent() {
     try {
       const response = await fetch(`/api/stripe/create-payment-intent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({
           orderId: convexOrderId,
-          amount: Math.round(displayTotal * 100),
           currency: "usd",
-          customerEmail: email,
-          customerName: `${firstName} ${lastName}`,
         }),
       });
       const data = await response.json();
@@ -262,6 +287,14 @@ export default function CheckoutContent() {
     e.preventDefault();
     if (items.length === 0) return;
 
+    if (authLoaded && !isSignedIn) {
+      toast.error("Sign in required", {
+        description: "Please sign in to complete your order",
+      });
+      router.push("/sign-in?redirect_url=/checkout");
+      return;
+    }
+
     if (paymentProvider === "stripe" && orderId) {
       return;
     }
@@ -274,7 +307,7 @@ export default function CheckoutContent() {
       });
       const response = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({
           items: items.map((item) => ({
             slug: item.slug,
@@ -282,7 +315,7 @@ export default function CheckoutContent() {
             tier: item.tier,
           })),
           customerEmail: email,
-          customerName: `${firstName} ${lastName}`,
+          customerName: `${firstName} ${lastName}`.trim(),
           paymentMethod:
             paymentProvider === "pesapal"
               ? pesapalMethod === "mtn"
@@ -311,12 +344,9 @@ export default function CheckoutContent() {
         if (paymentProvider === "pesapal") {
           const initiateResponse = await fetch("/api/pesapal/initiate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: await authHeaders(),
             body: JSON.stringify({
               orderId: result.orderId,
-              amount: result.total,
-              customerEmail: email,
-              customerName: `${firstName} ${lastName}`,
               phone,
               method:
                 pesapalMethod === "mtn"
@@ -413,6 +443,39 @@ export default function CheckoutContent() {
     </Dialog>
   );
 
+  if (authLoaded && !isSignedIn) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center bg-surface">
+        <div className="mx-auto max-w-md px-6 text-center">
+          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-card">
+            <ShieldCheck className="h-9 w-9 text-muted/60" />
+          </span>
+          <h1 className="mt-6 font-heading text-2xl font-semibold text-primary">
+            Sign in to continue checkout
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            You must be signed in before completing your order. Your cart is saved and will be
+            waiting for you.
+          </p>
+          <Link href="/sign-in?redirect_url=/checkout" className="mt-8 inline-block">
+            <Button
+              size="lg"
+              className="gradient-gold px-7 font-semibold text-primary-dark hover:brightness-105"
+            >
+              Sign in to Checkout
+            </Button>
+          </Link>
+          <div className="mt-4">
+            <Link href="/store" className="text-sm text-muted underline hover:text-foreground">
+              Continue browsing the store
+            </Link>
+          </div>
+        </div>
+        {pesapalPaymentDialog}
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center bg-surface">
@@ -448,7 +511,7 @@ export default function CheckoutContent() {
             Secure Checkout
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Complete your purchase as a guest - no account required.
+            You&apos;re signed in — your order will be linked to your account.
           </p>
         </div>
 

@@ -23,13 +23,16 @@ export default function PaymentsPage() {
 
   const reconcile = useMutation(api.payments.reconcileFromOrders)
   const [syncing, setSyncing] = useState(false)
+  const [removingOrphans, setRemovingOrphans] = useState(false)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const [orphaned, setOrphaned] = useState(0)
 
   const handleSync = async () => {
     setSyncing(true)
     setSyncMessage(null)
     try {
       const res = await reconcile({})
+      setOrphaned(res.orphaned)
       setSyncMessage(
         `Synced with orders — ${res.created} created, ${res.updated} updated, ${res.orphaned} orphaned`
       )
@@ -37,6 +40,25 @@ export default function PaymentsPage() {
       setSyncMessage("Sync failed")
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleRemoveOrphans = async () => {
+    if (orphaned === 0) return
+    const confirmed = window.confirm(
+      `Delete ${orphaned} orphaned payment record${orphaned === 1 ? "" : "s"} with no matching order? This cannot be undone.`
+    )
+    if (!confirmed) return
+    setRemovingOrphans(true)
+    setSyncMessage(null)
+    try {
+      const res = await reconcile({ removeOrphans: true })
+      setOrphaned(0)
+      setSyncMessage(`Removed ${res.removedOrphans} orphaned payment record${res.removedOrphans === 1 ? "" : "s"}`)
+    } catch {
+      setSyncMessage("Orphan removal failed")
+    } finally {
+      setRemovingOrphans(false)
     }
   }
 
@@ -86,6 +108,17 @@ export default function PaymentsPage() {
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync with orders"}
             </button>
+            {orphaned > 0 && (
+              <button
+                type="button"
+                onClick={handleRemoveOrphans}
+                disabled={removingOrphans}
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/20 disabled:opacity-60"
+                title="Delete payment records that have no matching order"
+              >
+                {removingOrphans ? "Removing..." : `Remove ${orphaned} orphaned`}
+              </button>
+            )}
             <ExportButton state={state} disabled={loadingStats && loadingData} />
           </div>
         }
