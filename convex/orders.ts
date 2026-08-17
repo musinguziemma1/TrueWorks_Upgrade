@@ -473,6 +473,19 @@ export const listMine = query({
   },
 });
 
+/** Admin: most recent orders for a given customer email (detail panel). */
+export const listByCustomerEmail = query({
+  args: { email: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    if (!(await requireAdminSilent(ctx))) return [];
+    return await ctx.db
+      .query("orders")
+      .withIndex("by_customerEmail", (q) => q.eq("customerEmail", args.email))
+      .order("desc")
+      .take(args.limit ?? 5);
+  },
+});
+
 /**
  * "Frequently bought together" recommendations. Given a target product, count
  * how many completed orders bundled it together with each other product, and

@@ -161,3 +161,23 @@ export const remove = mutation({
     });
   },
 });
+
+/** Admin KPI counts across all customers. */
+export const stats = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, subscribed: 0, totalLtv: 0, topLtv: 0 };
+    }
+    const all = await ctx.db.query("customers").collect();
+    let subscribed = 0;
+    let totalLtv = 0;
+    let topLtv = 0;
+    for (const c of all) {
+      if (c.newsletterSubscribed) subscribed++;
+      totalLtv += c.lifetimeValue;
+      if (c.lifetimeValue > topLtv) topLtv = c.lifetimeValue;
+    }
+    return { total: all.length, subscribed, totalLtv, topLtv };
+  },
+});

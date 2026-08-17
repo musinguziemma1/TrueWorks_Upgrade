@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Search, Mail, Phone, Calendar, DollarSign, ShoppingCart, MapPin, ChevronRight, Loader2, Trash2 } from "lucide-react"
+import { Users, Search, Mail, Phone, Calendar, DollarSign, ShoppingCart, MapPin, ChevronRight, Loader2, Trash2, FileSpreadsheet, UserCheck } from "lucide-react"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -10,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { downloadCsv, toCsv } from "@/lib/csv"
 import { toast } from "sonner"
 import {
   useCustomers,
@@ -38,6 +41,10 @@ export default function CustomersPage() {
   const [page, setPage] = useState(1)
 
   const customers = useCustomers({ search: search || undefined })
+  const customerStats = useQuery(api.customers.stats)
+  const customerOrders = useQuery(api.orders.listByCustomerEmail, {
+    email: selectedCustomer?.email ?? "",
+  })
   const removeCustomer = deleteCustomer.useMutation()
 
   const isLoading = customers === undefined
@@ -61,6 +68,21 @@ export default function CustomersPage() {
     }
   }
 
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((c) => ({
+        name: c.name,
+        email: c.email,
+        phone: c.phone ?? "",
+        orders: c.totalOrders,
+        ltv: c.lifetimeValue,
+        newsletter: c.newsletterSubscribed ? "yes" : "no",
+        joined: new Date(c.createdAt).toISOString().slice(0, 10),
+      }))
+    )
+    downloadCsv(`customers-${new Date().toISOString().slice(0, 10)}`, csv)
+  }
+
   const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
 
   return (
@@ -69,7 +91,31 @@ export default function CustomersPage() {
         title="Customers"
         description="View and manage your customer base"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Customers" }]}
+        action={
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+            <FileSpreadsheet className="h-4 w-4" /> Export CSV
+          </Button>
+        }
       />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { label: "Total Customers", value: customerStats?.total ?? 0, icon: Users, color: "text-[#0B2545]" },
+          { label: "Newsletter Subscribers", value: customerStats?.subscribed ?? 0, icon: UserCheck, color: "text-emerald-600" },
+          { label: "Total LTV", value: fmtLTV(customerStats?.totalLtv ?? 0), icon: DollarSign, color: "text-amber-600" },
+          { label: "Top Customer LTV", value: fmtLTV(customerStats?.topLtv ?? 0), icon: ShoppingCart, color: "text-[#3E6990]" },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-muted">{s.label}</p>
+                <s.icon className={`h-4 w-4 ${s.color}`} />
+              </div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -168,6 +214,26 @@ export default function CustomersPage() {
                   <div className="flex items-center gap-2 text-sm"><ShoppingCart className="h-4 w-4 text-muted-foreground shrink-0" /><span>{selectedCustomer.totalOrders} orders</span></div>
                   <div className="flex items-center gap-2 text-sm"><DollarSign className="h-4 w-4 text-muted-foreground shrink-0" /><span className="font-semibold">{fmtLTV(selectedCustomer.lifetimeValue)} LTV</span></div>
                   <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 text-muted-foreground shrink-0" /><span>Joined {new Date(selectedCustomer.createdAt).toLocaleDateString("en-UG")}</span></div>
+                </div>
+                <div className="border-t border-border pt-3 mt-4">
+                  <p className="text-sm font-medium mb-2">Recent Orders</p>
+                  {customerOrders === undefined ? (
+                    <p className="text-xs text-muted-foreground py-2">Loading...</p>
+                  ) : customerOrders.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">No orders yet</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {customerOrders.map((o) => (
+                        <div key={o._id} className="flex items-center justify-between text-xs rounded-md border border-border/70 bg-surface px-2.5 py-1.5">
+                          <span className="font-medium">{o.orderNumber}</span>
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <StatusBadge status={o.paymentStatus === "completed" ? "Paid" : o.paymentStatus} />
+                            {fmtLTV(o.total)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
