@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Download,
   Users,
-  Mail,
   BarChart3,
   Star,
   Clock,
@@ -90,12 +89,16 @@ export default function AdminDashboard() {
     )
   }
 
-  const revenue = orderStats?.totalRevenue ?? 0
+const revenue = orderStats?.totalRevenue ?? 0
   const totalOrders = orderStats?.total ?? 0
   const pendingOrders = orderStats?.pending ?? 0
   const completedOrders = orderStats?.completed ?? 0
+  const refundedOrders = orderStats?.refunded ?? 0
   const totalProducts = productStats?.total ?? 0
 const publishedProducts = productStats?.published ?? 0
+  const draftProducts = productStats?.draft ?? 0
+
+  const revenue45 = analyticsSummary?.dailyData?.reduce((sum, d) => sum + d.revenue, 0) ?? 0
 
 const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
   const revenueChartData = revenueData.map((d) => ({
@@ -118,13 +121,13 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-6 rounded-xl bg-card border border-border px-5 py-3 shadow-soft">
             <div>
-              <p className="text-xs text-muted-foreground font-body">Total Revenue</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{formatPrice(revenue)}</p>
+              <p className="text-xs text-muted-foreground font-body">Revenue (45d)</p>
+              <p className="text-lg font-bold text-[#0B2545] font-heading">{formatPrice(revenue45)}</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
-              <p className="text-xs text-muted-foreground font-body">Total Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalOrders}</p>
+              <p className="text-xs text-muted-foreground font-body">Pending Orders</p>
+              <p className="text-lg font-bold text-[#0B2545] font-heading">{pendingOrders}</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
@@ -152,6 +155,7 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
               </div>
               <p className="text-sm text-muted-foreground font-body mb-1">Total Revenue</p>
               <p className="text-3xl font-bold text-[#0B2545] font-heading">{formatPrice(revenue)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Revenue in last 45 days: {formatPrice(revenue45)}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
@@ -200,8 +204,8 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
                   <Clock className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Pending Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{pendingOrders}</p>
+              <p className="text-xs text-muted-foreground font-body mb-1">Draft Products</p>
+              <p className="text-lg font-bold text-[#0B2545] font-heading">{draftProducts}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
@@ -229,12 +233,12 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-rose-500/10 text-rose-600">
-                  <Mail className="h-4 w-4" />
+                <div className="p-2 rounded-full bg-red-500/10 text-red-600">
+                  <Clock className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Subscribers</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalSubscribers}</p>
+              <p className="text-xs text-muted-foreground font-body mb-1">Refunded Orders</p>
+              <p className="text-lg font-bold text-[#0B2545] font-heading">{refundedOrders}</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
@@ -246,7 +250,7 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
               </div>
               <p className="text-xs text-muted-foreground font-body mb-1">Avg Order Value</p>
               <p className="text-lg font-bold text-[#0B2545] font-heading">
-                {completedOrders > 0 ? formatPrice(Math.round(revenue / completedOrders)) : "$0"}
+                {completedOrders > 0 ? formatPrice(revenue / completedOrders) : "$0"}
               </p>
             </CardContent>
           </Card>
@@ -261,7 +265,7 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
               <BarChart3 className="h-5 w-5 text-[#3E6990]" />
               Revenue Trend
             </CardTitle>
-            <CardDescription>Revenue over time</CardDescription>
+            <CardDescription>Daily revenue over the last 45 days</CardDescription>
           </CardHeader>
           <CardContent>
             <AdminRevenueChart data={revenueChartData} />
@@ -302,7 +306,14 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
               {recentOrders && recentOrders.length > 0 ? (
                 recentOrders.slice(0, 5).map((order) => (
                   <TableRow key={order._id} className="transition-colors hover:bg-muted/40">
-                    <TableCell className="font-medium text-[#0B2545]">{order.orderNumber}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/orders`}
+                        className="font-medium text-[#0B2545] hover:underline"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                    </TableCell>
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
                     <TableCell className="text-center">

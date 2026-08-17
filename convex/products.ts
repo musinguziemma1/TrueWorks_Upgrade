@@ -479,6 +479,38 @@ export const remove = mutation({
   },
 });
 
+/** Set the status of many products at once (admin bulk action). */
+export const bulkSetStatus = mutation({
+  args: {
+    ids: v.array(v.id("products")),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+  },
+  handler: async (ctx, args) => {
+    await requireEditor(ctx);
+    const now = Date.now();
+    let changed = 0;
+    for (const id of args.ids) {
+      const product = await ctx.db.get(id);
+      if (!product || product.status === args.status) continue;
+      await ctx.db.patch(id, { status: args.status, updatedAt: now });
+      changed++;
+    }
+    const identity = await ctx.auth.getUserIdentity();
+    const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
+    await ctx.db.insert("auditLogs", {
+      actorId: actor?._id,
+      actorEmail: actor?.email ?? identity?.email ?? "system",
+      actorName: actor?.name,
+      action: "product.bulkStatus",
+      entityType: "product",
+      entityId: args.ids[0],
+      summary: `Bulk set ${changed}/${args.ids.length} products to "${args.status}"`,
+      createdAt: now,
+    });
+    return changed;
+  },
+});
+
 export const stats = query({
   args: {},
   handler: async (ctx) => {

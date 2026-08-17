@@ -3,9 +3,11 @@
 import { useState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useMutation } from "convex/react"
+import { api } from "@convex/_generated/api"
 import {
   Package, Plus, Search, Grid3X3, List, Edit3, Trash2,
-  Upload, Download, FileSpreadsheet, Loader2,
+  Upload, Download, FileSpreadsheet, Loader2, CheckCircle2, FileText, Archive, DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
@@ -24,6 +26,8 @@ import {
   bulkImportProducts,
   ProductStatus,
 } from "@/lib/admin-queries"
+import { useProductStats } from "@/lib/admin-queries"
+import { downloadCsv, toCsv } from "@/lib/csv"
 import { toast } from "sonner"
 
 
@@ -50,8 +54,10 @@ export default function ProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const products = useProducts()
+  const productStats = useProductStats()
   const removeProduct = deleteProduct.useMutation()
   const importProducts = bulkImportProducts.useMutation()
+  const setStatusBulk = useMutation(api.products.bulkSetStatus)
 
   const isLoading = products === undefined
 
@@ -99,6 +105,33 @@ export default function ProductsPage() {
     }
     setSelected(new Set())
     toast.success("Products deleted")
+  }
+
+  const handleBulkStatus = async (status: ProductStatus) => {
+    if (selected.size === 0) return
+    try {
+      const changed = await setStatusBulk({ ids: Array.from(selected) as never, status })
+      toast.success(`Updated ${changed} products to ${status}`)
+      setSelected(new Set())
+    } catch (e) {
+      toast.error(String(e))
+    }
+  }
+
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((p) => ({
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        industry: p.industry,
+        price: p.salePrice ?? p.price,
+        status: p.status,
+        sales: p.totalSales,
+        featured: p.featured ? "yes" : "no",
+      }))
+    )
+    downloadCsv(`products-${new Date().toISOString().slice(0, 10)}`, csv)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,8 +196,11 @@ export default function ProductsPage() {
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Products" }]}
         action={
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportCsv} disabled={filtered.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" /> Export
+            </Button>
             <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-              <FileSpreadsheet className="h-4 w-4" /> Import
+              <Upload className="h-4 w-4" /> Import
             </Button>
             <Link href="/admin/products/new">
               <Button><Plus className="h-4 w-4" /> Add Product</Button>
@@ -172,6 +208,25 @@ export default function ProductsPage() {
           </div>
         }
       />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { label: "Published", value: productStats?.published ?? 0, icon: CheckCircle2, color: "text-emerald-600" },
+          { label: "Drafts", value: productStats?.draft ?? 0, icon: FileText, color: "text-amber-600" },
+          { label: "Archived", value: productStats?.archived ?? 0, icon: Archive, color: "text-slate-600" },
+          { label: "Est. Revenue", value: fmtPrice(productStats?.totalRevenue ?? 0), icon: DollarSign, color: "text-[#0B2545]" },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-muted">{s.label}</p>
+                <s.icon className={`h-4 w-4 ${s.color}`} />
+              </div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
@@ -206,8 +261,16 @@ export default function ProductsPage() {
       </div>
 
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3 p-3 bg-destructive/10 rounded-lg">
           <span className="text-sm font-medium">{selected.size} selected</span>
+          <Select value="" onValueChange={(v) => { if (v) { handleBulkStatus(v as ProductStatus) } }}>
+            <SelectTrigger className="w-[180px] h-8 bg-white text-xs"><SelectValue placeholder="Set status..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="published">Publish selected</SelectItem>
+              <SelectItem value="draft">Move to draft</SelectItem>
+              <SelectItem value="archived">Archive selected</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="destructive" size="sm" onClick={handleBulkDelete}>Delete Selected</Button>
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
