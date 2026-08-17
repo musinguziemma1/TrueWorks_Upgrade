@@ -294,71 +294,152 @@ export default function AnalyticsPage() {
   }, [geoData])
 
   const handleExportPdf = useCallback(async () => {
-    if (!analyticsRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
       const { jsPDF } = await import("jspdf")
-
-      const element = analyticsRef.current
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#f8fafc",
-      })
-
-      const imgWidth = 210
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
       const pdf = new jsPDF("p", "mm", "a4")
-      const pageHeight = 270
+      const W = 210
+      const MARGIN = 14
+      const maxY = 292
+      let y = 24
 
-      pdf.setFontSize(16)
-      pdf.setFont("helvetica", "bold")
-      pdf.text("TrueWorks Analytics Report", 105, 15, { align: "center" })
-      pdf.setFontSize(10)
-      pdf.setFont("helvetica", "normal")
-      pdf.text(`Date Range: ${dateRange} | Generated: ${new Date().toLocaleDateString("en-UG")}`, 105, 22, { align: "center" })
+      const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 })
+      const money = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+      const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 
-      const marginTop = 28
-      const availableHeight = pageHeight - marginTop
-      const totalPages = Math.ceil(imgHeight / availableHeight)
-
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage()
-
-        const sourceY = (page * availableHeight * canvas.width) / imgWidth / 2
-        const sourceHeight = Math.min(
-          (availableHeight * canvas.width) / imgWidth / 2,
-          canvas.height - sourceY
-        )
-
-        const pageCanvas = document.createElement("canvas")
-        pageCanvas.width = canvas.width
-        pageCanvas.height = sourceHeight
-        const ctx = pageCanvas.getContext("2d")
-        if (ctx) {
-          ctx.fillStyle = "#f8fafc"
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
-          ctx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          )
+      const ensure = (needed: number) => {
+        if (y + needed > maxY) {
+          pdf.addPage()
+          y = MARGIN
         }
-
-        const sliceHeight = (sourceHeight * imgWidth) / canvas.width
-        pdf.addImage(
-          pageCanvas.toDataURL("image/png"),
-          "PNG",
-          0,
-          page === 0 ? marginTop : 0,
-          imgWidth,
-          sliceHeight
-        )
       }
 
-      pdf.save(`TrueWorks-Analytics-${rangeLabel.replace(/\s+/g, "-")}.pdf`)
+      // Title block
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(18)
+      pdf.setTextColor("#0B2545")
+      pdf.text("TrueWorks Analytics Report", MARGIN, 16)
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(9)
+      pdf.setTextColor(120)
+      pdf.text(`Range: ${rangeLabel}   |   Generated: ${new Date().toLocaleDateString("en-UG")}`, MARGIN, 21)
+
+      const section = (title: string) => {
+        ensure(12)
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(11)
+        pdf.setTextColor("#0B2545")
+        pdf.text(title, MARGIN, y)
+        pdf.setDrawColor("#0B2545")
+        pdf.setLineWidth(0.3)
+        pdf.line(MARGIN, y + 1.5, W - MARGIN, y + 1.5)
+        y += 6
+      }
+
+      const kvRow = (label: string, value: string) => {
+        ensure(7)
+        pdf.setFont("helvetica", "normal")
+        pdf.setFontSize(9)
+        pdf.setTextColor(90)
+        pdf.text(label, MARGIN, y)
+        pdf.setFont("helvetica", "bold")
+        pdf.setTextColor(20)
+        pdf.text(value, W - MARGIN, y, { align: "right" })
+        y += 5.5
+      }
+
+      const table = (headers: string[], rows: (string | number)[][]) => {
+        if (rows.length === 0) {
+          ensure(6)
+          pdf.setFont("helvetica", "italic")
+          pdf.setFontSize(9)
+          pdf.setTextColor(130)
+          pdf.text("No data for this range.", MARGIN + 2, y)
+          y += 6
+          return
+        }
+        const colW = (W - MARGIN * 2) / headers.length
+        const colX = headers.map((_, i) => MARGIN + i * colW)
+        ensure(8)
+        pdf.setFillColor("#0B2545")
+        pdf.rect(MARGIN, y - 4.5, W - MARGIN * 2, 6.5, "F")
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(8.5)
+        pdf.setTextColor("#ffffff")
+        headers.forEach((h, i) => pdf.text(h, colX[i] + 2, y, { maxWidth: colW - 4 }))
+        y += 7
+        rows.forEach((row, ri) => {
+          ensure(6)
+          if (ri % 2 === 1) {
+            pdf.setFillColor(245, 248, 250)
+            pdf.rect(MARGIN, y - 4, W - MARGIN * 2, 5, "F")
+          }
+          pdf.setFont("helvetica", "normal")
+          pdf.setFontSize(8)
+          pdf.setTextColor(40)
+          row.forEach((cell, ci) => {
+            pdf.text(String(cell), colX[ci] + 2, y, { maxWidth: colW - 4 })
+          })
+          y += 5
+        })
+        y += 3
+      }
+
+      // KPI summary
+      section("Key Metrics")
+      kvRow("Total Revenue", money(safeSummary.totalRevenue))
+      kvRow("Total Orders", fmt(totalOrdersCount))
+      kvRow("Downloads", fmt(safeSummary.totalDownloads))
+      kvRow("Visitors", fmt(safeSummary.totalVisitors))
+      kvRow("Page Views", fmt(safeSummary.totalPageViews))
+      kvRow("Conversion Rate", `${conversionRate}%`)
+      kvRow("Avg Order Value", money(avgOrderValue))
+      kvRow("Revenue / Visitor", revenuePerVisitor)
+      y += 2
+
+      // Daily revenue trend
+      section("Daily Revenue Trend")
+      table(
+        ["Date", "Revenue", "Orders", "Downloads", "Visitors", "Page Views"],
+        revenueData.map((d) => [d.date, money(d.revenue * 1_000_000), d.orders, d.downloads, d.visitors, d.pageViews])
+      )
+
+      // Product performance
+      section("Top Products")
+      table(
+        ["Product", "Sales", "Revenue"],
+        productPerformance.map((p) => [clip(p.name, 40), fmt(p.totalSales), money(p.totalRevenue)])
+      )
+
+      // Payment methods
+      section("Payment Methods")
+      table(
+        ["Method", "Orders"],
+        paymentChartData.map((p) => [p.name, fmt(p.value)])
+      )
+
+      // Geographic breakdown
+      section("Geographic Sales")
+      table(
+        ["Country", "Orders", "Revenue"],
+        geoChartData.map((g) => [clip(g.country, 30), fmt(g.orders), money(g.revenue)])
+      )
+
+      // Conversion funnel
+      section("Conversion Funnel")
+      table(
+        ["Step", "Count"],
+        (funnelData?.funnel ?? []).map((s) => [clip(STEP_LABELS[s.name] ?? s.name.replace(/_/g, " "), 30), fmt(s.count)])
+      )
+
+      // LTV segments
+      section("Customer Lifetime Value")
+      table(
+        ["Segment", "Customers"],
+        (ltvSegments ?? []).map((s) => [s.label, fmt(s.count)])
+      )
+
+      pdf.save(`TrueWorks-Analytics-${rangeLabel.replace(/[^\w-]+/g, "-")}.pdf`)
       toast.success("PDF exported successfully")
     } catch (err) {
       console.error("PDF export failed:", err)
@@ -366,7 +447,7 @@ export default function AnalyticsPage() {
     } finally {
       setExporting(false)
     }
-  }, [dateRange, rangeLabel])
+  }, [rangeLabel, safeSummary, totalOrdersCount, conversionRate, avgOrderValue, revenuePerVisitor, revenueData, productPerformance, paymentChartData, geoChartData, funnelData, ltvSegments])
 
   if (loading) {
     return (
