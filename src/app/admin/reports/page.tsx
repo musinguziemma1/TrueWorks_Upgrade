@@ -13,6 +13,8 @@ import {
   Mail,
   FileSpreadsheet,
   Loader2,
+  Eye,
+  X,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -20,6 +22,9 @@ import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 function fmtDate(ts: number) {
@@ -95,6 +100,7 @@ function rowCountFor(
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("This Month");
+  const [preview, setPreview] = useState<ReportId | null>(null);
 
   // Bound the orders read to the selected range so the scan stays small; the
   // client-side `since` filter below remains as a safety net.
@@ -289,18 +295,29 @@ export default function ReportsPage() {
                       </div>
                       <h3 className="font-semibold text-primary mb-1">{report.title}</h3>
                       <p className="text-xs text-muted-foreground mb-4">{report.description}</p>
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         disabled={rowCount === 0}
-                        className="w-full gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50 disabled:pointer-events-none"
+                        className="flex-1 gap-2 border-[#0B2545]/30 text-[#0B2545] hover:bg-[#0B2545]/5 disabled:opacity-50 disabled:pointer-events-none"
+                        onClick={() => setPreview(report.id)}
+                      >
+                        <Eye className="h-3.5 w-3.5" /> Preview
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={rowCount === 0}
+                        className="flex-1 gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50 disabled:pointer-events-none"
                         onClick={() => exportReport(report.id)}
                       >
-                        <FileSpreadsheet className="h-3.5 w-3.5" /> Download CSV
+                        <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
                       </Button>
-                      <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                        {rowCount > 0 ? `${rowCount.toLocaleString()} rows` : "No data in range"}
-                      </p>
+                    </div>
+                    <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                      {rowCount > 0 ? `${rowCount.toLocaleString()} rows` : "No data in range"}
+                    </p>
                     </div>
                     <div className={`h-1 w-full ${report.color}`} />
                   </CardContent>
@@ -308,6 +325,21 @@ export default function ReportsPage() {
               )
             })}
           </div>
+
+          {preview && (
+            <ReportPreview
+              reportId={preview}
+              onClose={() => setPreview(null)}
+              sources={{
+                orders: filteredOrders,
+                products,
+                customers,
+                downloads,
+                coupons,
+                subscribers,
+              }}
+            />
+          )}
         </>
       )}
     </div>
@@ -332,6 +364,112 @@ function SummaryCard({
         <div>
           <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
           <p className="font-heading text-xl font-bold text-primary">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ReportSources {
+  orders: unknown[];
+  products?: unknown[] | null;
+  customers?: unknown[] | null;
+  downloads?: unknown[] | null;
+  coupons?: unknown[] | null;
+  subscribers?: unknown[] | null;
+}
+
+function ReportPreview({ reportId, onClose, sources }: {
+  reportId: ReportId;
+  onClose: () => void;
+  sources: ReportSources;
+}) {
+  const title = REPORTS.find((r) => r.id === reportId)?.title ?? "Report";
+
+  const previewRows = (() => {
+    switch (reportId) {
+      case "sales":
+      case "revenue": {
+        const rows = (sources.orders as { orderNumber: string; _creationTime: number; customerName: string; customerEmail: string; paymentStatus: string; total: number; subtotal: number }[]).slice(0, 8);
+        return {
+          headers: ["Order", "Date", "Customer", "Status", "Total"],
+          cells: rows.map((o) => [o.orderNumber, fmtDate(o._creationTime), o.customerEmail, o.paymentStatus, fmtMoney(o.total)]),
+        };
+      }
+      case "products": {
+        const rows = (sources.products as { name: string; sku: string; category: string; price: number; totalSales: number }[]).slice(0, 8);
+        return {
+          headers: ["Name", "SKU", "Category", "Price", "Sales"],
+          cells: rows.map((p) => [p.name, p.sku, p.category, fmtMoney(p.price), String(p.totalSales)]),
+        };
+      }
+      case "customers": {
+        const rows = (sources.customers as { name: string; email: string; totalOrders: number; lifetimeValue: number }[]).slice(0, 8);
+        return {
+          headers: ["Name", "Email", "Orders", "LTV"],
+          cells: rows.map((c) => [c.name, c.email, String(c.totalOrders), fmtMoney(c.lifetimeValue)]),
+        };
+      }
+      case "downloads": {
+        const rows = (sources.downloads as { productName: string; email: string; status: string; downloadCount: number }[]).slice(0, 8);
+        return {
+          headers: ["Product", "Email", "Status", "Count"],
+          cells: rows.map((d) => [d.productName, d.email, d.status, String(d.downloadCount)]),
+        };
+      }
+      case "coupons": {
+        const rows = (sources.coupons as { code: string; type: string; value: number; usageCount: number; usageLimit?: number | null }[]).slice(0, 8);
+        return {
+          headers: ["Code", "Type", "Value", "Used", "Limit"],
+          cells: rows.map((c) => [c.code, c.type, String(c.value), String(c.usageCount), c.usageLimit ? String(c.usageLimit) : "∞"]),
+        };
+      }
+      case "marketing": {
+        const rows = (sources.subscribers as { email: string; name?: string | null; source?: string | null; active: boolean }[]).slice(0, 8);
+        return {
+          headers: ["Email", "Name", "Source", "Active"],
+          cells: rows.map((s) => [s.email, s.name ?? "", s.source ?? "", s.active ? "yes" : "no"]),
+        };
+      }
+    }
+  })();
+
+  if (!previewRows || previewRows.cells.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-primary">{title} — Preview</h3>
+            <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+          </div>
+          <p className="text-sm text-muted-foreground">No rows to preview in the selected range.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-primary">{title} — Preview (first {previewRows.cells.length})</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {previewRows.headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {previewRows.cells.map((row, i) => (
+                <TableRow key={i}>
+                  {row.map((cell, j) => <TableCell key={j}>{cell}</TableCell>)}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
