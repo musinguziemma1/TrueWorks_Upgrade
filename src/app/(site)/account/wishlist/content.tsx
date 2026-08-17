@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useWishlist } from "@/components/layout/wishlist-context";
+import { useCart } from "@/components/layout/cart-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
-import { useCart } from "@/components/layout/cart-context";
+import { Heart, ShoppingCart, Trash2, Check } from "lucide-react";
+import { toast } from "sonner";
 
 function fmtMoney(n: number) {
-  return new Intl.NumberFormat("en-UG", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -40,11 +41,42 @@ export default function WishlistContent() {
     );
   }
 
+  const addToCart = (item: (typeof items)[number]) => {
+    cart.addItem({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      price: item.price,
+      image: item.image,
+      tier: undefined,
+    });
+    toast.success(`Added "${item.name}" to cart`);
+  };
+
+  const addAllToCart = () => {
+    items.forEach((item) =>
+      cart.addItem({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        price: item.price,
+        image: item.image,
+        tier: undefined,
+      })
+    );
+    toast.success(`Added ${items.length} item${items.length === 1 ? "" : "s"} to cart`);
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {items.length} {items.length === 1 ? "item" : "items"} in your wishlist.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {items.length} {items.length === 1 ? "item" : "items"} in your wishlist.
+        </p>
+        <Button variant="outline" size="sm" onClick={addAllToCart}>
+          <ShoppingCart className="h-4 w-4 mr-1" /> Move all to cart
+        </Button>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <Card key={item.id} className="overflow-hidden">
@@ -76,18 +108,21 @@ export default function WishlistContent() {
                 </p>
               </div>
               <div className="flex gap-2">
+                <Button size="sm" className="flex-1" onClick={() => addToCart(item)}>
+                  <ShoppingCart className="h-4 w-4 mr-1" /> Add to cart
+                </Button>
                 <Link
                   href={`/store/${item.slug}`}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-primary/20 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-white"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
-                  <ShoppingCart className="h-4 w-4" />
-                  View
+                  <Check className="h-4 w-4" /> View
                 </Link>
                 <Button
                   variant="outline"
                   size="icon"
                   className="shrink-0 text-destructive hover:bg-destructive hover:text-white"
                   onClick={() => removeItem(item.id)}
+                  aria-label="Remove from wishlist"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

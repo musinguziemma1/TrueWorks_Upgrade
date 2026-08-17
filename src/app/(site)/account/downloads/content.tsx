@@ -10,14 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Download, KeyRound, Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-function fmtDate(ts: number) {
-  return new Date(ts).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default function DownloadsContent() {
   const downloads = useQuery(api.downloads.listMine);
   const licenses = useQuery(api.licenses.listMine);
@@ -88,7 +80,7 @@ export default function DownloadsContent() {
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2">
-                    <code className="font-mono text-xs text-foreground">{l.key}</code>
+                    <code className="truncate font-mono text-xs text-foreground">{l.key}</code>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -106,6 +98,18 @@ export default function DownloadsContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Activations</span>
                     <span>{l.activations} / {l.maxActivations}</span>
+                  </div>
+                  <div className="pt-1">
+                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                      <span>Activation usage</span>
+                      <span>{Math.round((l.activations / Math.max(1, l.maxActivations)) * 100)}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#0B2545]"
+                        style={{ width: `${Math.min(100, (l.activations / Math.max(1, l.maxActivations)) * 100)}%` }}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -128,41 +132,56 @@ export default function DownloadsContent() {
                   <CardHeader>
                     <CardTitle className="text-base">{d.productName}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status</span>
+                  <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <div className="flex items-center gap-2">
                       <StatusBadge status={d.status} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Downloads</span>
-                      <span>{d.remainingDownloads} left</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Expires</span>
-                      <span>{fmtDate(d.expiresAt)}</span>
-                    </div>
-                    <div className="pt-2">
-                      {canDownload ? (
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={() => handleDownload(d._id)}
-                          disabled={downloadingId === d._id}
-                        >
-                          {downloadingId === d._id ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                          )}
-                          Download File
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" className="w-full" disabled>
-                          {d.status === "expired" ? "Expired" : d.remainingDownloads <= 0 ? "No downloads left" : "Unavailable"}
-                        </Button>
+                      {d.expiresAt > now && (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                          expires {Math.max(1, Math.ceil((d.expiresAt - now) / (24 * 60 * 60 * 1000)))}d
+                        </span>
                       )}
                     </div>
-                  </CardContent>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Downloads remaining</span>
+                    <span className="font-medium">{d.remainingDownloads}</span>
+                  </div>
+                  <div className="pt-0.5">
+                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                      <span>Used {d.downloadCount} / {d.downloadCount + d.remainingDownloads}</span>
+                      <span>{Math.round((d.downloadCount / Math.max(1, d.downloadCount + d.remainingDownloads)) * 100)}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${d.remainingDownloads < (d.downloadCount + d.remainingDownloads) / 4 ? "bg-amber-500" : "bg-[#0B2545]"}`}
+                        style={{ width: `${Math.min(100, (d.downloadCount / Math.max(1, d.downloadCount + d.remainingDownloads)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    {canDownload ? (
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleDownload(d._id)}
+                        disabled={downloadingId === d._id}
+                      >
+                        {downloadingId === d._id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="mr-2 h-4 w-4" />
+                        )}
+                        Download File
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" className="w-full" disabled>
+                        {d.status === "expired" ? "Expired" : d.remainingDownloads <= 0 ? "No downloads left" : "Unavailable"}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
                 </Card>
               );
             })}

@@ -17,8 +17,11 @@ import {
   Truck,
   Mail,
   RotateCcw,
+  Printer,
+  AlertTriangle,
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -87,7 +90,7 @@ function Timeline({ orderStatus, paymentStatus }: { orderStatus: string; payment
 
 export default function OrderDetailLoader() {
   const { id } = useParams<{ id: string }>();
-  const order = useQuery(api.orders.getById, id ? { id: id as any } : "skip");
+  const order = useQuery(api.orders.getById, { id: id as Id<"orders"> });
   const existingReturn = useQuery(
     api.returns.listMine,
   );
@@ -130,7 +133,7 @@ export default function OrderDetailLoader() {
     setSubmitting(true);
     try {
       await createReturn({
-        orderId: order._id as any,
+        orderId: order._id,
         items,
         notes: returnNotes || undefined,
       });
@@ -138,8 +141,8 @@ export default function OrderDetailLoader() {
       setShowReturnForm(false);
       setReturnReasons({});
       setReturnNotes("");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to submit return request.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit return request.");
     } finally {
       setSubmitting(false);
     }
@@ -192,8 +195,37 @@ export default function OrderDetailLoader() {
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge status={order.orderStatus} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+          >
+            <Printer className="h-4 w-4 mr-1" /> Print
+          </Button>
         </div>
       </div>
+
+      {withinWindow && refundPolicy && (
+        <Card className="mt-4 border-amber-200 bg-amber-50">
+          <CardContent className="flex flex-col gap-1 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Refund window open — you can request a return within{" "}
+              {refundPolicy.windowDays} days of purchase.
+            </p>
+            <p className="text-xs font-medium text-amber-700">
+              Closes {String(Math.max(0, Math.ceil((order._creationTime + refundPolicy.windowMs - now) / (24 * 60 * 60 * 1000))))} day(s) from now
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {order.orderStatus === "cancelled" && (
+        <Card className="mt-4 border-red-200 bg-red-50">
+          <CardContent className="p-4 text-sm text-red-700">
+            This order was cancelled. No further actions are available.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
