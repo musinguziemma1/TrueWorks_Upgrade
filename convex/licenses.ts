@@ -129,3 +129,25 @@ export const revoke = mutation({
     });
   },
 });
+
+/** Admin KPI counts across license keys. */
+export const stats = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, active: 0, revoked: 0, activations: 0, capacity: 0 };
+    }
+    const all = await ctx.db.query("licenses").collect();
+    let active = 0;
+    let revoked = 0;
+    let activations = 0;
+    let capacity = 0;
+    for (const l of all) {
+      if (l.status === "active") active++;
+      else revoked++;
+      activations += l.activations;
+      capacity += l.maxActivations;
+    }
+    return { total: all.length, active, revoked, activations, capacity };
+  },
+});
