@@ -9,7 +9,11 @@ import {
   Trash2,
   Eye,
   MessageSquare,
+  FileSpreadsheet,
 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import type { Doc } from "@convex/_generated/dataModel";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import {
   Card,
@@ -37,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { downloadCsv, toCsv } from "@/lib/csv";
 import { toast } from "sonner";
 import {
   useReviews,
@@ -47,16 +52,20 @@ import {
 } from "@/lib/admin-queries";
 import { Stars } from "@/components/product/stars";
 
+type ReviewDoc = Doc<"reviews">;
+
 export default function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [previewReview, setPreviewReview] = useState<any>(null);
+  const [previewReview, setPreviewReview] = useState<ReviewDoc | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const reviews = useReviews(
-    statusFilter !== "all" ? { status: statusFilter } : undefined
-  );
+  const reviews = useReviews({
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    search: search.trim() || undefined,
+  });
+  const reviewStats = useQuery(api.reviews.stats);
   const approve = approveReview.useMutation();
   const reject = rejectReview.useMutation();
   const toggleFeatured = toggleFeaturedReview.useMutation();
@@ -64,28 +73,11 @@ export default function ReviewsPage() {
 
   const isLoading = reviews === undefined;
 
-  const filtered = (reviews ?? []).filter((r) => {
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        r.customerName.toLowerCase().includes(q) ||
-        r.title?.toLowerCase().includes(q) ||
-        r.content.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = (reviews ?? []) as ReviewDoc[];
 
   const perPage = 10;
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
-
-  const stats = {
-    total: reviews?.length ?? 0,
-    pending: reviews?.filter((r) => r.status === "pending").length ?? 0,
-    approved: reviews?.filter((r) => r.status === "approved").length ?? 0,
-    rejected: reviews?.filter((r) => r.status === "rejected").length ?? 0,
-  };
 
   const handleApprove = async (id: string) => {
     try {
@@ -125,20 +117,43 @@ export default function ReviewsPage() {
     }
   };
 
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((r) => ({
+        customer: r.customerName,
+        rating: r.rating,
+        title: r.title ?? "",
+        content: r.content,
+        status: r.status,
+        featured: r.featured ? "yes" : "no",
+        verified: r.verified ? "yes" : "no",
+        date: new Date(r.createdAt).toISOString().slice(0, 10),
+      }))
+    );
+    downloadCsv(`reviews-${new Date().toISOString().slice(0, 10)}`, csv);
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Reviews"
         description="Manage customer reviews and ratings"
+        action={
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+            <FileSpreadsheet className="h-4 w-4" /> Export CSV
+          </Button>
+        }
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         {[
-          { label: "Total", value: stats.total, color: "text-foreground" },
-          { label: "Pending", value: stats.pending, color: "text-yellow-600" },
-          { label: "Approved", value: stats.approved, color: "text-green-600" },
-          { label: "Rejected", value: stats.rejected, color: "text-red-600" },
+          { label: "Total", value: reviewStats?.total ?? 0, color: "text-foreground" },
+          { label: "Pending", value: reviewStats?.pending ?? 0, color: "text-yellow-600" },
+          { label: "Approved", value: reviewStats?.approved ?? 0, color: "text-green-600" },
+          { label: "Rejected", value: reviewStats?.rejected ?? 0, color: "text-red-600" },
+          { label: "Featured", value: reviewStats?.featured ?? 0, color: "text-amber-500" },
+          { label: "Avg Rating", value: reviewStats?.avgRating ?? 0, color: "text-[#0B2545]" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">

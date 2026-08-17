@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { checkRateLimit } from "./rateLimit";
 import { auditLog } from "./lib/audit";
+import { sanitizeSearch } from "./lib/sanitize";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
@@ -24,6 +25,7 @@ export const list = query({
   args: {
     productId: v.optional(v.id("products")),
     status: v.optional(v.string()),
+    search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const isAdmin = await requireAdminSilent(ctx);
@@ -41,6 +43,15 @@ export const list = query({
     } else {
       reviews = await ctx.db.query("reviews").order("desc").take(100);
     }
+    if (args.search) {
+      const term = sanitizeSearch(args.search).toLowerCase();
+      reviews = reviews.filter(
+        (r) =>
+          r.customerName.toLowerCase().includes(term) ||
+          (r.title ?? "").toLowerCase().includes(term) ||
+          r.content.toLowerCase().includes(term)
+      );
+    }
     if (!isAdmin) {
       return reviews.filter((r) => r.status === "approved");
     }
@@ -56,6 +67,38 @@ export const listApproved = query({
       .withIndex("by_productId", (q) => q.eq("productId", args.productId))
       .collect()
       .then((reviews) => reviews.filter((r) => r.status === "approved"));
+  },
+});
+
+/** Admin KPI counts for the reviews page (page-independent). */
+export const stats = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, pending: 0, approved: 0, rejected: 0, featured: 0, avgRating: 0 };
+    }
+    const all = await ctx.db.query("reviews").collect();
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let featured = 0;
+    let ratingSum = 0;
+    for (const r of all) {
+      if (r.status === "pending") pending++;
+      else if (r.status === "approved") {
+        approved++;
+        ratingSum += r.rating;
+        if (r.featured) featured++;
+      } else rejected++;
+    }
+    return {
+      total: all.length,
+      pending,
+      approved,
+      rejected,
+      featured,
+      avgRating: approved > 0 ? Math.round((ratingSum / approved) * 10) / 10 : 0,
+    };
   },
 });
 

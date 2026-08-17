@@ -154,7 +154,7 @@ export const deleteCustomer = {
   useMutation: () => useMutation(api.customers.remove),
 };
 
-export function useReviews(args?: { productId?: Id<"products">; status?: string }) {
+export function useReviews(args?: { productId?: Id<"products">; status?: string; search?: string }) {
   return useQuery(api.reviews.list, args ?? {});
 }
 
