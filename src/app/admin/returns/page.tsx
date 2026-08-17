@@ -8,11 +8,13 @@ import {
   RotateCcw,
   Mail,
   AlertTriangle,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { downloadCsv, toCsv } from "@/lib/csv";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -127,12 +129,40 @@ export default function AdminReturnsPage() {
     }
   };
 
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      rows.map((r) => ({
+        order: r.orderNumber,
+        customer: r.customerName,
+        email: r.customerEmail,
+        items: r.items.map((i) => i.productName).join("; "),
+        amount: refundTotal(r),
+        status: r.status,
+        requested: fmtDate(r.createdAt),
+        deadline: fmtDate(r.refundDeadline),
+        expired: r.windowExpired ? "yes" : "no",
+      }))
+    );
+    downloadCsv(`refund-requests-${new Date().toISOString().slice(0, 10)}`, csv);
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Refund Requests"
         description="Review and approve or reject customer refund requests. Approving refunds money to the original payment method and revokes access to the order."
         breadcrumbs={[{ label: "Data" }, { label: "Refunds", href: "/admin/returns" }]}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={rows.length === 0}
+            className="gap-2 border-[#0B2545]/30 text-[#0B2545] hover:bg-[#0B2545]/5"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Export CSV
+          </Button>
+        }
       />
 
       {/* Stats */}
@@ -386,23 +416,40 @@ export default function AdminReturnsPage() {
                   </p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-muted">Requested</p>
-                  <p>{fmtDate(selected.createdAt)}</p>
+              <div>
+                <p className="text-sm text-muted mb-2">Timeline</p>
+                <div className="space-y-3">
+                  {(() => {
+                    const steps: { label: string; time: number }[] = [
+                      { label: "Order placed", time: selected.orderCreatedAt },
+                      { label: "Refund requested", time: selected.createdAt },
+                    ]
+                    if (selected.approvedAt) steps.push({ label: "Approved", time: selected.approvedAt })
+                    if (selected.refundedAt) steps.push({ label: "Refunded", time: selected.refundedAt })
+                    return steps.map((step, i) => (
+                      <div key={step.label} className="flex items-start gap-3">
+                        <div className="mt-1.5 flex flex-col items-center">
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${
+                              i === steps.length - 1
+                                ? selected?.status === "completed"
+                                  ? "bg-green-500"
+                                  : selected?.status === "rejected"
+                                    ? "bg-red-500"
+                                    : "bg-amber-500"
+                                : "bg-[#0B2545]/40"
+                            }`}
+                          />
+                          {i < steps.length - 1 && <span className="w-px flex-1 bg-border" />}
+                        </div>
+                        <div className="pb-1">
+                          <p className="text-sm font-medium">{step.label}</p>
+                          <p className="text-xs text-muted">{fmtDate(step.time)}</p>
+                        </div>
+                      </div>
+                    ))
+                  })()}
                 </div>
-                {selected.approvedAt && (
-                  <div>
-                    <p className="text-muted">Approved</p>
-                    <p>{fmtDate(selected.approvedAt)}</p>
-                  </div>
-                )}
-                {selected.refundedAt && (
-                  <div>
-                    <p className="text-muted">Refunded</p>
-                    <p>{fmtDate(selected.refundedAt)}</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
