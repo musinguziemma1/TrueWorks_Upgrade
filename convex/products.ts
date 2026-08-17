@@ -10,7 +10,7 @@ import {
 import { Doc, Id, type DataModel } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
-import { sanitizeSearch, sanitizeText, pickFromWhitelist } from "./lib/sanitize";
+import { sanitizeSearch, sanitizeText, pickFromWhitelist, slugify } from "./lib/sanitize";
 
 const PRODUCT_STATUS = ["draft", "published", "archived"] as const;
 const PRODUCT_SORT = [
@@ -125,19 +125,35 @@ export const getByIdInternal = internalQuery({
 export const getBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
-    const results = await ctx.db
+    // Normalize the incoming slug so URL variants (spaces, title case,
+    // hyphens) resolve the same product. Products are stored with a
+    // canonical lowercase-hyphenated slug, but some legacy records contain
+    // spaces/title-case — normalize both the query and the stored value.
+    const normalize = (s: string) =>
+      s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+    // Fast path: exact indexed lookup.
+    const exact = await ctx.db
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .collect();
-    const product = results[0] ?? null;
+    const normalized = normalize(args.slug);
+    let product: Doc<"products"> | null = exact[0] ?? null;
+    if (!product) {
+      // Fallback: scan with normalized comparison for legacy/malformed slugs.
+      const all = await ctx.db.query("products").withIndex("by_slug").collect();
+      const fallback = all.find((p) => normalize(p.slug) === normalized) ?? null;
+      product = fallback;
+    }
     if (!product) return null;
+    const found = product;
     // SECURITY: Non-admins can only see published products
-    if (product.status !== "published") {
+    if (found.status !== "published") {
       const isAdmin = await requireAdminSilent(ctx);
       if (!isAdmin) return null;
     }
     const isAdmin = await requireAdminSilent(ctx);
-    return isAdmin ? product : publicProduct(product);
+    return isAdmin ? found : publicProduct(found);
   },
 });
 
@@ -354,16 +370,18 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await requireEditor(ctx);
+    const slug = slugify(args.slug) || slugify(args.name);
     const existing = await ctx.db
       .query("products")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
       .collect();
     if (existing.length > 0) {
-      throw new Error(`Product with slug "${args.slug}" already exists`);
+      throw new Error(`Product with slug "${slug}" already exists`);
     }
     const now = Date.now();
     const id = await ctx.db.insert("products", {
       ...args,
+      slug,
       totalSales: 0,
       rating: 0,
       reviewCount: 0,
@@ -433,6 +451,8 @@ export const update = mutation({
     await requireEditor(ctx);
     const { id, ...updates } = args;
     const oldProduct = await ctx.db.get(id);
+    // Normalize slug so legacy spacey/title-case slugs are corrected on edit.
+    if (updates.slug !== undefined) updates.slug = slugify(updates.slug) || slugify(updates.name ?? "");
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
     if (updates.category && oldProduct && updates.category !== oldProduct.category) {
@@ -555,17 +575,19 @@ export const bulkImport = mutation({
 
     for (const p of args.products) {
       try {
+        const slug = slugify(p.slug) || slugify(p.name);
+        const normalized = { ...p, slug };
         const existing = await ctx.db
           .query("products")
-          .withIndex("by_slug", (q) => q.eq("slug", p.slug))
+          .withIndex("by_slug", (q) => q.eq("slug", slug))
           .collect();
 
         if (existing.length > 0) {
-          await ctx.db.patch(existing[0]._id, { ...p, updatedAt: now });
-          results.push({ slug: p.slug, success: true });
+          await ctx.db.patch(existing[0]._id, { ...normalized, updatedAt: now });
+          results.push({ slug, success: true });
         } else {
           await ctx.db.insert("products", {
-            ...p,
+            ...normalized,
             faqs: [],
             totalSales: 0,
             rating: 0,
@@ -573,7 +595,7 @@ export const bulkImport = mutation({
             createdAt: now,
             updatedAt: now,
           });
-          results.push({ slug: p.slug, success: true });
+          results.push({ slug, success: true });
         }
       } catch (e) {
         results.push({ slug: p.slug, success: false, error: String(e) });

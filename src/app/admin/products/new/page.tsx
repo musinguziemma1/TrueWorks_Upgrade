@@ -27,6 +27,14 @@ import {
 
 interface FaqItem { question: string; answer: string }
 
+function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function NewProductPage() {
   const router = useRouter()
   const [publishing, setPublishing] = useState(false)
@@ -84,6 +92,14 @@ export default function NewProductPage() {
     const next = [...faqs]
     next[i] = { ...next[i], [field]: value }
     setFaqs(next)
+  }
+
+  // Auto-generate a URL-safe slug from the name until the admin edits it manually.
+  const handleNameChange = (value: string) => {
+    setName(value)
+    if (!slug || slug === slugify(name)) {
+      setSlug(slugify(value))
+    }
   }
 
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,12 +244,18 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Product Name *</Label>
-                    <Input placeholder="Enter product name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <Input placeholder="Enter product name" value={name} onChange={(e) => handleNameChange(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Slug *</Label>
-                      <Input placeholder="product-slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                      <Input
+                        placeholder="product-slug"
+                        value={slug}
+                        onChange={(e) => setSlug(slugify(e.target.value))}
+                        onBlur={(e) => setSlug(slugify(e.target.value))}
+                      />
+                      <p className="text-xs text-muted-foreground">Auto-generated from the name. URL: /store/{slug || "…"}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>SKU *</Label>

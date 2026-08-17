@@ -331,7 +331,13 @@ export default function EditProductPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Slug *</Label>
-                      <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+                      <Input
+                        value={slug}
+                        onChange={(e) =>
+                          setSlug(e.target.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""))
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">URL: /store/{slug || "…"}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>SKU *</Label>

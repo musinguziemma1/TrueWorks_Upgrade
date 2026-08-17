@@ -51,3 +51,19 @@ export function pickFromWhitelist<T extends string>(
     ? (input as T)
     : fallback;
 }
+
+/**
+ * Normalizes free text into a URL-safe slug: lowercase, spaces/illegal chars
+ * become single hyphens, leading/trailing hyphens stripped. Returns "" when
+ * nothing usable remains. Used to sanitize user-supplied slugs so product URLs
+ * stay stable and case/space-insensitive.
+ */
+export function slugify(input: unknown): string {
+  if (typeof input !== "string") return "";
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 160);
+}
