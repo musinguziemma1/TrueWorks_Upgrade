@@ -1,7 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
-import { Search, ChevronDown, ChevronUp, CreditCard, Loader2 } from "lucide-react"
+import { Search, ChevronDown, ChevronUp, CreditCard, Loader2, FileSpreadsheet, DollarSign, CheckCircle2, Clock, RotateCcw } from "lucide-react"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -14,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { downloadCsv, toCsv } from "@/lib/csv"
 import { toast } from "sonner"
 import {
   useOrders,
@@ -37,6 +40,7 @@ export default function OrdersPage() {
   const [notes, setNotes] = useState("")
 
   const orders = useOrders({ paymentStatus: paymentFilter !== "All" ? paymentFilter : undefined })
+  const orderStats = useQuery(api.orders.stats)
   const updateStatus = updateOrderStatus.useMutation()
   const removeOrder = deleteOrder.useMutation()
 
@@ -96,13 +100,69 @@ export default function OrdersPage() {
     }
   }
 
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((o) => ({
+        order: o.orderNumber,
+        date: new Date(o.createdAt).toISOString().slice(0, 10),
+        customer: o.customerName,
+        email: o.customerEmail,
+        items: o.items.length,
+        total: o.total,
+        paymentMethod: o.paymentMethod,
+        paymentStatus: o.paymentStatus,
+        orderStatus: o.orderStatus,
+      }))
+    )
+    downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}`, csv)
+  }
+
+  const handleBulkComplete = async () => {
+    if (selected.size === 0) return
+    if (!confirm(`Mark ${selected.size} order(s) as completed?`)) return
+    try {
+      for (const id of selected) {
+        await updateStatus({ id: id as never, orderStatus: "completed" as never })
+      }
+      toast.success("Orders marked completed")
+      setSelected(new Set())
+    } catch (e) {
+      toast.error(String(e))
+    }
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Orders"
         description="Manage customer orders and track order status"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Orders" }]}
+        action={
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+            <FileSpreadsheet className="h-4 w-4" /> Export CSV
+          </Button>
+        }
       />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+        {[
+          { label: "Total", value: orderStats?.total ?? 0, icon: CreditCard, color: "text-foreground" },
+          { label: "Revenue", value: fmtPrice(orderStats?.totalRevenue ?? 0), icon: DollarSign, color: "text-[#0B2545]" },
+          { label: "Pending", value: orderStats?.pending ?? 0, icon: Clock, color: "text-amber-600" },
+          { label: "Completed", value: orderStats?.completed ?? 0, icon: CheckCircle2, color: "text-emerald-600" },
+          { label: "Refunded", value: orderStats?.refunded ?? 0, icon: RotateCcw, color: "text-orange-600" },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-muted">{s.label}</p>
+                <s.icon className={`h-4 w-4 ${s.color}`} />
+              </div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
@@ -122,6 +182,16 @@ export default function OrdersPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 p-3 bg-[#0B2545]/5 rounded-lg border border-[#0B2545]/10">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <Button variant="outline" size="sm" onClick={handleBulkComplete}>
+            <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Mark Completed
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
