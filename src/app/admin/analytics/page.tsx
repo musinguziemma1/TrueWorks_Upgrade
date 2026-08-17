@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -76,13 +77,14 @@ function getDateRangeFilter(range: string) {
   return { startDate, endDate: today, startTimestamp, endTimestamp: now.getTime() }
 }
 
-function MetricCard({ icon, label, value, sub, delta }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string; delta?: number
+function MetricCard({ icon, label, value, sub, delta, spark }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string; delta?: number; spark?: number[]
 }) {
   const deltaColor = delta === undefined ? "" : delta >= 0 ? "text-emerald-600" : "text-red-600"
   const deltaArrow = delta === undefined ? "" : delta >= 0 ? "▲" : "▼"
+  const max = spark && spark.length ? Math.max(...spark, 1) : 0
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
@@ -96,6 +98,18 @@ function MetricCard({ icon, label, value, sub, delta }: {
         <p className="text-xl font-bold text-[#0B2545]">{value}</p>
         {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
       </CardContent>
+      {spark && spark.length > 1 && (
+        <div className="flex h-8 items-end gap-[2px] px-4 pb-2">
+          {spark.map((v, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-sm bg-[#0B2545]/[0.18]"
+              style={{ height: `${Math.max(8, (v / max) * 100)}%` }}
+              title={String(v)}
+            />
+          ))}
+        </div>
+      )}
     </Card>
   )
 }
@@ -123,19 +137,37 @@ function getPreviousRange(range: string, current: ReturnType<typeof getDateRange
 
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("This Year")
+  const [customFrom, setCustomFrom] = useState("")
+  const [customTo, setCustomTo] = useState("")
+  const [compare, setCompare] = useState(true)
   const analyticsRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
 
-  const filter = useMemo(() => getDateRangeFilter(dateRange), [dateRange])
-  const prevFilter = useMemo(() => getPreviousRange(dateRange, filter), [dateRange, filter])
+  const rangeLabel = dateRange === "Custom" ? `${customFrom || "…"} → ${customTo || "…"}` : dateRange
+
+  const filter = useMemo(() => {
+    if (dateRange === "Custom" && customFrom && customTo) {
+      return {
+        startDate: customFrom,
+        endDate: customTo,
+        startTimestamp: new Date(`${customFrom}T00:00:00`).getTime(),
+        endTimestamp: new Date(`${customTo}T23:59:59.999`).getTime(),
+      }
+    }
+    return getDateRangeFilter(dateRange)
+  }, [dateRange, customFrom, customTo])
+  const prevFilter = useMemo(
+    () => (compare ? getPreviousRange(dateRange, filter) : null),
+    [compare, dateRange, filter]
+  )
 
   const summary = useQuery(api.analytics.summary, {
     startDate: filter.startDate || undefined,
     endDate: filter.endDate || undefined,
   })
   const prevSummary = useQuery(api.analytics.summary, {
-    startDate: prevFilter.startDate || undefined,
-    endDate: prevFilter.endDate || undefined,
+    startDate: prevFilter?.startDate || undefined,
+    endDate: prevFilter?.endDate || undefined,
   })
   const products = useQuery(api.products.list, { status: "published" })
   const orders = useQuery(api.orders.list, {
@@ -233,6 +265,16 @@ export default function AnalyticsPage() {
     }))
   }, [safeSummary.dailyData])
 
+  const spark = useMemo(() => {
+    return {
+      revenue: revenueData.map((d) => d.revenue),
+      orders: revenueData.map((d) => d.orders),
+      downloads: revenueData.map((d) => d.downloads),
+      visitors: revenueData.map((d) => d.visitors),
+      pageViews: revenueData.map((d) => d.pageViews),
+    }
+  }, [revenueData])
+
   const paymentChartData = useMemo(() => {
     return (paymentMethods ?? []).map((p: { name: string; value: number }, i: number) => ({
       name: p.name,
@@ -316,7 +358,7 @@ export default function AnalyticsPage() {
         )
       }
 
-      pdf.save(`TrueWorks-Analytics-${dateRange.replace(/\s+/g, "-")}.pdf`)
+      pdf.save(`TrueWorks-Analytics-${rangeLabel.replace(/\s+/g, "-")}.pdf`)
       toast.success("PDF exported successfully")
     } catch (err) {
       console.error("PDF export failed:", err)
@@ -324,7 +366,7 @@ export default function AnalyticsPage() {
     } finally {
       setExporting(false)
     }
-  }, [dateRange])
+  }, [dateRange, rangeLabel])
 
   if (loading) {
     return (
@@ -348,15 +390,43 @@ export default function AnalyticsPage() {
         description="Deep dive into your store performance, traffic, and customer behavior."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Analytics" }]}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={dateRange} onValueChange={(v) => v && setDateRange(v)}>
               <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["Today", "This Week", "This Month", "This Quarter", "This Year", "All Time"].map((r) => (
+                {["Today", "This Week", "This Month", "This Quarter", "This Year", "All Time", "Custom"].map((r) => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {dateRange === "Custom" && (
+              <>
+                <Input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-[150px] h-9"
+                  aria-label="From date"
+                />
+                <span className="text-xs text-muted-foreground">→</span>
+                <Input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-[150px] h-9"
+                  aria-label="To date"
+                />
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className={compare ? "border-[#0B2545] text-[#0B2545]" : ""}
+              onClick={() => setCompare((c) => !c)}
+            >
+              {compare ? <TrendingUp className="h-4 w-4 mr-1" /> : <ArrowUpRight className="h-4 w-4 mr-1" />}
+              Compare
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -376,11 +446,11 @@ export default function AnalyticsPage() {
 
       <div ref={analyticsRef} className="space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} delta={deltas.revenue} />
-          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={totalOrdersCount.toLocaleString()} delta={deltas.orders} />
-          <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} delta={deltas.downloads} />
-          <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} delta={deltas.visitors} />
-          <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} delta={deltas.pageViews} />
+          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} delta={deltas.revenue} spark={spark.revenue} />
+          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={totalOrdersCount.toLocaleString()} delta={deltas.orders} spark={spark.orders} />
+          <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} delta={deltas.downloads} spark={spark.downloads} />
+          <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} delta={deltas.visitors} spark={spark.visitors} />
+          <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} delta={deltas.pageViews} spark={spark.pageViews} />
           <MetricCard icon={<TrendingUp className="h-5 w-5" />} label="Conv. Rate" value={`${conversionRate}%`} sub={`${formatPrice(avgOrderValue)} avg order`} />
         </div>
 
