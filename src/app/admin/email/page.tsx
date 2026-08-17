@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FilterX, Plus, Search, Users } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { FilterX, Plus, Search, Users, Mail } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -18,9 +19,15 @@ import { SubscribersTable } from "./_components/subscribers-table"
 import { CampaignEditor, type CampaignFormData } from "./_components/campaign-editor"
 import { DeleteCampaignDialog, RemoveSubscriberDialog, SendCampaignDialog } from "./_components/confirm-dialogs"
 import { CampaignsExportButton, SubscribersExportButton } from "./_components/export-buttons"
+import { EmailTemplateManager } from "./_components/email-template-manager"
 import type { Campaign, Subscriber } from "./types"
 
 export default function EmailPage() {
+  const searchParams = useSearchParams()
+  const requestedTab = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState(
+    requestedTab === "templates" || requestedTab === "subscribers" ? requestedTab : "campaigns"
+  )
   const state = useEmailState()
   const { setCampaignTotal, setSubscriberTotal } = state
 
@@ -214,11 +221,14 @@ export default function EmailPage() {
 
       <EngagementChart stats={stats} loading={loadingStats} />
 
-      <Tabs defaultValue="campaigns">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
         <TabsList>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="subscribers">
             <Users className="h-4 w-4 mr-1.5" /> Subscribers
+          </TabsTrigger>
+          <TabsTrigger value="templates">
+            <Mail className="h-4 w-4 mr-1.5" /> Templates
           </TabsTrigger>
         </TabsList>
 
@@ -314,6 +324,10 @@ export default function EmailPage() {
             onPageSizeChange={state.setSubscriberPageSize}
             onRemove={setRemoveTarget}
           />
+        </TabsContent>
+
+        <TabsContent value="templates" className="mt-4">
+          <EmailTemplateManager />
         </TabsContent>
       </Tabs>
 

@@ -117,10 +117,10 @@ export function EmailTab({ form }: { form: SettingsForm }) {
       <Card>
         <CardHeader>
           <CardTitle>Email Templates</CardTitle>
-          <CardDescription>Edit the subject lines and HTML bodies of transactional emails.</CardDescription>
+          <CardDescription>Customize the subject lines and HTML bodies of transactional emails, with live preview and variable insertion.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/admin/email-templates">
+          <Link href="/admin/email?tab=templates">
             <Button variant="outline">
               <Mail className="h-4 w-4 mr-2" />
               Manage Templates

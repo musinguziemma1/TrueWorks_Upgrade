@@ -1,6 +1,5 @@
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { LiveChat } from "@/components/layout/live-chat";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,7 +7,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Header />
       <main id="main-content" className="flex-1">{children}</main>
       <Footer />
-      <LiveChat />
     </>
   );
 }
