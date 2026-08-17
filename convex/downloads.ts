@@ -193,3 +193,25 @@ export const listAll = query({
     return enriched;
   },
 });
+
+/** Admin KPI counts across download records. */
+export const stats = query({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, active: 0, expired: 0, disabled: 0, totalDownloads: 0 };
+    }
+    const all = await ctx.db.query("downloads").collect();
+    let active = 0;
+    let expired = 0;
+    let disabled = 0;
+    let totalDownloads = 0;
+    for (const d of all) {
+      if (d.status === "active") active++;
+      else if (d.status === "expired") expired++;
+      else if (d.status === "disabled") disabled++;
+      totalDownloads += d.downloadCount;
+    }
+    return { total: all.length, active, expired, disabled, totalDownloads };
+  },
+});
