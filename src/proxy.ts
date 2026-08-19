@@ -17,6 +17,7 @@ const publicRoutes = [
   "/sign-up",
   "/verify-email",
   "/reset-password",
+  "/api/auth",
   "/pesapal-callback",
   "/api/checkout",
   "/api/pesapal",

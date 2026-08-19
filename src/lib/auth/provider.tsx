@@ -54,22 +54,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh();
+    const timer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string, rememberMe = false) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, rememberMe }),
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      await refresh();
-      return { ok: true };
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, rememberMe }),
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        await refresh();
+        return { ok: true };
+      }
+      return {
+        ok: false,
+        error: typeof data.error === "string" ? data.error : "Unable to sign in. Please try again.",
+        requiresVerification: data.requiresVerification,
+        mfaRequired: data.mfaRequired,
+      };
+    } catch {
+      return { ok: false, error: "Unable to reach the authentication service. Please try again." };
     }
-    return { ok: false, error: data.error, requiresVerification: data.requiresVerification, mfaRequired: data.mfaRequired };
   }, [refresh]);
 
   const register = useCallback(async (email: string, password: string, name: string) => {

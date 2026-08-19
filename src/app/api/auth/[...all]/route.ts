@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(/\/$/, "") || "";
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "") || "";
 
 function getIamBase(): string {
   if (!CONVEX_SITE_URL) throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
@@ -106,11 +106,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/login") {
     const res = await fetch(`${getIamBase()}/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-        ...(req.headers.get("origin") ? { origin: req.headers.get("origin")! } : {}),
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     return proxyIamResponse(res);
