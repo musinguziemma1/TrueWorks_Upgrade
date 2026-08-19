@@ -11,6 +11,7 @@ function assert(condition: boolean, message: string): void {
 }
 
 assert(proxy.includes("function proxyIamResponse"), "Auth proxy response helper is missing");
+assert(proxy.includes("const rawBody = await res.text()"), "Auth proxy does not preserve plain-text errors");
 assert(proxy.includes("NEXT_PUBLIC_CONVEX_SITE_URL"), "Auth proxy is not using the Convex site URL");
 assert(proxy.includes('response.headers.set("set-cookie", setCookie)'), "Auth proxy does not preserve Set-Cookie");
 assert(proxy.includes("headers.origin = origin"), "Auth proxy does not forward Origin");

@@ -25,7 +25,13 @@ async function proxyIamResponse(res: Response): Promise<NextResponse> {
     return response;
   }
 
-  const data = await res.json().catch(() => ({ error: "Invalid authentication response" }));
+  const rawBody = await res.text();
+  let data: unknown;
+  try {
+    data = rawBody ? JSON.parse(rawBody) : { error: "Empty authentication response" };
+  } catch {
+    data = { error: rawBody || `Authentication request failed (${res.status})` };
+  }
   const response = NextResponse.json(data, { status: res.status });
   if (setCookie) response.headers.set("set-cookie", setCookie);
   return response;
@@ -92,7 +98,7 @@ export async function GET(req: NextRequest) {
       if (setCookie) response.headers.set("set-cookie", setCookie);
       return response;
     }
-    return NextResponse.json(await res.json().catch(() => ({ ok: false })), { status: res.status });
+    return proxyIamResponse(res);
   }
 
   return NextResponse.json({ error: "Not found" }, { status: 404 });
