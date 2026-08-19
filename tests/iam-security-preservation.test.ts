@@ -5,6 +5,8 @@ const root = process.cwd();
 const proxy = readFileSync(join(root, "src", "app", "api", "auth", "[...all]", "route.ts"), "utf8");
 const http = readFileSync(join(root, "convex", "http.ts"), "utf8");
 const nextProxy = readFileSync(join(root, "src", "proxy.ts"), "utf8");
+const accountLayout = readFileSync(join(root, "src", "app", "(site)", "account", "layout.tsx"), "utf8");
+const adminLayout = readFileSync(join(root, "src", "app", "admin", "layout.tsx"), "utf8");
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -20,5 +22,8 @@ assert(http.includes('return json({ error: "Invalid request origin." }, 403)'), 
 assert(http.includes('path: "/iam/change-password"'), "Change-password route is missing");
 assert(http.includes("withIamOriginProtection(changePasswordHandler)"), "Change-password route is not Origin protected");
 assert(nextProxy.includes('"/api/auth"'), "Global proxy is still intercepting authentication API requests");
+assert(nextProxy.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && nextProxy.includes("/iam/me"), "Global proxy uses the wrong IAM validation endpoint");
+assert(accountLayout.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && accountLayout.includes("/iam/me"), "Account layout uses the wrong IAM validation endpoint");
+assert(adminLayout.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && adminLayout.includes("/iam/me"), "Admin layout uses the wrong IAM validation endpoint");
 
 console.log("IAM security preservation checks passed.");

@@ -52,10 +52,10 @@ export default async function proxy(req: NextRequest) {
   }
 
   try {
-    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(/\/$/, "");
-    if (!convexUrl) return NextResponse.next();
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+    if (!convexSiteUrl) return NextResponse.next();
 
-    const res = await fetch(`${convexUrl}/api/auth/me`, {
+    const res = await fetch(`${convexSiteUrl}/iam/me`, {
       method: "GET",
       headers: { cookie: req.headers.get("cookie") ?? "" },
       cache: "no-store",

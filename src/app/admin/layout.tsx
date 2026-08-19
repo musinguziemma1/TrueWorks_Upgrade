@@ -8,8 +8,8 @@ import { AuthGate } from "@/components/auth/auth-gate";
 const ALLOWED_ROLES = ["superadmin", "admin", "owner", "editor"];
 
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(/\/$/, "");
-  if (!convexUrl) redirect("/");
+  const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  if (!convexSiteUrl) redirect("/");
 
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("tw_session")?.value;
@@ -21,7 +21,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
 
   let role = "";
   try {
-    const res = await fetch(`${convexUrl}/api/auth/me`, {
+    const res = await fetch(`${convexSiteUrl}/iam/me`, {
       method: "GET",
       headers: { cookie: `tw_session=${sessionCookie}` },
       cache: "no-store",

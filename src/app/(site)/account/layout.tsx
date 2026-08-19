@@ -12,15 +12,15 @@ const tabs = [
 ];
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(/\/$/, "");
+  const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("tw_session")?.value;
 
-  if (!convexUrl || !sessionCookie) redirect("/sign-in");
+  if (!convexSiteUrl || !sessionCookie) redirect("/sign-in");
 
   let ok = false;
   try {
-    const res = await fetch(`${convexUrl}/api/auth/me`, {
+    const res = await fetch(`${convexSiteUrl}/iam/me`, {
       method: "GET",
       headers: { cookie: `tw_session=${sessionCookie}` },
       cache: "no-store",
