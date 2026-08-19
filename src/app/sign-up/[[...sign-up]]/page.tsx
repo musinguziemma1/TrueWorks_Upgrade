@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { GoogleIcon } from "@/components/brand/google-icon";
 import { AuthLayout } from "@/components/auth/auth-layout";
 
 export default function SignUpPage() {
@@ -39,6 +40,21 @@ export default function SignUpPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-primary-dark">Create account</h1>
           <p className="mt-2 text-sm text-muted-foreground">Join TrueWorks and get started.</p>
+        </div>
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => (window.location.href = "/api/auth/google?redirect=/account")}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-white text-sm font-medium text-foreground transition-colors hover:bg-surface"
+          >
+            <GoogleIcon className="h-5 w-5" />
+            Continue with Google
+          </button>
+          <div className="my-4 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

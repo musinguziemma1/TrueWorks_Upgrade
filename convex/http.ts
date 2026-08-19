@@ -33,6 +33,8 @@ import {
   meHandler,
   securityEventsHandler,
   tokenHandler,
+  googleOauthStartHandler,
+  googleOauthCallbackHandler,
 } from "./iam";
 import { generateJwks } from "./lib/tokens";
 
@@ -300,6 +302,18 @@ http.route({
   path: "/iam/token",
   method: "POST",
   handler: httpAction(withAuditTiming(tokenHandler)),
+});
+
+http.route({
+  path: "/iam/oauth/google",
+  method: "GET",
+  handler: httpAction(withAuditTiming(googleOauthStartHandler)),
+});
+
+http.route({
+  path: "/iam/oauth/google/callback",
+  method: "GET",
+  handler: httpAction(withAuditTiming(googleOauthCallbackHandler)),
 });
 
 http.route({

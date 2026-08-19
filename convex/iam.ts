@@ -1,6 +1,5 @@
 "use node";
 
-import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import {
@@ -901,6 +900,187 @@ export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): 
   });
 
   return json({ ok: true, recoveryCodes: codes });
+}
+
+// ======================== GOOGLE OAUTH ========================
+// "Continue with Google" for sign-up/sign-in. Flow:
+//   GET  /iam/oauth/google          → 302 to Google authorize URL
+//   GET  /iam/oauth/google/callback →  exchange code, find/create user,
+//                                     create a session, set tw_session cookie,
+//                                     redirect to /account or ?redirect=
+
+const GOOGLE_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const GOOGLE_USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v2/userinfo";
+
+function getGoogleClient(): { id: string; secret: string } | null {
+  const id = process.env.GOOGLE_CLIENT_ID ?? "";
+  const secret = process.env.GOOGLE_CLIENT_SECRET ?? "";
+  if (!id || !secret) return null;
+  return { id, secret };
+}
+
+function getSiteOrigin(request: Request): string {
+  // Trust the forwarded origin for proxied deployments; fall back to a
+  // configured site URL. Never build redirect URLs from open-ended input.
+  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://trueworksgroup.com";
+}
+
+export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promise<Response> {
+  const client = getGoogleClient();
+  if (!client) return serverError("Google OAuth is not configured");
+
+  const url = new URL(request.url);
+  const redirectParam = url.searchParams.get("redirect") ?? "/account";
+  // Only allow internal redirect targets to avoid open redirects.
+  const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "/account";
+
+  const callbackUrl = `${getSiteOrigin(request)}/api/auth/google/callback`;
+  const state = Buffer.from(JSON.stringify({ redirect: safeRedirect })).toString("base64url");
+
+  const authUrl = new URL(GOOGLE_AUTH_ENDPOINT);
+  authUrl.searchParams.set("client_id", client.id);
+  authUrl.searchParams.set("redirect_uri", callbackUrl);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", "openid email profile");
+  authUrl.searchParams.set("access_type", "online");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("prompt", "select_account");
+
+  return new Response(null, { status: 302, headers: { Location: authUrl.toString() } });
+}
+
+export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Promise<Response> {
+  const client = getGoogleClient();
+  if (!client) return new Response("Google OAuth is not configured", { status: 500 });
+
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const error = url.searchParams.get("error");
+
+  if (error || !code || !state) {
+    return new Response("OAuth failed or cancelled", { status: 400 });
+  }
+
+  let safeRedirect = "/account";
+  try {
+    const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
+    if (decoded?.redirect && typeof decoded.redirect === "string" && decoded.redirect.startsWith("/") && !decoded.redirect.startsWith("//")) {
+      safeRedirect = decoded.redirect;
+    }
+  } catch {
+    // ignore malformed state
+  }
+
+  const ip = getClientIp(request);
+  const ua = request.headers.get("user-agent") ?? "";
+
+  try {
+    // Exchange authorization code for tokens.
+    const tokenRes = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: client.id,
+        client_secret: client.secret,
+        redirect_uri: `${getSiteOrigin(request)}/api/auth/google/callback`,
+        grant_type: "authorization_code",
+      }).toString(),
+    });
+    if (!tokenRes.ok) {
+      await ctx.db.insert("loginAttempts", { email: "", success: false, ipAddress: anonymizeIp(ip), userAgent: ua, createdAt: Date.now() });
+      return new Response("Token exchange failed", { status: 401 });
+    }
+    const token = await tokenRes.json();
+    if (typeof token.access_token !== "string") {
+      return new Response("Missing access token", { status: 401 });
+    }
+
+    // Fetch the user's Google profile with the access token.
+    const userRes = await fetch(GOOGLE_USERINFO_ENDPOINT, {
+      headers: { Authorization: `Bearer ${token.access_token}` },
+    });
+    if (!userRes.ok) return new Response("Failed to load Google profile", { status: 401 });
+    const profile = await userRes.json();
+
+    const email = normalizeEmail(typeof profile.email === "string" ? profile.email : "");
+    if (!isValidEmail(email)) return new Response("Google account has no email", { status: 400 });
+    const name =
+      [profile.given_name, profile.family_name].filter((v) => typeof v === "string" && v).join(" ") ||
+      profile.name ||
+      email.split("@")[0];
+    const avatar = typeof profile.picture === "string" ? profile.picture : undefined;
+
+    const now = Date.now();
+    const rawToken = randomToken(32);
+
+    // Find existing user by normalized email, else create one. Google emails
+    // are pre-verified, so emailVerified is set true.
+    let existing = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", email))
+      .first();
+
+    let userId: any;
+    if (existing) {
+      userId = existing._id;
+      await ctx.db.patch(existing._id, {
+        emailVerified: true,
+        name: existing.name ?? name,
+        avatar: existing.avatar ?? avatar,
+        lastLoginAt: now,
+        loginCount: (existing.loginCount ?? 0) + 1,
+        updatedAt: now,
+      });
+    } else {
+      const clerkId = `tw_${randomToken(16)}`;
+      userId = await ctx.db.insert("users", {
+        clerkId,
+        tokenIdentifier: `${process.env.CONVEX_AUTH_ISSUER ?? "https://trueworksgroup.com"}|${clerkId}`,
+        email,
+        normalizedEmail: email,
+        emailVerified: true,
+        name,
+        avatar,
+        role: "viewer",
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+        securityVersion: 0,
+        loginCount: 1,
+      });
+      if (existing) {
+        await ctx.scheduler.runAfter(0, internal.email.sendIamWelcomeEmail, {
+          to: email,
+          name,
+        });
+      }
+    }
+
+    await createSession(ctx, { userId: String(userId), rawToken, rememberMe: false, ipAddress: anonymizeIp(ip), userAgent: ua });
+
+    await recordSecurityEvent(ctx, {
+      userId: String(userId),
+      action: "login",
+      result: "success",
+      ipAddress: anonymizeIp(ip),
+      userAgent: ua,
+    });
+
+    const redirectUrl = new URL(safeRedirect, getSiteOrigin(request));
+    return setCookieHeader(
+      new Response(null, {
+        status: 302,
+        headers: { Location: redirectUrl.toString() },
+      }),
+      rawToken,
+      SESSION_ABSOLUTE_MS / 1000
+    );
+  } catch {
+    return new Response("OAuth sign-in failed", { status: 500 });
+  }
 }
 
 // ======================== ME / CURRENT USER ========================

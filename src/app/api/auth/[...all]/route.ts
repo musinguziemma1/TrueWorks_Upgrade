@@ -43,6 +43,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(await res.json(), { status: res.status });
   }
 
+  if (pathname === "/google") {
+    const redirect = url.searchParams.get("redirect") ?? "/account";
+    const res = await fetch(`${getIamBase()}/oauth/google?redirect=${encodeURIComponent(redirect)}`, {
+      method: "GET",
+    });
+    const location = res.headers.get("location");
+    if (location) {
+      return NextResponse.redirect(location, { status: 302 });
+    }
+    return NextResponse.json(await res.json().catch(() => ({ ok: false })), { status: res.status });
+  }
+
+  if (pathname === "/google/callback") {
+    const res = await fetch(`${getIamBase()}/oauth/google/callback?${url.searchParams.toString()}`, {
+      method: "GET",
+    });
+    const location = res.headers.get("location");
+    if (location) {
+      const response = NextResponse.redirect(location, { status: 302 });
+      const setCookie = res.headers.get("set-cookie");
+      if (setCookie) response.headers.set("set-cookie", setCookie);
+      return response;
+    }
+    return NextResponse.json(await res.json().catch(() => ({ ok: false })), { status: res.status });
+  }
+
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
