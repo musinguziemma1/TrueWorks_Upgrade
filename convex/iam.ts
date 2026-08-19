@@ -929,6 +929,10 @@ function decodeOauthState(value: string): string {
   return new TextDecoder().decode(Uint8Array.from(atob(padded), (character) => character.charCodeAt(0)));
 }
 
+function invalidOauthResponse(message: string, status: 400 | 401 | 500): Response {
+  return json({ error: message }, status);
+}
+
 export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promise<Response> {
   const client = getGoogleClient();
   if (!client) return serverError("Google OAuth is not configured");
@@ -955,29 +959,34 @@ export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promi
 
 export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Promise<Response> {
   const client = getGoogleClient();
-  if (!client) return new Response("Google OAuth is not configured", { status: 500 });
+  if (!client) return invalidOauthResponse("Google OAuth is not configured", 500);
 
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  if (error || !code || !state) {
-    return new Response("OAuth failed or cancelled", { status: 400 });
+  if (error) {
+    return invalidOauthResponse("Google sign-in was cancelled or denied.", 400);
+  }
+  if (!code || !state) {
+    return invalidOauthResponse("Google sign-in response was incomplete.", 400);
   }
 
-  let safeRedirect = "/account";
+  let safeRedirect: string;
   try {
     const decoded = JSON.parse(decodeOauthState(state));
-    if (decoded?.redirect && typeof decoded.redirect === "string" && decoded.redirect.startsWith("/") && !decoded.redirect.startsWith("//")) {
-      safeRedirect = decoded.redirect;
+    if (!decoded?.redirect || typeof decoded.redirect !== "string" || !decoded.redirect.startsWith("/") || decoded.redirect.startsWith("//")) {
+      throw new Error("invalid redirect state");
     }
+    safeRedirect = decoded.redirect;
   } catch {
-    // ignore malformed state
+    return invalidOauthResponse("Google sign-in session expired. Please try again.", 400);
   }
 
   const ip = getClientIp(request);
   const ua = request.headers.get("user-agent") ?? "";
+  let phase = "token_exchange";
 
   try {
     // Exchange authorization code for tokens.
@@ -994,25 +1003,33 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
     });
     if (!tokenRes.ok) {
       await ctx.db.insert("loginAttempts", { email: "", success: false, ipAddress: anonymizeIp(ip), userAgent: ua, createdAt: Date.now() });
-      return new Response("Token exchange failed", { status: 401 });
+      console.error(`Google OAuth ${phase} failed with status ${tokenRes.status}`);
+      return invalidOauthResponse("Google sign-in could not be completed. Please try again.", 401);
     }
     const token = await tokenRes.json();
     if (typeof token.access_token !== "string") {
-      return new Response("Missing access token", { status: 401 });
+      console.error("Google OAuth token response did not contain an access token");
+      return invalidOauthResponse("Google sign-in could not be completed. Please try again.", 401);
     }
 
     // Fetch the user's Google profile with the access token.
+    phase = "profile_fetch";
     const userRes = await fetch(GOOGLE_USERINFO_ENDPOINT, {
       headers: { Authorization: `Bearer ${token.access_token}` },
     });
-    if (!userRes.ok) return new Response("Failed to load Google profile", { status: 401 });
+    if (!userRes.ok) {
+      console.error(`Google OAuth ${phase} failed with status ${userRes.status}`);
+      return invalidOauthResponse("Google profile could not be loaded. Please try again.", 401);
+    }
     const profile = await userRes.json();
 
     const email = normalizeEmail(typeof profile.email === "string" ? profile.email : "");
-    if (!isValidEmail(email)) return new Response("Google account has no email", { status: 400 });
+    if (!isValidEmail(email) || profile.email_verified === false) {
+      return invalidOauthResponse("This Google account does not have a verified email address.", 400);
+    }
     const name =
       [profile.given_name, profile.family_name].filter((v) => typeof v === "string" && v).join(" ") ||
-      profile.name ||
+      (typeof profile.name === "string" ? profile.name : "") ||
       email.split("@")[0];
     const avatar = typeof profile.picture === "string" ? profile.picture : undefined;
 
@@ -1021,6 +1038,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
 
     // Find existing user by normalized email, else create one. Google emails
     // are pre-verified, so emailVerified is set true.
+    phase = "user_lookup";
     const existing = await ctx.db
       .query("users")
       .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", email))
@@ -1038,6 +1056,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
         updatedAt: now,
       });
     } else {
+      phase = "user_create";
       const clerkId = `tw_${randomToken(16)}`;
       userId = await ctx.db.insert("users", {
         clerkId,
@@ -1054,16 +1073,13 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
         securityVersion: 0,
         loginCount: 1,
       });
-      if (existing) {
-        await ctx.scheduler.runAfter(0, internal.email.sendIamWelcomeEmail, {
-          to: email,
-          name,
-        });
-      }
+      await ctx.scheduler.runAfter(0, internal.email.sendIamWelcomeEmail, { to: email, name });
     }
 
+    phase = "session_create";
     await createSession(ctx, { userId: String(userId), rawToken, rememberMe: false, ipAddress: anonymizeIp(ip), userAgent: ua });
 
+    phase = "security_event";
     await recordSecurityEvent(ctx, {
       userId: String(userId),
       action: "login",
@@ -1081,8 +1097,9 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
       rawToken,
       SESSION_ABSOLUTE_MS / 1000
     );
-  } catch {
-    return new Response("OAuth sign-in failed", { status: 500 });
+  } catch (error) {
+    console.error(`Google OAuth ${phase} exception`, error instanceof Error ? error.message : String(error));
+    return invalidOauthResponse("Google sign-in failed. Please try again.", 500);
   }
 }
 
