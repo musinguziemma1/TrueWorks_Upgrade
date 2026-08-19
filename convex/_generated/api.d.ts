@@ -33,6 +33,7 @@ import type * as fulfillment from "../fulfillment.js";
 import type * as gdpr from "../gdpr.js";
 import type * as http from "../http.js";
 import type * as iam from "../iam.js";
+import type * as iamMutations from "../iamMutations.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_mfa from "../lib/mfa.js";
@@ -99,6 +100,7 @@ declare const fullApi: ApiFromModules<{
   gdpr: typeof gdpr;
   http: typeof http;
   iam: typeof iam;
+  iamMutations: typeof iamMutations;
   invitations: typeof invitations;
   "lib/audit": typeof lib_audit;
   "lib/mfa": typeof lib_mfa;

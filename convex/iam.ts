@@ -1033,57 +1033,13 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
       email.split("@")[0];
     const avatar = typeof profile.picture === "string" ? profile.picture : undefined;
 
-    const now = Date.now();
     const rawToken = randomToken(32);
-
-    // Find existing user by normalized email, else create one. Google emails
-    // are pre-verified, so emailVerified is set true.
-    phase = "user_lookup";
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", email))
-      .first();
-
-    let userId: string;
-    if (existing) {
-      userId = existing._id;
-      await ctx.db.patch(existing._id, {
-        emailVerified: true,
-        name: existing.name ?? name,
-        avatar: existing.avatar ?? avatar,
-        lastLoginAt: now,
-        loginCount: (existing.loginCount ?? 0) + 1,
-        updatedAt: now,
-      });
-    } else {
-      phase = "user_create";
-      const clerkId = `tw_${randomToken(16)}`;
-      userId = await ctx.db.insert("users", {
-        clerkId,
-        tokenIdentifier: `${process.env.CONVEX_AUTH_ISSUER ?? "https://trueworksgroup.com"}|${clerkId}`,
-        email,
-        normalizedEmail: email,
-        emailVerified: true,
-        name,
-        avatar,
-        role: "viewer",
-        status: "active",
-        createdAt: now,
-        updatedAt: now,
-        securityVersion: 0,
-        loginCount: 1,
-      });
-      await ctx.scheduler.runAfter(0, internal.email.sendIamWelcomeEmail, { to: email, name });
-    }
-
-    phase = "session_create";
-    await createSession(ctx, { userId: String(userId), rawToken, rememberMe: false, ipAddress: anonymizeIp(ip), userAgent: ua });
-
-    phase = "security_event";
-    await recordSecurityEvent(ctx, {
-      userId: String(userId),
-      action: "login",
-      result: "success",
+    phase = "finalize_login";
+    await ctx.runMutation(internal.iamMutations.finalizeGoogleLogin, {
+      email,
+      name,
+      avatar,
+      rawToken,
       ipAddress: anonymizeIp(ip),
       userAgent: ua,
     });
