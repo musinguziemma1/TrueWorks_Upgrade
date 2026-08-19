@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
     const redirect = url.searchParams.get("redirect") ?? "/account";
     const res = await fetch(`${getIamBase()}/oauth/google?redirect=${encodeURIComponent(redirect)}`, {
       method: "GET",
+      redirect: "manual",
     });
     const location = res.headers.get("location");
     if (location) {
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
   if (pathname === "/google/callback") {
     const res = await fetch(`${getIamBase()}/oauth/google/callback?${url.searchParams.toString()}`, {
       method: "GET",
+      redirect: "manual",
     });
     const location = res.headers.get("location");
     if (location) {
