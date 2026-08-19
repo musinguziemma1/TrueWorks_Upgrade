@@ -6,6 +6,7 @@ import {
   normalizeEmail,
   isValidEmail,
   randomToken,
+  toBase64Url,
   sha256Hex,
   checkPasswordStrength,
   parseUserAgent,
@@ -918,6 +919,16 @@ function getSiteOrigin(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://trueworksgroup.com";
 }
 
+function encodeOauthState(value: string): string {
+  return toBase64Url(new TextEncoder().encode(value));
+}
+
+function decodeOauthState(value: string): string {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  return new TextDecoder().decode(Uint8Array.from(atob(padded), (character) => character.charCodeAt(0)));
+}
+
 export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promise<Response> {
   const client = getGoogleClient();
   if (!client) return serverError("Google OAuth is not configured");
@@ -928,7 +939,7 @@ export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promi
   const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "/account";
 
   const callbackUrl = `${getSiteOrigin()}/api/auth/google/callback`;
-  const state = Buffer.from(JSON.stringify({ redirect: safeRedirect })).toString("base64url");
+  const state = encodeOauthState(JSON.stringify({ redirect: safeRedirect }));
 
   const authUrl = new URL(GOOGLE_AUTH_ENDPOINT);
   authUrl.searchParams.set("client_id", client.id);
@@ -957,7 +968,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
 
   let safeRedirect = "/account";
   try {
-    const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
+    const decoded = JSON.parse(decodeOauthState(state));
     if (decoded?.redirect && typeof decoded.redirect === "string" && decoded.redirect.startsWith("/") && !decoded.redirect.startsWith("//")) {
       safeRedirect = decoded.redirect;
     }
