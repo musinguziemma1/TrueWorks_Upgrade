@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { auditLog } from "./lib/audit";
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -114,12 +114,6 @@ export const resend = mutation({
 
     const now = Date.now();
     const EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
-
-    // Create new Clerk invitation
-    await ctx.scheduler.runAfter(0, internal.clerk.inviteClerkUser, {
-      email: invitation.email,
-      role: invitation.role,
-    });
 
     // Update invitation record
     await ctx.db.patch(args.invitationId, {

@@ -738,7 +738,7 @@ export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Respo
     updatedAt: Date.now(),
   });
 
-  const otpauth = `otpauth://totup/TrueWorks:${session.user.email}?secret=${secret}&issuer=TrueWorks&period=30&digits=6`;
+  const otpauth = `otpauth://totp/TrueWorks:${session.user.email}?secret=${secret}&issuer=TrueWorks&period=30&digits=6`;
   return json({ secret, otpauth });
 }
 

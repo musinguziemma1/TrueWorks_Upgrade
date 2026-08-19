@@ -104,11 +104,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href={process.env.NEXT_PUBLIC_CONVEX_URL ?? "https://disciplined-clownfish-256.convex.cloud"}
           crossOrigin="anonymous"
         />
-        <link
-          rel="preconnect"
-          href={process.env.CLERK_JWT_ISSUER_DOMAIN ?? "https://clerk.trueworksgroup.com"}
-          crossOrigin="anonymous"
-        />
       </head>
       <body className="font-body min-h-full flex flex-col antialiased">
         <SkipNav />

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth/provider";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useWishlist } from "@/components/layout/wishlist-context";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, ShoppingCart, Download, Heart, RotateCcw } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Download, Heart, RotateCcw, ShieldCheck } from "lucide-react";
 
 interface Tab {
   href: string;
@@ -33,6 +33,7 @@ const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/account/downloads": Download,
   "/account/wishlist": Heart,
   "/account/returns": RotateCcw,
+  "/account/security": ShieldCheck,
 };
 
 export default function AccountLayoutClient({
@@ -54,7 +55,7 @@ export default function AccountLayoutClient({
         <h1 className="font-display text-3xl text-primary">My Account</h1>
         {isLoaded && user && (
           <p className="mt-1 text-sm text-muted-foreground">
-            Welcome back, {user.firstName ?? user.username ?? "there"}.
+            Welcome back, {user.name ?? "there"}.
           </p>
         )}
       </div>

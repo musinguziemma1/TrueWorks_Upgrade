@@ -1,7 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { auditLog } from "./lib/audit";
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -231,86 +231,6 @@ export const isAdmin = query({
   },
 });
 
-export const getByClerkId = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    if (!(await requireAdminSilent(ctx))) return null;
-    const results = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .collect();
-    return results[0] ?? null;
-  },
-});
-
-export const upsertFromClerk = internalMutation({
-  args: {
-    clerkId: v.string(),
-    tokenIdentifier: v.string(),
-    email: v.string(),
-    name: v.optional(v.string()),
-    avatar: v.optional(v.string()),
-    publicRole: v.optional(v.union(v.literal("superadmin"), v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer"))),
-  },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .collect();
-
-    const now = Date.now();
-    const adminEmail = isAdminEmail(args.email);
-    const isSuperAdmin = isSuperAdminEmail(args.email);
-    const adminRole = isSuperAdmin ? "superadmin" : "admin";
-
-    // Check for pending invitation to determine role
-    let invitationRole: string | undefined;
-    if (!adminEmail) {
-      const pendingInvitations = await ctx.db
-        .query("invitations")
-        .withIndex("by_email", (q) => q.eq("email", args.email))
-        .collect();
-      const pending = pendingInvitations.find(
-        (inv) => inv.status === "pending" && inv.expiresAt > now
-      );
-      if (pending) {
-        invitationRole = pending.role;
-        // Mark invitation as accepted
-        await ctx.db.patch(pending._id, { status: "accepted" });
-      }
-    }
-
-    if (existing.length > 0) {
-      await ctx.db.patch(existing[0]._id, {
-        tokenIdentifier: args.tokenIdentifier,
-        email: args.email,
-        name: args.name,
-        avatar: args.avatar,
-        role: adminEmail ? adminRole : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? existing[0].role,
-        status: existing[0].status ?? "active",
-        lastLoginAt: now,
-        loginCount: (existing[0].loginCount ?? 0) + 1,
-        updatedAt: now,
-      });
-      return existing[0]._id;
-    }
-
-    return await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      tokenIdentifier: args.tokenIdentifier,
-      email: args.email,
-      name: args.name,
-      avatar: args.avatar,
-      role: adminEmail ? adminRole : (invitationRole as typeof args.publicRole) ?? args.publicRole ?? "viewer",
-      status: "active",
-      lastLoginAt: now,
-      loginCount: 1,
-      createdAt: now,
-      updatedAt: now,
-    });
-  },
-});
-
 export const setRole = mutation({
   args: {
     userId: v.id("users"),
@@ -351,13 +271,6 @@ export const setRole = mutation({
 
     await ctx.db.patch(args.userId, { role: args.role, updatedAt: Date.now() });
 
-    if (target.clerkId) {
-      await ctx.scheduler.runAfter(0, internal.clerk.syncRoleToClerk, {
-        clerkId: target.clerkId,
-        role: args.role,
-      });
-    }
-
     await auditLog(ctx, {
       action: "user.role_change",
       entityType: "user",
@@ -392,12 +305,6 @@ export const suspendUser = mutation({
 
     await ctx.db.patch(args.userId, { status: "suspended", updatedAt: Date.now() });
 
-    if (target.clerkId) {
-      await ctx.scheduler.runAfter(0, internal.clerk.suspendClerkUser, {
-        clerkId: target.clerkId,
-      });
-    }
-
     await auditLog(ctx, {
       action: "user.suspend",
       entityType: "user",
@@ -427,12 +334,6 @@ export const activateUser = mutation({
     if (!target) throw new Error("User not found");
 
     await ctx.db.patch(args.userId, { status: "active", updatedAt: Date.now() });
-
-    if (target.clerkId) {
-      await ctx.scheduler.runAfter(0, internal.clerk.activateClerkUser, {
-        clerkId: target.clerkId,
-      });
-    }
 
     await auditLog(ctx, {
       action: "user.activate",
@@ -464,12 +365,6 @@ export const deleteUser = mutation({
     if (target.role === "owner") throw new Error("Cannot delete the owner");
     if (target.role === "superadmin") throw new Error("Cannot delete a superadmin");
     if (actor[0]._id === args.userId) throw new Error("Cannot delete yourself");
-
-    if (target.clerkId) {
-      await ctx.scheduler.runAfter(0, internal.clerk.deleteClerkUser, {
-        clerkId: target.clerkId,
-      });
-    }
 
     await ctx.db.delete(args.userId);
     await auditLog(ctx, {
@@ -527,12 +422,6 @@ export const inviteUser = mutation({
       status: "pending",
       createdAt: now,
       expiresAt: now + EXPIRY_MS,
-    });
-
-    // Create Clerk invitation (sends Clerk's default email)
-    await ctx.scheduler.runAfter(0, internal.clerk.inviteClerkUser, {
-      email: args.email,
-      role: args.role,
     });
 
     // Send branded invitation email via Resend
@@ -629,8 +518,8 @@ export const seedAdmin = mutation({
     }
 
     // New user — check permissions.
-    // SECURITY: All authorization must be derived from the identity verified by
-    // Clerk, never from client-supplied args.email.
+    // SECURITY: All authorization must be derived from the identity verified
+    // by the IAM JWT, never from client-supplied args.email.
     const identityEmail = (identity.email ?? "").toLowerCase();
     const claims = identity as unknown as {
       role?: string;
@@ -641,13 +530,13 @@ export const seedAdmin = mutation({
     const claimsRole =
       claims.role ?? claims.metadata?.role ?? claims.publicMetadata?.role;
 
-    // Allow if: has admin role in Clerk claims OR identity email is in admin allowlist
-    const hasClerkAdminRole = claimsRole === "admin" || claimsRole === "owner" || claimsRole === "superadmin";
+    // Allow if: has admin role in JWT claims OR identity email is in admin allowlist
+    const hasJwtAdminRole = claimsRole === "admin" || claimsRole === "owner" || claimsRole === "superadmin";
     const hasAdminEmail = identityEmail.length > 0 && isAdminEmail(identityEmail);
 
-    if (!hasClerkAdminRole && !hasAdminEmail) {
+    if (!hasJwtAdminRole && !hasAdminEmail) {
       throw new Error(
-        "Unauthorized: Admin role required on Clerk session or admin email allowlist"
+        "Unauthorized: Admin role required on this session or the admin email allowlist"
       );
     }
 

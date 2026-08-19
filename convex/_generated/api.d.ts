@@ -21,7 +21,6 @@ import type * as cartRecovery from "../cartRecovery.js";
 import type * as carts from "../carts.js";
 import type * as categories from "../categories.js";
 import type * as checkout from "../checkout.js";
-import type * as clerk from "../clerk.js";
 import type * as contact from "../contact.js";
 import type * as coupons from "../coupons.js";
 import type * as crons from "../crons.js";
@@ -88,7 +87,6 @@ declare const fullApi: ApiFromModules<{
   carts: typeof carts;
   categories: typeof categories;
   checkout: typeof checkout;
-  clerk: typeof clerk;
   contact: typeof contact;
   coupons: typeof coupons;
   crons: typeof crons;

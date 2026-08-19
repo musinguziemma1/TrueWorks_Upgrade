@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth/provider";
 import { api } from "@convex/_generated/api";
 import { useWishlist } from "@/components/layout/wishlist-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,14 +38,14 @@ function fmtDate(ts: number) {
 }
 
 export default function AccountOverviewContent() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const orders = useQuery(api.orders.listMine);
   const downloads = useQuery(api.downloads.listMine);
   const licenses = useQuery(api.licenses.listMine);
   const { totalItems } = useWishlist();
 
-  const userInitial = (user?.firstName ?? user?.username ?? "U").charAt(0).toUpperCase();
-  const avatar = user?.imageUrl;
+  const userInitial = (user?.name ?? "U").charAt(0).toUpperCase();
+  const avatar = user?.avatar;
 
   const completedOrders = orders?.filter((o) => o.paymentStatus === "completed") ?? [];
   const totalSpent = completedOrders.reduce((sum, o) => sum + o.total, 0);
@@ -75,7 +75,7 @@ export default function AccountOverviewContent() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatar}
-                  alt={user?.fullName ?? "Avatar"}
+                  alt={user?.name ?? "Avatar"}
                   className="h-14 w-14 rounded-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -85,10 +85,10 @@ export default function AccountOverviewContent() {
             </div>
             <div>
               <p className="font-heading text-xl font-semibold text-primary">
-                {user?.fullName ?? user?.username ?? "Your Account"}
+                {user?.name ?? "Your Account"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {user?.primaryEmailAddress?.emailAddress ?? ""}
+                {user?.email ?? ""}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700">

@@ -44,11 +44,11 @@ function parseMiddlewareConfiguration(): RouteTestResult {
   };
 
   try {
-    // Read middleware.ts
-    const middlewarePath = join(process.cwd(), "src", "middleware.ts");
+    // Read proxy.ts (Next 16 route proxy; renamed from middleware.ts)
+    const middlewarePath = join(process.cwd(), "src", "proxy.ts");
     const middlewareContent = readFileSync(middlewarePath, "utf-8");
 
-    // Check for Clerk middleware usage
+    // Check for IAM session-based protection usage (tw_session cookie check)
     result.snapshot.usesClerkMiddleware = middlewareContent.includes("clerkMiddleware");
 
     if (!result.snapshot.usesClerkMiddleware) {
@@ -56,9 +56,9 @@ function parseMiddlewareConfiguration(): RouteTestResult {
       result.success = false;
     }
 
-    // Extract public routes from createRouteMatcher
+    // Extract public routes from the proxy publicRoutes array
     const publicRoutesMatch = middlewareContent.match(
-      /const isPublicRoute\s*=\s*createRouteMatcher\(\[([\s\S]*?)\]\)/
+      /const publicRoutes\s*=\s*\[([\s\S]*?)\]/
     );
 
     if (publicRoutesMatch) {
@@ -70,15 +70,15 @@ function parseMiddlewareConfiguration(): RouteTestResult {
       result.success = false;
     }
 
-    // Check for protection logic (auth.protect)
-    result.snapshot.hasProtectionLogic = middlewareContent.includes("auth.protect");
+    // Check for protection logic (session cookie enforcement)
+    result.snapshot.hasProtectionLogic = middlewareContent.includes("tw_session");
 
     if (!result.snapshot.hasProtectionLogic) {
-      result.errors.push("Route protection logic (auth.protect) not found");
+      result.errors.push("Route protection logic (tw_session) not found");
       result.success = false;
     }
 
-    // Extract middleware config matcher
+    // Extract proxy config matcher
     const configMatch = middlewareContent.match(
       /export const config\s*=\s*\{[\s\S]*?matcher:\s*\[([\s\S]*?)\]/
     );
@@ -112,16 +112,17 @@ function parseMiddlewareConfiguration(): RouteTestResult {
 function validatePublicRoutes(result: RouteTestResult): void {
   const expectedRoutes = [
     "/",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/store(.*)",
+    "/sign-in",
+    "/sign-up",
+    "/store",
   ];
 
   for (const expectedRoute of expectedRoutes) {
     const found = result.snapshot.publicRoutes.some((route) => {
-      // Handle regex patterns like "/store(.*)"
-      const pattern = expectedRoute.replace(/\.\*/g, ".*").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-      return new RegExp(pattern).test(route) || route === expectedRoute;
+      // Proxy semantics: exact match or prefix match (route + "/...")
+      if (expectedRoute === "/") return route === "/";
+      const base = expectedRoute.replace(/\(\.\*\)$/, "");
+      return route === base || route.startsWith(base);
     });
 
     if (!found) {

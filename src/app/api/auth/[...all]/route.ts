@@ -35,6 +35,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(await res.json(), { status: res.status });
   }
 
+  if (pathname === "/sessions") {
+    const res = await fetch(`${getIamBase()}/sessions`, {
+      method: "GET",
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
@@ -162,6 +170,24 @@ export async function POST(req: NextRequest) {
 
   if (pathname === "/sessions/revoke") {
     const res = await fetch(`${getIamBase()}/sessions?action=revoke&id=${encodeURIComponent(body?.id ?? "")}`, {
+      method: "POST",
+      headers: { cookie },
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/sessions/revoke-others") {
+    const res = await fetch(`${getIamBase()}/sessions?action=revoke-others`, {
+      method: "POST",
+      headers: { cookie },
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/sessions/revoke-all") {
+    const res = await fetch(`${getIamBase()}/sessions?action=revoke-all`, {
       method: "POST",
       headers: { cookie },
     });

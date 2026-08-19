@@ -59,19 +59,14 @@ const THIRD_PARTY_ALLOWANCES = {
     domains: ["https://fonts.googleapis.com", "https://fonts.gstatic.com"],
     requiredIn: ["style-src", "font-src"],
   },
-  clerk: {
+  integrations: {
     domains: [
-      "https://*.clerk.accounts.dev",
-      "https://*.clerk.dev",
-      "https://*.clerk.com",
-      "https://api.clerk.com",
-      "https://cdn.clerk.com",
-      "https://clerk-telemetry.com",
-      "https://img.clerk.com",
-      "https://images.clerk.dev",
+      "https://*.convex.cloud",
+      "https://api.stripe.com",
+      "https://js.stripe.com",
+      "https://va.vercel-scripts.com",
     ],
-    // Note: NOT checking font-src for Clerk - that's the bug we're fixing
-    requiredIn: ["script-src", "style-src", "img-src", "connect-src", "frame-src", "worker-src"],
+    requiredIn: ["script-src", "connect-src"],
   },
 } as const;
 
@@ -221,18 +216,11 @@ function validateThirdPartyAllowances(result: PreservationTestResult): void {
       const hasDomain = config.domains.some((domain) => directive.includes(domain));
 
       if (!hasDomain) {
-        // Special handling: don't fail for Clerk font-src (that's the bug)
-        if (serviceName === "clerk" && directiveName === "font-src") {
-          result.warnings.push(
-            `Clerk domains not found in ${directiveName} (expected - this is the bug)`
-          );
-        } else {
-          result.errors.push(
-            `Third-party allowance for ${serviceName} missing in ${directiveName}. ` +
-              `Expected one of: ${config.domains.join(", ")}`
-          );
-          result.success = false;
-        }
+        result.errors.push(
+          `Third-party allowance for ${serviceName} missing in ${directiveName}. ` +
+            `Expected one of: ${config.domains.join(", ")}`
+        );
+        result.success = false;
       }
     }
   }
