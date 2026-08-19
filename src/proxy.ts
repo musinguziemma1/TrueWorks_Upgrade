@@ -37,6 +37,14 @@ function isPublicRoute(pathname: string): boolean {
   });
 }
 
+function getConvexSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  return (process.env.NEXT_PUBLIC_CONVEX_URL ?? "")
+    .replace(/\.convex\.cloud\/?$/, ".convex.site")
+    .replace(/\/$/, "");
+}
+
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
@@ -52,7 +60,7 @@ export default async function proxy(req: NextRequest) {
   }
 
   try {
-    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+    const convexSiteUrl = getConvexSiteUrl();
     if (!convexSiteUrl) return NextResponse.next();
 
     const res = await fetch(`${convexSiteUrl}/iam/me`, {

@@ -23,6 +23,7 @@ assert(http.includes('path: "/iam/change-password"'), "Change-password route is 
 assert(http.includes("withIamOriginProtection(changePasswordHandler)"), "Change-password route is not Origin protected");
 assert(nextProxy.includes('"/api/auth"'), "Global proxy is still intercepting authentication API requests");
 assert(nextProxy.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && nextProxy.includes("/iam/me"), "Global proxy uses the wrong IAM validation endpoint");
+assert(nextProxy.includes("convex\\.cloud") && nextProxy.includes("convex.site"), "Global proxy has no Convex URL fallback");
 assert(accountLayout.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && accountLayout.includes("/iam/me"), "Account layout uses the wrong IAM validation endpoint");
 assert(adminLayout.includes("NEXT_PUBLIC_CONVEX_SITE_URL") && adminLayout.includes("/iam/me"), "Admin layout uses the wrong IAM validation endpoint");
 

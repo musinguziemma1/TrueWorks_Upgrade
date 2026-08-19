@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "") || "";
+function getConvexSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+
+  return (process.env.NEXT_PUBLIC_CONVEX_URL ?? "")
+    .replace(/\.convex\.cloud\/?$/, ".convex.site")
+    .replace(/\/$/, "");
+}
 
 function getIamBase(): string {
-  if (!CONVEX_SITE_URL) throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
-  return `${CONVEX_SITE_URL}/iam`;
+  const siteUrl = getConvexSiteUrl();
+  if (!siteUrl) throw new Error("Convex site URL is not configured");
+  return `${siteUrl}/iam`;
 }
 
 function forwardedHeaders(req: NextRequest, includeJson = false): Record<string, string> {

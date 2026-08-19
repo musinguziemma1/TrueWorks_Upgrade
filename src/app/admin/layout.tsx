@@ -5,10 +5,18 @@ import AdminHeader from "@/components/layout/admin-header";
 import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context";
 import { AuthGate } from "@/components/auth/auth-gate";
 
+function getConvexSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  return (process.env.NEXT_PUBLIC_CONVEX_URL ?? "")
+    .replace(/\.convex\.cloud\/?$/, ".convex.site")
+    .replace(/\/$/, "");
+}
+
 const ALLOWED_ROLES = ["superadmin", "admin", "owner", "editor"];
 
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  const convexSiteUrl = getConvexSiteUrl();
   if (!convexSiteUrl) redirect("/");
 
   const cookieStore = await cookies();

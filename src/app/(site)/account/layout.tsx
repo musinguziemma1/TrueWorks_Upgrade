@@ -2,6 +2,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AccountLayoutClient from "./account-layout-client"
 
+function getConvexSiteUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  return (process.env.NEXT_PUBLIC_CONVEX_URL ?? "")
+    .replace(/\.convex\.cloud\/?$/, ".convex.site")
+    .replace(/\/$/, "");
+}
+
 const tabs = [
   { href: "/account", label: "Overview" },
   { href: "/account/orders", label: "Orders" },
@@ -12,7 +20,7 @@ const tabs = [
 ];
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
+  const convexSiteUrl = getConvexSiteUrl();
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("tw_session")?.value;
 
