@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Convex AI agent skills (installed by 'npx convex ai-files install')
+.agents/skills/convex-*
+.claude/skills/convex-*
+convex/_generated/ai/

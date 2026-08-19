@@ -24,6 +24,7 @@ import {
   Mail,
   Percent,
   MessageSquare,
+  KeyRound,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -59,6 +60,7 @@ const searchLinks = [
   { label: "Email Marketing", href: "/admin/email", icon: Mail },
   { label: "Reviews", href: "/admin/reviews", icon: MessageSquare },
   { label: "Coupons", href: "/admin/coupons", icon: Percent },
+  { label: "Auth & Security", href: "/admin/auth", icon: KeyRound },
 ]
 
 function getPageTitle(pathname: string) {

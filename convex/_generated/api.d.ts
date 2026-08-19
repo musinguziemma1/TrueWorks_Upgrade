@@ -13,6 +13,7 @@ import type * as analytics from "../analytics.js";
 import type * as analyticsEvents from "../analyticsEvents.js";
 import type * as auditLogExport from "../auditLogExport.js";
 import type * as auditLogs from "../auditLogs.js";
+import type * as authAdmin from "../authAdmin.js";
 import type * as campaignExport from "../campaignExport.js";
 import type * as campaignScheduler from "../campaignScheduler.js";
 import type * as campaigns from "../campaigns.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   analyticsEvents: typeof analyticsEvents;
   auditLogExport: typeof auditLogExport;
   auditLogs: typeof auditLogs;
+  authAdmin: typeof authAdmin;
   campaignExport: typeof campaignExport;
   campaignScheduler: typeof campaignScheduler;
   campaigns: typeof campaigns;
