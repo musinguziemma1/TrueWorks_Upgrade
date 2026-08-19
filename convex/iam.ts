@@ -1,7 +1,7 @@
 "use node";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import {
   normalizeEmail,
   isValidEmail,
@@ -22,8 +22,6 @@ import {
   recordSecurityEvent,
   recordLoginAttempt,
   checkRateLimit,
-  resetRateLimit,
-  SESSION_IDLE_MS,
   SESSION_ABSOLUTE_MS,
   SESSION_ABSOLUTE_REMEMBER_MS,
 } from "./lib/sessions";
@@ -31,14 +29,10 @@ import {
   generateBase32Secret,
   generateRecoveryCodes,
   hashRecoveryCode,
-  verifyRecoveryCode,
   verifyTOTP,
 } from "./lib/mfa";
 
 type Ctx = any;
-
-const COOKIE_OPTS = (maxAgeSec: number) =>
-  `tw_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec};`;
 
 const CLEAR_COOKIE = "tw_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;";
 
@@ -269,7 +263,7 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
 
   // complete login
   const rawToken = randomToken(32);
-  const { sessionId } = await createSession(ctx, {
+  await createSession(ctx, {
     userId: user._id,
     rawToken,
     rememberMe,
@@ -333,8 +327,6 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
   const pending = all.find((t: any) => t.type === "mfa_pending" && !t.usedAt && t.expiresAt > Date.now());
   if (!pending) return unauthorized("Invalid or expired MFA session.");
 
-  const user = await ctx.db.get(pending.email as any);
-  // Actually pending.email is user email; we need user by normalizedEmail
   const normalized = normalizeEmail(pending.email);
   const userRow = await ctx.db
     .query("users")
@@ -383,7 +375,7 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
   const ip = getClientIp(request);
   const ua = request.headers.get("user-agent") ?? "";
   const rawToken = randomToken(32);
-  const { sessionId } = await createSession(ctx, {
+  await createSession(ctx, {
     userId: userRow._id,
     rawToken,
     rememberMe: false,
@@ -920,7 +912,7 @@ function getGoogleClient(): { id: string; secret: string } | null {
   return { id, secret };
 }
 
-function getSiteOrigin(request: Request): string {
+function getSiteOrigin(): string {
   // Trust the forwarded origin for proxied deployments; fall back to a
   // configured site URL. Never build redirect URLs from open-ended input.
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://trueworksgroup.com";
@@ -935,7 +927,7 @@ export async function googleOauthStartHandler(ctx: Ctx, request: Request): Promi
   // Only allow internal redirect targets to avoid open redirects.
   const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "/account";
 
-  const callbackUrl = `${getSiteOrigin(request)}/api/auth/google/callback`;
+  const callbackUrl = `${getSiteOrigin()}/api/auth/google/callback`;
   const state = Buffer.from(JSON.stringify({ redirect: safeRedirect })).toString("base64url");
 
   const authUrl = new URL(GOOGLE_AUTH_ENDPOINT);
@@ -985,7 +977,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
         code,
         client_id: client.id,
         client_secret: client.secret,
-        redirect_uri: `${getSiteOrigin(request)}/api/auth/google/callback`,
+        redirect_uri: `${getSiteOrigin()}/api/auth/google/callback`,
         grant_type: "authorization_code",
       }).toString(),
     });
@@ -1018,12 +1010,12 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
 
     // Find existing user by normalized email, else create one. Google emails
     // are pre-verified, so emailVerified is set true.
-    let existing = await ctx.db
+    const existing = await ctx.db
       .query("users")
       .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", email))
       .first();
 
-    let userId: any;
+    let userId: string;
     if (existing) {
       userId = existing._id;
       await ctx.db.patch(existing._id, {
@@ -1069,7 +1061,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
       userAgent: ua,
     });
 
-    const redirectUrl = new URL(safeRedirect, getSiteOrigin(request));
+    const redirectUrl = new URL(safeRedirect, getSiteOrigin());
     return setCookieHeader(
       new Response(null, {
         status: 302,
@@ -1092,7 +1084,8 @@ export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
   const session = await validateSession(ctx, rawToken);
   if (!session.valid) return unauthorized();
 
-  const { passwordHash: _, ...user } = session.user;
+  const user = { ...session.user };
+  delete user.passwordHash;
   return json({ user });
 }
 

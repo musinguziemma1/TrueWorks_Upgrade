@@ -49,7 +49,7 @@ export function SecurityTab({ form }: { form: SettingsForm }) {
       <Card>
         <CardHeader>
           <CardTitle>Authentication & Sessions</CardTitle>
-          <CardDescription>Access control and session policies. Session lifecycle is managed by Clerk.</CardDescription>
+          <CardDescription>Access control and session policies for the first-party TrueWorks IAM system.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -69,7 +69,7 @@ export function SecurityTab({ form }: { form: SettingsForm }) {
 
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
             <Clock className="h-4 w-4 shrink-0" />
-            <span>Sessions are created and revoked through Clerk. Active sessions appear in your Clerk dashboard.</span>
+            <span>Sessions are created and revoked server-side. Review active sessions from the Auth &amp; Security admin page.</span>
           </div>
         </CardContent>
       </Card>

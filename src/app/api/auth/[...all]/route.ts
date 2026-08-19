@@ -7,6 +7,30 @@ function getIamBase(): string {
   return `${CONVEX_SITE_URL}/iam`;
 }
 
+function forwardedHeaders(req: NextRequest, includeJson = false): Record<string, string> {
+  const headers: Record<string, string> = {
+    cookie: req.headers.get("cookie") ?? "",
+  };
+  const origin = req.headers.get("origin");
+  if (origin) headers.origin = origin;
+  if (includeJson) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+async function proxyIamResponse(res: Response): Promise<NextResponse> {
+  const setCookie = res.headers.get("set-cookie");
+  if (res.status === 204) {
+    const response = new NextResponse(null, { status: 204 });
+    if (setCookie) response.headers.set("set-cookie", setCookie);
+    return response;
+  }
+
+  const data = await res.json().catch(() => ({ error: "Invalid authentication response" }));
+  const response = NextResponse.json(data, { status: res.status });
+  if (setCookie) response.headers.set("set-cookie", setCookie);
+  return response;
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const pathname = url.pathname.replace(/\/api\/auth/, "");
@@ -30,9 +54,9 @@ export async function GET(req: NextRequest) {
   if (pathname === "/token") {
     const res = await fetch(`${getIamBase()}/token`, {
       method: "POST",
-      headers: { cookie: req.headers.get("cookie") ?? "" },
+      headers: forwardedHeaders(req),
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/sessions") {
@@ -85,11 +109,11 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         cookie,
+        ...(req.headers.get("origin") ? { origin: req.headers.get("origin")! } : {}),
       },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/register") {
@@ -111,9 +135,10 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         cookie,
+        ...(req.headers.get("origin") ? { origin: req.headers.get("origin")! } : {}),
       },
     });
-    return NextResponse.json({ ok: true }, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/mfa/challenge") {
@@ -122,11 +147,11 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         cookie,
+        ...(req.headers.get("origin") ? { origin: req.headers.get("origin")! } : {}),
       },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/verify-email") {
@@ -184,88 +209,69 @@ export async function POST(req: NextRequest) {
   if (pathname === "/change-password") {
     const res = await fetch(`${getIamBase()}/change-password`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/sessions/revoke") {
     const res = await fetch(`${getIamBase()}/sessions?action=revoke&id=${encodeURIComponent(body?.id ?? "")}`, {
       method: "POST",
-      headers: { cookie },
+      headers: forwardedHeaders(req),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/sessions/revoke-others") {
     const res = await fetch(`${getIamBase()}/sessions?action=revoke-others`, {
       method: "POST",
-      headers: { cookie },
+      headers: forwardedHeaders(req),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/sessions/revoke-all") {
     const res = await fetch(`${getIamBase()}/sessions?action=revoke-all`, {
       method: "POST",
-      headers: { cookie },
+      headers: forwardedHeaders(req),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/mfa/setup") {
     const res = await fetch(`${getIamBase()}/mfa/setup`, {
       method: "POST",
-      headers: { cookie },
+      headers: forwardedHeaders(req),
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/mfa/enable") {
     const res = await fetch(`${getIamBase()}/mfa/enable`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/mfa/disable") {
     const res = await fetch(`${getIamBase()}/mfa/disable`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   if (pathname === "/mfa/regenerate-recovery") {
     const res = await fetch(`${getIamBase()}/mfa/regenerate-recovery`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return proxyIamResponse(res);
   }
 
   return NextResponse.json({ error: "Not found" }, { status: 404 });

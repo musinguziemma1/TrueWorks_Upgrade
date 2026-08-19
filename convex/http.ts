@@ -108,6 +108,33 @@ function withAuditTiming(handler: HttpHandler): HttpHandler {
   };
 }
 
+function withIamOriginProtection(handler: HttpHandler): HttpHandler {
+  return async (ctx, req) => {
+    const hasSessionCookie = /(?:^|;\s*)tw_session=/.test(req.headers.get("cookie") ?? "");
+    if (!hasSessionCookie || !["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+      return handler(ctx, req);
+    }
+
+    const origin = req.headers.get("origin");
+    const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+    const allowedOrigins = new Set(
+      [
+        configuredOrigin,
+        "https://trueworksgroup.com",
+        "https://www.trueworksgroup.com",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+      ].filter((value): value is string => Boolean(value)),
+    );
+
+    if (!origin || !allowedOrigins.has(origin)) {
+      return json({ error: "Invalid request origin." }, 403);
+    }
+
+    return handler(ctx, req);
+  };
+}
+
 http.route({
   path: "/pesapal/initiate",
   method: "POST",
@@ -211,13 +238,13 @@ http.route({
 http.route({
   path: "/iam/logout",
   method: "POST",
-  handler: httpAction(withAuditTiming(logoutHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(logoutHandler))),
 });
 
 http.route({
   path: "/iam/mfa/challenge",
   method: "POST",
-  handler: httpAction(withAuditTiming(mfaChallengeHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(mfaChallengeHandler))),
 });
 
 http.route({
@@ -247,7 +274,7 @@ http.route({
 http.route({
   path: "/iam/change-password",
   method: "POST",
-  handler: httpAction(withAuditTiming(changePasswordHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(changePasswordHandler))),
 });
 
 http.route({
@@ -259,31 +286,31 @@ http.route({
 http.route({
   path: "/iam/sessions/revoke",
   method: "POST",
-  handler: httpAction(withAuditTiming(sessionsHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(sessionsHandler))),
 });
 
 http.route({
   path: "/iam/mfa/setup",
   method: "POST",
-  handler: httpAction(withAuditTiming(mfaSetupHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(mfaSetupHandler))),
 });
 
 http.route({
   path: "/iam/mfa/enable",
   method: "POST",
-  handler: httpAction(withAuditTiming(mfaEnableHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(mfaEnableHandler))),
 });
 
 http.route({
   path: "/iam/mfa/disable",
   method: "POST",
-  handler: httpAction(withAuditTiming(mfaDisableHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(mfaDisableHandler))),
 });
 
 http.route({
   path: "/iam/mfa/regenerate-recovery",
   method: "POST",
-  handler: httpAction(withAuditTiming(mfaRegenerateRecoveryHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(mfaRegenerateRecoveryHandler))),
 });
 
 http.route({
@@ -301,7 +328,7 @@ http.route({
 http.route({
   path: "/iam/token",
   method: "POST",
-  handler: httpAction(withAuditTiming(tokenHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(tokenHandler))),
 });
 
 http.route({
@@ -320,6 +347,8 @@ http.route({
   path: "/.well-known/jwks.json",
   method: "GET",
   handler: httpAction(async (_ctx, _req) => {
+    void _ctx;
+    void _req;
     const privateKey = process.env.IAM_JWT_PRIVATE_KEY;
     if (!privateKey) {
       return new Response(JSON.stringify({ error: "JWKS not configured" }), {
