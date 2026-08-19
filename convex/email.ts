@@ -263,7 +263,7 @@ export const sendRefundConfirmation = async (ctx: ActionCtx, request: Request): 
   return new Response(JSON.stringify({ sent }), { status: 200 });
 };
 
-export const sendWelcomeEmail = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+export const handleWelcomeEmailHttp = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);
   if (authError) return authError;
 
@@ -287,6 +287,83 @@ export const sendWelcomeEmail = async (ctx: ActionCtx, request: Request): Promis
   const sent = await sendEmail({
     to: customerEmail,
     subject: "Welcome to TrueWorks!",
+    html,
+  });
+
+  return new Response(JSON.stringify({ sent }), { status: 200 });
+};
+
+export const handleVerificationEmailHttp = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
+  const body = await request.json();
+  const { to, name, token } = body;
+
+  const verifyUrl = `${SITE_URL}/verify-email?token=${encodeURIComponent(token)}`;
+  const html = baseTemplate(`
+    <h2>Verify Your Email</h2>
+    <p>Hi ${escapeHtml(name ?? "")},</p>
+    <p>Thanks for signing up for TrueWorks! Please verify your email address to activate your account.</p>
+    <a href="${escapeUrl(verifyUrl)}" class="button">Verify Email</a>
+    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
+    </p>
+  `);
+
+  const sent = await sendEmail({
+    to,
+    subject: "Verify your TrueWorks account",
+    html,
+  });
+
+  return new Response(JSON.stringify({ sent }), { status: 200 });
+};
+
+export const handlePasswordResetEmailHttp = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
+  const body = await request.json();
+  const { to, name, token } = body;
+
+  const resetUrl = `${SITE_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  const html = baseTemplate(`
+    <h2>Reset Your Password</h2>
+    <p>Hi ${escapeHtml(name ?? "")},</p>
+    <p>We received a request to reset your TrueWorks password. Click the button below to choose a new one.</p>
+    <a href="${escapeUrl(resetUrl)}" class="button">Reset Password</a>
+    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      This link expires in 1 hour. If you did not request a reset, you can safely ignore this email.
+    </p>
+  `);
+
+  const sent = await sendEmail({
+    to,
+    subject: "Reset your TrueWorks password",
+    html,
+  });
+
+  return new Response(JSON.stringify({ sent }), { status: 200 });
+};
+
+export const handleSecurityNotificationHttp = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
+  const body = await request.json();
+  const { to, name, event, detail } = body;
+
+  const html = baseTemplate(`
+    <h2>${escapeHtml(event)}</h2>
+    <p>Hi ${escapeHtml(name ?? "")},</p>
+    <p>${escapeHtml(detail ?? "A security event occurred on your account.")}</p>
+    <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at hello@trueworksgroup.com.</p>
+  `);
+
+  const sent = await sendEmail({
+    to,
+    subject: `${event} — TrueWorks`,
     html,
   });
 
@@ -688,6 +765,75 @@ export const sendTeamInvitation = internalAction({
       html,
     });
 
+    return { sent };
+  },
+});
+
+// ======================== IAM internal email actions ========================
+// Called via ctx.scheduler.runAfter(0, internal.email.sendVerificationEmail, …)
+// from convex/iam.ts. These bypass the HTTP /email/* secret gate because they
+// run inside the trusted Convex runtime.
+
+export const sendVerificationEmail = internalAction({
+  args: { to: v.string(), name: v.optional(v.string()), token: v.string() },
+  handler: async (_ctx, args) => {
+    const verifyUrl = `${SITE_URL}/verify-email?token=${encodeURIComponent(args.token)}`;
+    const html = baseTemplate(`
+      <h2>Verify Your Email</h2>
+      <p>Hi ${escapeHtml(args.name ?? "")},</p>
+      <p>Thanks for signing up for TrueWorks! Please verify your email address to activate your account.</p>
+      <a href="${escapeUrl(verifyUrl)}" class="button">Verify Email</a>
+      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+        This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
+      </p>
+    `);
+    const sent = await sendEmail({ to: args.to, subject: "Verify your TrueWorks account", html });
+    return { sent };
+  },
+});
+
+export const sendPasswordResetEmail = internalAction({
+  args: { to: v.string(), name: v.optional(v.string()), token: v.string() },
+  handler: async (_ctx, args) => {
+    const resetUrl = `${SITE_URL}/reset-password?token=${encodeURIComponent(args.token)}`;
+    const html = baseTemplate(`
+      <h2>Reset Your Password</h2>
+      <p>Hi ${escapeHtml(args.name ?? "")},</p>
+      <p>We received a request to reset your TrueWorks password. Click the button below to choose a new one.</p>
+      <a href="${escapeUrl(resetUrl)}" class="button">Reset Password</a>
+      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+        This link expires in 1 hour. If you did not request a reset, you can safely ignore this email.
+      </p>
+    `);
+    const sent = await sendEmail({ to: args.to, subject: "Reset your TrueWorks password", html });
+    return { sent };
+  },
+});
+
+export const sendSecurityNotification = internalAction({
+  args: { to: v.string(), name: v.optional(v.string()), event: v.string(), detail: v.optional(v.string()) },
+  handler: async (_ctx, args) => {
+    const html = baseTemplate(`
+      <h2>${escapeHtml(args.event)}</h2>
+      <p>Hi ${escapeHtml(args.name ?? "")},</p>
+      <p>${escapeHtml(args.detail ?? "A security event occurred on your account.")}</p>
+      <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at hello@trueworksgroup.com.</p>
+    `);
+    const sent = await sendEmail({ to: args.to, subject: `${args.event} — TrueWorks`, html });
+    return { sent };
+  },
+});
+
+export const sendIamWelcomeEmail = internalAction({
+  args: { to: v.string(), name: v.optional(v.string()) },
+  handler: async (_ctx, args) => {
+    const html = baseTemplate(`
+      <h2>Welcome to TrueWorks!</h2>
+      <p>Hi ${escapeHtml(args.name ?? "")},</p>
+      <p>Welcome to TrueWorks — your trusted source for premium business templates and systems built for Global organizations.</p>
+      <a href="${SITE_URL}/store" class="button">Explore the Store</a>
+    `);
+    const sent = await sendEmail({ to: args.to, subject: "Welcome to TrueWorks!", html });
     return { sent };
   },
 });

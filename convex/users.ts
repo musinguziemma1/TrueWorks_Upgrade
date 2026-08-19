@@ -758,3 +758,115 @@ export const deleteFromClerk = internalMutation({
     }
   },
 });
+
+// ======================== IAM Native Auth ========================
+
+export const upsertNative = internalMutation({
+  args: {
+    userId: v.optional(v.id("users")),
+    email: v.string(),
+    name: v.optional(v.string()),
+    role: v.optional(v.union(v.literal("superadmin"), v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer"))),
+    passwordHash: v.optional(v.string()),
+    securityVersion: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const normalized = args.email.toLowerCase().trim();
+    const now = Date.now();
+    const adminEmail = isAdminEmail(args.email);
+    const isSuperAdmin = isSuperAdminEmail(args.email);
+    const assignedRole = args.role ?? (isSuperAdmin ? "superadmin" : adminEmail ? "admin" : "viewer");
+
+    if (args.userId) {
+      const existing = await ctx.db.get(args.userId);
+      if (existing) {
+        const updates: Record<string, unknown> = {
+          email: args.email,
+          normalizedEmail: normalized,
+          updatedAt: now,
+          role: assignedRole,
+        };
+        if (args.name !== undefined) updates.name = args.name;
+        if (args.passwordHash !== undefined) updates.passwordHash = args.passwordHash;
+        if (args.securityVersion !== undefined) updates.securityVersion = args.securityVersion;
+        await ctx.db.patch(args.userId, updates);
+        return args.userId;
+      }
+    }
+
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
+      .first();
+
+    if (existing) {
+      const updates: Record<string, unknown> = {
+        email: args.email,
+        normalizedEmail: normalized,
+        updatedAt: now,
+        role: assignedRole,
+      };
+      if (args.name !== undefined) updates.name = args.name;
+      if (args.passwordHash !== undefined) updates.passwordHash = args.passwordHash;
+      if (args.securityVersion !== undefined) updates.securityVersion = args.securityVersion;
+      await ctx.db.patch(existing._id, updates);
+      return existing._id;
+    }
+
+    const clerkId = `tw_${Date.now().toString(36)}`;
+    return await ctx.db.insert("users", {
+      clerkId,
+      tokenIdentifier: `trueworks|${clerkId}`,
+      email: args.email,
+      normalizedEmail: normalized,
+      name: args.name,
+      role: assignedRole,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+      securityVersion: args.securityVersion ?? 0,
+      loginCount: 0,
+    });
+  },
+});
+
+export const seedNativeAdmin = internalMutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const normalized = args.email.toLowerCase().trim();
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        passwordHash: args.password,
+        role: "superadmin",
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    }
+
+    const clerkId = `tw_${Date.now().toString(36)}`;
+    return await ctx.db.insert("users", {
+      clerkId,
+      tokenIdentifier: `trueworks|${clerkId}`,
+      email: args.email,
+      normalizedEmail: normalized,
+      name: args.name ?? args.email.split("@")[0],
+      role: "superadmin",
+      status: "active",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      securityVersion: 0,
+      loginCount: 0,
+      passwordHash: args.password,
+      emailVerified: true,
+    });
+  },
+});

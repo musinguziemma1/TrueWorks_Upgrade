@@ -1,0 +1,220 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(/\/$/, "") || "";
+
+function getIamBase(): string {
+  if (!CONVEX_SITE_URL) throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  return `${CONVEX_SITE_URL}/iam`;
+}
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const pathname = url.pathname.replace(/\/api\/auth/, "");
+  
+  if (pathname === "/me") {
+    const res = await fetch(`${getIamBase()}/me`, {
+      method: "GET",
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
+  if (pathname === "/security-events") {
+    const res = await fetch(`${getIamBase()}/security-events`, {
+      method: "GET",
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
+  if (pathname === "/token") {
+    const res = await fetch(`${getIamBase()}/token`, {
+      method: "POST",
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
+}
+
+export async function POST(req: NextRequest) {
+  const url = new URL(req.url);
+  const pathname = url.pathname.replace(/\/api\/auth/, "");
+
+  const body = await req.json().catch(() => null);
+  const cookie = req.headers.get("cookie") ?? "";
+
+  if (pathname === "/login") {
+    const res = await fetch(`${getIamBase()}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/register") {
+    const res = await fetch(`${getIamBase()}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/logout") {
+    const res = await fetch(`${getIamBase()}/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+    });
+    return NextResponse.json({ ok: true }, { status: res.status });
+  }
+
+  if (pathname === "/mfa/challenge") {
+    const res = await fetch(`${getIamBase()}/mfa/challenge`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/verify-email") {
+    const res = await fetch(`${getIamBase()}/verify-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/resend-verification") {
+    const res = await fetch(`${getIamBase()}/resend-verification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/forgot-password") {
+    const res = await fetch(`${getIamBase()}/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/reset-password") {
+    const res = await fetch(`${getIamBase()}/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/change-password") {
+    const res = await fetch(`${getIamBase()}/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/sessions/revoke") {
+    const res = await fetch(`${getIamBase()}/sessions?action=revoke&id=${encodeURIComponent(body?.id ?? "")}`, {
+      method: "POST",
+      headers: { cookie },
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/mfa/setup") {
+    const res = await fetch(`${getIamBase()}/mfa/setup`, {
+      method: "POST",
+      headers: { cookie },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
+  if (pathname === "/mfa/enable") {
+    const res = await fetch(`${getIamBase()}/mfa/enable`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/mfa/disable") {
+    const res = await fetch(`${getIamBase()}/mfa/disable`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (pathname === "/mfa/regenerate-recovery") {
+    const res = await fetch(`${getIamBase()}/mfa/regenerate-recovery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
+}

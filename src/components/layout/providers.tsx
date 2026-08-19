@@ -1,8 +1,8 @@
 "use client";
 
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { useAuth } from "@clerk/nextjs";
+import { ConvexProvider } from "convex/react";
 import { convexClient } from "@/lib/convex";
+import { AuthProvider } from "@/lib/auth/provider";
 import { CartProvider } from "@/components/layout/cart-context";
 import { WishlistProvider } from "@/components/layout/wishlist-context";
 import { CartSync } from "@/components/layout/cart-sync";
@@ -16,21 +16,13 @@ export function Providers({ children }: { children: ReactNode }) {
   const wrapped = (
     <CartProvider>
       <WishlistProvider>
-        {convexClient ? (
-          <SettingsProvider>
-            <CartSync />
-            <AnalyticsTracker />
-            <ThemeApply />
-            {children}
-            <Toaster />
-          </SettingsProvider>
-        ) : (
-          <>
-            <ThemeApply />
-            {children}
-            <Toaster />
-          </>
-        )}
+        <SettingsProvider>
+          <CartSync />
+          <AnalyticsTracker />
+          <ThemeApply />
+          {children}
+          <Toaster />
+        </SettingsProvider>
       </WishlistProvider>
     </CartProvider>
   );
@@ -38,8 +30,10 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!convexClient) return wrapped;
 
   return (
-    <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-      {wrapped}
-    </ConvexProviderWithClerk>
+    <ConvexProvider client={convexClient}>
+      <AuthProvider>
+        {wrapped}
+      </AuthProvider>
+    </ConvexProvider>
   );
 }

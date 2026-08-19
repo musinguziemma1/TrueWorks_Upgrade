@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { useUser, useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth/provider"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
@@ -73,8 +73,8 @@ export default function AdminHeader() {
   const router = useRouter()
   const { toggleMobile } = useAdminSidebar()
   const [searchOpen, setSearchOpen] = useState(false)
-  const { user } = useUser()
-  const { signOut } = useAuth()
+  const { user } = useAuth()
+  const { logout } = useAuth()
 
   const notifications = useQuery(api.notifications.list, {})
   const markRead = useMutation(api.notifications.markRead)
@@ -200,17 +200,17 @@ export default function AdminHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-lg px-2 text-foreground outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar className="h-7 w-7" size="sm">
-                {user?.imageUrl ? (
-                  <Image src={user.imageUrl} alt={user.fullName ?? "Admin"} width={28} height={28} className="h-full w-full rounded-full object-cover" />
+                {user?.avatar ? (
+                  <Image src={user.avatar} alt={user.name ?? "Admin"} width={28} height={28} className="h-full w-full rounded-full object-cover" />
                 ) : (
                   <AvatarFallback className="bg-[#0B2545] text-[11px] font-bold text-white">
-                    {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                    {(user?.name?.[0] ?? "A").toUpperCase()}
                   </AvatarFallback>
                 )}
               </Avatar>
               <div className="hidden text-left sm:block">
                 <p className="text-xs font-semibold leading-tight">
-                  {user?.fullName ?? user?.username ?? "Admin"}
+                  {user?.name ?? "Admin"}
                 </p>
                 <p className="text-[10px] leading-tight text-muted-foreground">Administrator</p>
               </div>
@@ -218,20 +218,20 @@ export default function AdminHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="h-9 w-9">
-                  {user?.imageUrl ? (
-                    <Image src={user.imageUrl} alt={user.fullName ?? "Admin"} width={36} height={36} className="h-full w-full rounded-full object-cover" />
+                  {user?.avatar ? (
+                    <Image src={user.avatar} alt={user.name ?? "Admin"} width={36} height={36} className="h-full w-full rounded-full object-cover" />
                   ) : (
                     <AvatarFallback className="bg-[#0B2545] text-xs font-bold text-white">
-                      {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                      {(user?.name?.[0] ?? "A").toUpperCase()}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-foreground">
-                    {user?.fullName ?? user?.username ?? "Admin"}
+                    {user?.name ?? "Admin"}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {user?.primaryEmailAddress?.emailAddress ?? "Administrator"}
+                    {user?.email ?? "Administrator"}
                   </span>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function AdminHeader() {
                 <DropdownMenuItem
                   variant="destructive"
                   className="flex items-center gap-2"
-                  onClick={() => signOut({ redirectUrl: "/" })}
+                  onClick={async () => { await logout(); window.location.href = "/"; }}
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out

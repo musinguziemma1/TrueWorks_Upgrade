@@ -3,15 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser, useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Menu, ArrowRight } from "lucide-react";
+import { X, Menu, ArrowRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { convexClient } from "@/lib/convex";
 import { Logo } from "@/components/logo";
 import { SocialIcon, socialLinks } from "@/components/layout/social-icons";
+import { useAuth } from "@/lib/auth/provider";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -22,7 +21,7 @@ const navLinks = [
 ];
 
 function AdminDashboardLink({ onClose }: { onClose: () => void }) {
-  const isAdmin = useQuery(api.users.isAdmin);
+  const { isAdmin } = useAuth();
   if (!isAdmin) return null;
   return (
     <Link
@@ -74,8 +73,7 @@ export function MobileNav({ open: externalOpen, onClose, onToggle }: MobileNavPr
 
 function MobileNavPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
-  const { isLoaded, isSignedIn } = useUser();
-  const { signOut } = useAuth();
+  const { isAuthenticated, loading, user, logout } = useAuth();
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -169,9 +167,9 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
             Talk to Our Team
           </Link>
 
-          {isLoaded && (
+          {!loading && (
             <div className="space-y-2 border-t border-border pt-4">
-              {!isSignedIn ? (
+              {!isAuthenticated ? (
                 <>
                   <Link
                     href="/sign-in"
@@ -199,9 +197,13 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                   </Link>
                   {convexClient && <AdminDashboardLink onClose={onClose} />}
                   <button
-                    onClick={() => signOut({ redirectUrl: "/" })}
-                    className="w-full rounded-lg bg-surface px-5 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface/80"
+                    onClick={() => {
+                      logout();
+                      onClose();
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface px-5 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface/80"
                   >
+                    <LogOut className="h-4 w-4" />
                     Sign out
                   </button>
                 </>

@@ -4,16 +4,23 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard, Search } from "lucide-react";
+import { ShoppingCart, Menu, Mail, Phone, User, LayoutDashboard, Search, LogOut } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { convexClient } from "@/lib/convex";
 import { useCart } from "@/components/layout/cart-context";
 import { useSettings } from "@/lib/settings-context";
+import { useAuth } from "@/lib/auth/provider";
 import MobileNav from "@/components/layout/mobile-nav";
 import { Logo } from "@/components/logo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const navLinks = [
   { label: "Home", href: "/" },
@@ -24,10 +31,16 @@ export const navLinks = [
 ];
 
 function AdminMenuLink() {
-  const isAdmin = useQuery(api.users.isAdmin);
+  const { isAdmin } = useAuth();
   if (!isAdmin) return null;
   return (
-    <UserButton.Link label="Admin Dashboard" labelIcon={<LayoutDashboard className="h-4 w-4" />} href="/admin" />
+    <Link
+      href="/admin"
+      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-surface"
+    >
+      <LayoutDashboard className="h-4 w-4" />
+      Admin Dashboard
+    </Link>
   );
 }
 
@@ -100,7 +113,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { totalItems } = useCart();
   const pathname = usePathname();
-  const { isLoaded, isSignedIn } = useUser();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const settings = useSettings();
 
   useEffect(() => {
@@ -220,7 +233,7 @@ export default function Header() {
                 )}
               </Link>
 
-              {isLoaded && !isSignedIn && (
+              {!loading && !isAuthenticated && (
                 <Link
                   href="/sign-in"
                   className="hidden items-center rounded-lg border border-primary/15 px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:border-accent/40 hover:bg-surface sm:inline-flex"
@@ -229,15 +242,45 @@ export default function Header() {
                 </Link>
               )}
 
-              {isLoaded && isSignedIn && (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface">
-                  <UserButton>
-                    <UserButton.MenuItems>
-                      <UserButton.Link label="My Account" labelIcon={<User className="h-4 w-4" />} href="/account" />
-                      {convexClient && <AdminMenuLink />}
-                    </UserButton.MenuItems>
-                  </UserButton>
-                </div>
+              {!loading && isAuthenticated && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface">
+                        <User className="h-5 w-5" />
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="flex items-center gap-2 px-2 py-1.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white text-sm font-semibold">
+                        {(user?.name?.[0] ?? user?.email?.[0] ?? "U").toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{user?.name ?? "User"}</span>
+                        <span className="text-xs text-muted-foreground">{user?.email}</span>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/account" className="cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          My Account
+                        </Link>
+                      }
+                    />
+                    {convexClient && <AdminMenuLink />}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      onSelect={logout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
 
               <Link

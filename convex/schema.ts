@@ -3,21 +3,116 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    clerkId: v.string(),
+    clerkId: v.optional(v.string()),
     tokenIdentifier: v.string(),
     email: v.string(),
+    normalizedEmail: v.optional(v.string()),
+    emailVerified: v.optional(v.boolean()),
+    passwordHash: v.optional(v.string()),
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
     role: v.union(v.literal("superadmin"), v.literal("owner"), v.literal("admin"), v.literal("editor"), v.literal("viewer")),
     status: v.optional(v.union(v.literal("active"), v.literal("suspended"))),
     lastLoginAt: v.optional(v.number()),
     loginCount: v.optional(v.number()),
+    lastPasswordChangeAt: v.optional(v.number()),
+    securityVersion: v.optional(v.number()),
+    mfaEnabled: v.optional(v.boolean()),
     marketingOptIn: v.optional(v.boolean()),
+    deletedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerkId", ["clerkId"])
-    .index("by_tokenIdentifier", ["tokenIdentifier"]),
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_normalizedEmail", ["normalizedEmail"]),
+
+  sessions: defineTable({
+    tokenHash: v.string(),
+    userId: v.id("users"),
+    createdAt: v.number(),
+    lastActiveAt: v.number(),
+    idleExpiresAt: v.number(),
+    absoluteExpiresAt: v.number(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    city: v.optional(v.string()),
+    region: v.optional(v.string()),
+    country: v.optional(v.string()),
+    revoked: v.boolean(),
+    revokedAt: v.optional(v.number()),
+    refreshedAt: v.optional(v.number()),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId", ["userId"])
+    .index("by_userId_revoked", ["userId", "revoked"]),
+
+  verificationTokens: defineTable({
+    email: v.string(),
+    tokenHash: v.string(),
+    type: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_email_type", ["email", "type"]),
+
+  passwordResetTokens: defineTable({
+    email: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_email", ["email"]),
+
+  mfaFactors: defineTable({
+    userId: v.id("users"),
+    secret: v.string(),
+    verified: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"]),
+
+  recoveryCodes: defineTable({
+    userId: v.id("users"),
+    codeHash: v.string(),
+    used: v.boolean(),
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_userId_used", ["userId", "used"])
+    .index("by_codeHash", ["codeHash"]),
+
+  securityEvents: defineTable({
+    userId: v.id("users"),
+    actorId: v.optional(v.id("users")),
+    action: v.string(),
+    result: v.string(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    city: v.optional(v.string()),
+    region: v.optional(v.string()),
+    country: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_createdAt", ["createdAt"]),
+
+  loginAttempts: defineTable({
+    email: v.string(),
+    success: v.boolean(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_createdAt", ["createdAt"]),
+
 
   mediaFiles: defineTable({
     name: v.string(),

@@ -11,11 +11,31 @@ import {
   sendDownloadReady,
   sendPaymentFailed,
   sendRefundConfirmation,
-  sendWelcomeEmail,
+  handleWelcomeEmailHttp,
   sendNewsletter,
   trackOpen,
   trackClick,
 } from "./email";
+import {
+  registerHandler,
+  loginHandler,
+  logoutHandler,
+  mfaChallengeHandler,
+  verifyEmailHandler,
+  resendVerificationHandler,
+  forgotPasswordHandler,
+  resetPasswordHandler,
+  changePasswordHandler,
+  sessionsHandler,
+  mfaSetupHandler,
+  mfaEnableHandler,
+  mfaDisableHandler,
+  mfaRegenerateRecoveryHandler,
+  meHandler,
+  securityEventsHandler,
+  tokenHandler,
+} from "./iam";
+import { generateJwks } from "./lib/tokens";
 
 const http = httpRouter();
 
@@ -269,7 +289,7 @@ http.route({
 http.route({
   path: "/email/welcome",
   method: "POST",
-  handler: httpAction(withAuditTiming(sendWelcomeEmail)),
+  handler: httpAction(withAuditTiming(handleWelcomeEmailHttp)),
 });
 
 http.route({
@@ -300,6 +320,144 @@ http.route({
   path: "/stripe/webhook",
   method: "POST",
   handler: httpAction(withAuditTiming(handleStripeWebhook)),
+});
+
+// ---------------------------------------------------------------------------
+// TrueWorks IAM
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/iam/register",
+  method: "POST",
+  handler: httpAction(withAuditTiming(registerHandler)),
+});
+
+http.route({
+  path: "/iam/login",
+  method: "POST",
+  handler: httpAction(withAuditTiming(loginHandler)),
+});
+
+http.route({
+  path: "/iam/logout",
+  method: "POST",
+  handler: httpAction(withAuditTiming(logoutHandler)),
+});
+
+http.route({
+  path: "/iam/mfa/challenge",
+  method: "POST",
+  handler: httpAction(withAuditTiming(mfaChallengeHandler)),
+});
+
+http.route({
+  path: "/iam/verify-email",
+  method: "POST",
+  handler: httpAction(withAuditTiming(verifyEmailHandler)),
+});
+
+http.route({
+  path: "/iam/resend-verification",
+  method: "POST",
+  handler: httpAction(withAuditTiming(resendVerificationHandler)),
+});
+
+http.route({
+  path: "/iam/forgot-password",
+  method: "POST",
+  handler: httpAction(withAuditTiming(forgotPasswordHandler)),
+});
+
+http.route({
+  path: "/iam/reset-password",
+  method: "POST",
+  handler: httpAction(withAuditTiming(resetPasswordHandler)),
+});
+
+http.route({
+  path: "/iam/change-password",
+  method: "POST",
+  handler: httpAction(withAuditTiming(changePasswordHandler)),
+});
+
+http.route({
+  path: "/iam/sessions",
+  method: "GET",
+  handler: httpAction(withAuditTiming(sessionsHandler)),
+});
+
+http.route({
+  path: "/iam/sessions/revoke",
+  method: "POST",
+  handler: httpAction(withAuditTiming(sessionsHandler)),
+});
+
+http.route({
+  path: "/iam/mfa/setup",
+  method: "POST",
+  handler: httpAction(withAuditTiming(mfaSetupHandler)),
+});
+
+http.route({
+  path: "/iam/mfa/enable",
+  method: "POST",
+  handler: httpAction(withAuditTiming(mfaEnableHandler)),
+});
+
+http.route({
+  path: "/iam/mfa/disable",
+  method: "POST",
+  handler: httpAction(withAuditTiming(mfaDisableHandler)),
+});
+
+http.route({
+  path: "/iam/mfa/regenerate-recovery",
+  method: "POST",
+  handler: httpAction(withAuditTiming(mfaRegenerateRecoveryHandler)),
+});
+
+http.route({
+  path: "/iam/me",
+  method: "GET",
+  handler: httpAction(withAuditTiming(meHandler)),
+});
+
+http.route({
+  path: "/iam/security-events",
+  method: "GET",
+  handler: httpAction(withAuditTiming(securityEventsHandler)),
+});
+
+http.route({
+  path: "/iam/token",
+  method: "POST",
+  handler: httpAction(withAuditTiming(tokenHandler)),
+});
+
+http.route({
+  path: "/.well-known/jwks.json",
+  method: "GET",
+  handler: httpAction(async (_ctx, _req) => {
+    const privateKey = process.env.IAM_JWT_PRIVATE_KEY;
+    if (!privateKey) {
+      return new Response(JSON.stringify({ error: "JWKS not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    try {
+      const jwks = await generateJwks(privateKey);
+      return new Response(JSON.stringify(jwks), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    } catch {
+      return new Response(JSON.stringify({ error: "Failed to generate JWKS" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }),
 });
 
 // ---------------------------------------------------------------------------

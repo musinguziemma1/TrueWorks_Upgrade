@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth/provider";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Shield, Search, UserPlus, Trash2, Ban, CheckCircle, LogOut, MoreVertical, Mail, Clock, XCircle, RefreshCw } from "lucide-react";
@@ -107,7 +107,7 @@ export default function UsersPage() {
   const users = useQuery(api.users.list);
   const me = useQuery(api.users.current);
   const invitations = useQuery(api.invitations.listAll);
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
   const setRole = useMutation(api.users.setRole);
   const suspendUser = useMutation(api.users.suspendUser);
   const activateUser = useMutation(api.users.activateUser);
@@ -489,7 +489,7 @@ export default function UsersPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => signOut({ redirectUrl: "/" })}
+                            onClick={async () => { await logout(); window.location.href = "/"; }}
                           >
                             <LogOut className="mr-1 h-3.5 w-3.5" />
                             Sign out

@@ -42,12 +42,12 @@ export const exportMyData = query({
       // Cart by Clerk ID
       ctx.db
         .query("carts")
-        .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId))
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId ?? ""))
         .first(),
       // Returns by Clerk ID
       ctx.db
         .query("returns")
-        .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId))
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId ?? ""))
         .collect(),
       // Newsletter subscription by email
       ctx.db
@@ -168,7 +168,7 @@ export const deleteMyData = mutation({
     // Delete cart
     const cart = await ctx.db
       .query("carts")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId ?? ""))
       .first();
     if (cart) {
       await ctx.db.delete(cart._id);
@@ -177,7 +177,7 @@ export const deleteMyData = mutation({
     // Delete returns
     const returns = await ctx.db
       .query("returns")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId ?? ""))
       .collect();
     for (const ret of returns) {
       await ctx.db.delete(ret._id);

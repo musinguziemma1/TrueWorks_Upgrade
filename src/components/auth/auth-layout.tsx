@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { Logo } from "@/components/logo";
 import { Shield, Zap, BarChart3, ArrowRight } from "lucide-react";
 
@@ -30,8 +29,6 @@ export function AuthLayout({
   children: React.ReactNode;
   mode: "signin" | "signup";
 }) {
-  const { user } = useUser();
-
   return (
     <div className="flex min-h-screen">
       {/* Left Panel — Brand */}

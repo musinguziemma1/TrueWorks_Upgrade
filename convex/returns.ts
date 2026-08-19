@@ -54,7 +54,7 @@ export const listMine = query({
     if (!user) return [];
     return await ctx.db
       .query("returns")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", user.clerkId ?? ""))
       .order("desc")
       .collect();
   },
@@ -99,7 +99,7 @@ export const create = mutation({
 
     const now = Date.now();
     const id = await ctx.db.insert("returns", {
-      clerkId: user.clerkId,
+      clerkId: user.clerkId ?? "",
       orderId: args.orderId,
       orderNumber: order.orderNumber,
       customerEmail: user.email,

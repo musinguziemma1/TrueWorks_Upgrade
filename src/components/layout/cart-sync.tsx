@@ -1,90 +1,72 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useUser, useAuth } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useCart } from "@/components/layout/cart-context";
 import { useWishlist } from "@/components/layout/wishlist-context";
+import { useAuth } from "@/lib/auth/provider";
 
-/**
- * Syncs the local cart + wishlist to the server for signed-in users.
- * - On sign-in: server data replaces local (server is cross-device truth);
- *   if the server is empty, the local cart is pushed up instead.
- * - On change: debounce-saves (1s) to the server.
- * Also tracks abandoned carts for recovery emails.
- * Renders nothing.
- */
 export function CartSync() {
-  const { isLoaded, isSignedIn } = useUser();
-  const { getToken } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const cart = useCart();
   const wishlist = useWishlist();
   const [synced, setSynced] = useState(false);
   const pushedLocal = useRef(false);
   const lastTrackedRef = useRef<string>("");
 
-  const serverCart = useQuery(api.carts.getMine, isLoaded && isSignedIn ? {} : "skip");
+  const serverCart = useQuery(api.carts.getMine, loading || !isAuthenticated ? "skip" : {});
   const saveMine = useMutation(api.carts.saveMine);
   const trackAbandoned = useMutation(api.abandonedCarts.track);
-  const currentUser = useQuery(api.users.current, isLoaded && isSignedIn ? {} : "skip");
+  const currentUser = useQuery(api.users.current, loading || !isAuthenticated ? "skip" : {});
 
-  // Initial merge on sign-in
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || synced || serverCart === undefined || currentUser === undefined) return;
+    if (!isAuthenticated || synced || serverCart === undefined || currentUser === undefined) return;
 
     if (serverCart && (serverCart.items.length > 0 || serverCart.wishlist.length > 0)) {
-      // Server has data — it wins (cross-device truth)
       cart.replaceItems(serverCart.items);
       wishlist.replaceItems(serverCart.wishlist);
     } else if (!pushedLocal.current) {
-      // Server empty — push local up
       pushedLocal.current = true;
       saveMine({ items: cart.items, wishlist: wishlist.items }).catch(() => {});
     }
     setSynced(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, isSignedIn, serverCart, currentUser, synced]);
+  }, [isAuthenticated, serverCart, currentUser, synced]);
 
-  // Debounced save on changes
   useEffect(() => {
-    if (!synced || !isSignedIn || !currentUser) return;
+    if (!synced || !isAuthenticated || !currentUser) return;
     const t = setTimeout(() => {
       saveMine({ items: cart.items, wishlist: wishlist.items }).catch(() => {});
     }, 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart.items, wishlist.items, synced, isSignedIn, currentUser]);
+  }, [cart.items, wishlist.items, synced, isAuthenticated, currentUser]);
 
-  // Reset sync state on sign-out so a different account can re-sync
   useEffect(() => {
-    if (isLoaded && !isSignedIn && synced) {
+    if (!loading && !isAuthenticated && synced) {
       setSynced(false);
       pushedLocal.current = false;
     }
-  }, [isLoaded, isSignedIn, synced]);
+  }, [loading, isAuthenticated, synced]);
 
-  // Track abandoned carts for non-logged-in users with items in cart
   useEffect(() => {
-    if (!isLoaded || isSignedIn || cart.items.length === 0) return;
+    if (loading || isAuthenticated || cart.items.length === 0) return;
 
-    // Create a fingerprint from cart items to avoid duplicate tracking
     const fingerprint = cart.items.map((i) => `${i.id}:${i.quantity}`).join("|");
     if (fingerprint === lastTrackedRef.current) return;
 
-    // Debounce tracking to avoid excessive writes
     const t = setTimeout(() => {
       lastTrackedRef.current = fingerprint;
-      // Use a generic session email for anonymous carts
-      const sessionEmail = `guest-${localStorage.getItem("trueworks-session-id") || Date.now()}@trueworks.local`;
+      const sessionEmail = `guest-${Date.now()}@trueworks.local`;
       trackAbandoned({
         email: sessionEmail,
         items: cart.items,
       }).catch(() => {});
-    }, 5000); // Track after 5 seconds of cart stability
+    }, 5000);
 
     return () => clearTimeout(t);
-  }, [cart.items, isLoaded, isSignedIn, trackAbandoned]);
+  }, [cart.items, loading, isAuthenticated, trackAbandoned]);
 
   return null;
 }

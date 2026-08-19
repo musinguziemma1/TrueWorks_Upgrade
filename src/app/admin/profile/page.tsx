@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth/provider";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -42,8 +42,8 @@ const roleColors: Record<string, string> = {
 };
 
 export default function AdminProfilePage() {
-  const { user } = useUser();
-  const { signOut } = useAuth();
+  const { user } = useAuth();
+  const { logout } = useAuth();
   const router = useRouter();
   const me = useQuery(api.users.current);
   const updateUser = useMutation(api.users.update);
@@ -93,11 +93,11 @@ export default function AdminProfilePage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <Avatar className="h-24 w-24">
-                {user?.imageUrl && (
-                  <AvatarImage src={user.imageUrl} alt={user.fullName ?? ""} />
+                {user?.avatar && (
+                  <AvatarImage src={user.avatar} alt={user.name ?? ""} />
                 )}
                 <AvatarFallback className="bg-[#0B2545] text-2xl font-bold text-white">
-                  {initials(user?.fullName ?? undefined, user?.primaryEmailAddress?.emailAddress ?? undefined)}
+                  {initials(user?.name ?? undefined, user?.email ?? undefined)}
                 </AvatarFallback>
               </Avatar>
               {editing ? (
@@ -105,7 +105,7 @@ export default function AdminProfilePage() {
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={user?.fullName ?? "Your name"}
+                    placeholder={user?.name ?? "Your name"}
                   />
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1">
@@ -119,10 +119,10 @@ export default function AdminProfilePage() {
               ) : (
                 <>
                   <h2 className="mt-4 text-xl font-semibold text-foreground">
-                    {user?.fullName ?? user?.username ?? "Admin"}
+                    {user?.name ?? "Admin"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {user?.primaryEmailAddress?.emailAddress ?? "—"}
+                    {user?.email ?? "—"}
                   </p>
                   {me && (
                     <Badge variant="outline" className={`mt-3 ${roleColors[me.role] ?? ""}`}>
@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
                     size="sm"
                     className="mt-4"
                     onClick={() => {
-                      setName(user?.fullName ?? "");
+                      setName(user?.name ?? "");
                       setEditing(true);
                     }}
                   >
@@ -146,7 +146,7 @@ export default function AdminProfilePage() {
               <Button
                 variant="outline"
                 className="mt-4 w-full"
-                onClick={() => signOut({ redirectUrl: "/" })}
+                onClick={async () => { await logout(); window.location.href = "/"; }}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
@@ -160,7 +160,7 @@ export default function AdminProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Account Details</CardTitle>
-              <CardDescription>Your account information from Clerk</CardDescription>
+              <CardDescription>Your TrueWorks account information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -168,14 +168,14 @@ export default function AdminProfilePage() {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Full Name</p>
-                    <p className="text-sm font-medium">{user?.fullName ?? "—"}</p>
+                    <p className="text-sm font-medium">{user?.name ?? "—"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <Mail className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="text-sm font-medium">{user?.primaryEmailAddress?.emailAddress ?? "—"}</p>
+                    <p className="text-sm font-medium">{user?.email ?? "—"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
@@ -229,12 +229,12 @@ export default function AdminProfilePage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
-                  <p className="text-xs text-muted-foreground">Session ID: {user?.id?.slice(0, 20)}...</p>
+                  <p className="text-sm font-medium">Signed in as {user?.email ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">Account ID: {user?._id?.slice(0, 20)}...</p>
                 </div>
                 <Button
                   variant="destructive"
-                  onClick={() => signOut({ redirectUrl: "/" })}
+                  onClick={async () => { await logout(); window.location.href = "/"; }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out

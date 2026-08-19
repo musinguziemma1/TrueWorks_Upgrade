@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -117,11 +116,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        <ClerkProvider>
-          <TooltipProvider>
-            <Providers>{children}</Providers>
-          </TooltipProvider>
-        </ClerkProvider>
+        <TooltipProvider>
+          <Providers>{children}</Providers>
+        </TooltipProvider>
         <Analytics />
         <SpeedInsights />
       </body>

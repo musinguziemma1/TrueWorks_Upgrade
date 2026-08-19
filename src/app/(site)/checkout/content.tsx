@@ -19,7 +19,7 @@ import {
   Globe,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth/provider";
 import {
   Elements,
   PaymentElement,
@@ -148,8 +148,7 @@ export default function CheckoutContent() {
   const router = useRouter();
   const { track } = useAnalytics();
   const { items, totalItems, totalPrice, clearCart } = useCart();
-  const { isLoaded: authLoaded, isSignedIn, getToken } = useAuth();
-  const { user } = useUser();
+  const { loading: authLoaded, isAuthenticated: isSignedIn, getToken, user } = useAuth();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -182,16 +181,23 @@ export default function CheckoutContent() {
   // Prefill contact fields from the signed-in user.
   useEffect(() => {
     if (!user) return;
-    const primaryEmail = user.primaryEmailAddress?.emailAddress ?? "";
+    const primaryEmail = user.email ?? "";
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (primaryEmail && !email) setEmail(primaryEmail);
-    if (user.firstName && !firstName) setFirstName(user.firstName);
-    if (user.lastName && !lastName) setLastName(user.lastName);
+    if (user.name && !firstName && !lastName) {
+      const parts = user.name.trim().split(/\s+/);
+      if (parts.length > 1) {
+        setFirstName(parts[0] ?? "");
+        setLastName(parts.slice(1).join(" "));
+      } else {
+        setFirstName(user.name.trim());
+      }
+    }
   }, [user, email, firstName, lastName]);
 
   const getConvexToken = async (): Promise<string | null> => {
     try {
-      return await getToken({ template: "convex" });
+      return await getToken();
     } catch {
       return null;
     }

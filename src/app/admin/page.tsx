@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import dynamic from "next/dynamic"
-import Link from "next/link"
-import { useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
+import { useMemo } from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 import {
   DollarSign,
   ShoppingCart,
@@ -18,15 +17,18 @@ import {
   Clock,
   ShoppingBag,
   Activity,
-  Monitor,
-  CalendarDays,
   ArrowRight,
   Loader2,
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatPrice } from "@/lib/utils"
+  Shield,
+  UserCog,
+  CalendarDays,
+  Monitor,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatPrice } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/provider";
 
 const AdminRevenueChart = dynamic(
   () => import("@/components/admin/admin-revenue-chart").then((m) => m.default),
@@ -38,7 +40,7 @@ const AdminRevenueChart = dynamic(
       </div>
     ),
   }
-)
+);
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -48,27 +50,26 @@ function StatusBadge({ status }: { status: string }) {
     cancelled: "bg-red-50 text-red-700 border-red-200",
     refunded: "bg-orange-50 text-orange-700 border-orange-200",
     failed: "bg-red-50 text-red-700 border-red-200",
-  }
+  };
   return (
     <Badge variant="outline" className={`${styles[status] || ""} font-medium capitalize`}>
       {status}
     </Badge>
-  )
+  );
 }
 
 export default function AdminDashboard() {
-  const { user } = useUser();
+  const { user } = useAuth();
+  const dash = useQuery(api.dashboard.summary);
 
-  const dash = useQuery(api.dashboard.summary)
-
-  const orderStats = dash?.orderStats
-  const productStats = dash?.productStats
-  const recentOrders = dash?.recentOrders ?? []
-  const totalSubscribers = dash?.subscriberCount ?? 0
+  const orderStats = dash?.orderStats;
+  const productStats = dash?.productStats;
+  const recentOrders = dash?.recentOrders ?? [];
+  const totalSubscribers = dash?.subscriberCount ?? 0;
   const analyticsSummary = {
     totalDownloads: dash?.totalDownloads ?? 0,
     dailyData: dash?.dailyRevenue ?? [],
-  }
+  };
 
   const today = useMemo(() => {
     return new Date().toLocaleDateString("en-GB", {
@@ -76,42 +77,42 @@ export default function AdminDashboard() {
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
-  }, [])
+    });
+  }, []);
 
-  const isLoading = dash === undefined
+  const isLoading = dash === undefined;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
       </div>
-    )
+    );
   }
 
-const revenue = orderStats?.totalRevenue ?? 0
-  const totalOrders = orderStats?.total ?? 0
-  const pendingOrders = orderStats?.pending ?? 0
-  const completedOrders = orderStats?.completed ?? 0
-  const refundedOrders = orderStats?.refunded ?? 0
-  const totalProducts = productStats?.total ?? 0
-const publishedProducts = productStats?.published ?? 0
-  const draftProducts = productStats?.draft ?? 0
+  const revenue = orderStats?.totalRevenue ?? 0;
+  const totalOrders = orderStats?.total ?? 0;
+  const pendingOrders = orderStats?.pending ?? 0;
+  const completedOrders = orderStats?.completed ?? 0;
+  const refundedOrders = orderStats?.refunded ?? 0;
+  const totalProducts = productStats?.total ?? 0;
+  const publishedProducts = productStats?.published ?? 0;
+  const draftProducts = productStats?.draft ?? 0;
 
-  const revenue45 = analyticsSummary?.dailyData?.reduce((sum, d) => sum + d.revenue, 0) ?? 0
+  const revenue45 = analyticsSummary?.dailyData?.reduce((sum, d) => sum + d.revenue, 0) ?? 0;
 
-const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
+  const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? [];
   const revenueChartData = revenueData.map((d) => ({
     month: d.date.slice(5),
     revenue: d.revenue,
-  }))
+  }));
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#0B2545] font-heading">
-            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
+            Welcome back{user?.name ? `, ${user.name}` : ""}
           </h1>
           <p className="text-sm text-muted-foreground font-body flex items-center gap-2 mt-1">
             <CalendarDays className="h-4 w-4" />
@@ -257,7 +258,7 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
         </div>
       </section>
 
-      <section className="space-y-6">
+      <section className="space-y-4">
         <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Analytics</h2>
         <Card className="transition-shadow duration-200 hover:shadow-card">
           <CardHeader>
@@ -352,6 +353,7 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
               { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-[#C9A227]" },
               { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600" },
               { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600" },
+              { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600" },
             ].map((action) => (
               <Link
                 key={action.label}
@@ -368,5 +370,5 @@ const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? []
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

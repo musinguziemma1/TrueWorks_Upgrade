@@ -3,7 +3,7 @@
 import Link from "next/link"
 import NextImage from "next/image"
 import { usePathname } from "next/navigation"
-import { useUser, useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth/provider"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
@@ -119,8 +119,7 @@ const navSections: NavSection[] = [
 export default function AdminSidebar() {
   const pathname = usePathname()
   const { mobileOpen, setMobileOpen } = useAdminSidebar()
-  const { user } = useUser()
-  const { signOut } = useAuth()
+  const { user } = useAuth()
   const me = useQuery(api.users.current)
 
   const isAdminUser = me && ["superadmin", "admin", "owner"].includes(me.role)
@@ -248,17 +247,17 @@ export default function AdminSidebar() {
             onClick={() => setMobileOpen(false)}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
-              {user?.imageUrl ? (
-                <NextImage src={user.imageUrl} alt={user.fullName ?? "Admin"} width={36} height={36} className="h-full w-full object-cover" />
+              {user?.avatar ? (
+                <NextImage src={user.avatar} alt={user.name ?? "Admin"} width={36} height={36} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs font-bold text-white">
-                  {(user?.firstName?.[0] ?? "A").toUpperCase()}
+                  {(user?.name?.[0] ?? "A").toUpperCase()}
                 </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">
-                {user?.fullName ?? user?.username ?? "Admin"}
+                {user?.name ?? "Admin"}
               </p>
               <p className="truncate text-xs text-white/40">
                 {me ? (ROLE_LABELS[me.role] ?? me.role) : "Loading..."}
