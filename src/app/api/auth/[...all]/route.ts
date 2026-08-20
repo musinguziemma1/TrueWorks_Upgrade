@@ -119,6 +119,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const cookie = req.headers.get("cookie") ?? "";
 
+  if (pathname === "/token") {
+    const res = await fetch(`${getIamBase()}/token`, {
+      method: "POST",
+      headers: forwardedHeaders(req, true),
+      body: JSON.stringify(body ?? {}),
+    });
+    return proxyIamResponse(res);
+  }
+
   if (pathname === "/login") {
     const res = await fetch(`${getIamBase()}/login`, {
       method: "POST",

@@ -192,14 +192,21 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    return await ctx.db.query("users").order("desc").take(200);
+    const users = await ctx.db.query("users").order("desc").take(200);
+    return users.map((u) => stripPasswordHash(u));
   },
 });
+
+export function stripPasswordHash<T extends { passwordHash?: string }>(user: T | null) {
+  if (!user) return null;
+  const { passwordHash: _ph, ...rest } = user;
+  return rest;
+}
 
 export const current = query({
   args: {},
   handler: async (ctx) => {
-    return await getCurrentUser(ctx);
+    return stripPasswordHash(await getCurrentUser(ctx));
   },
 });
 
