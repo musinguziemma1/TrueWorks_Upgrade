@@ -67,6 +67,13 @@ Note the `.convex.site` domain — HTTP routes are served there, not on
 (The `.env.local` placeholders `GOOGLE_CLIENT_ID=` / `GOOGLE_CLIENT_SECRET=`
 exist for local reference but production reads the Convex env vars.)
 
+### Super admin auto-promotion
+
+Accounts whose email is listed in `SUPERADMIN_EMAILS` (comma-separated) are
+created with `role: superadmin` on register, and are promoted to `superadmin`
+on every password login or Google sign-in (register/login/OAuth paths). This
+lets you seed admin access without manually editing the DB.
+
 ---
 
 ## 3. Cleanup — stale Clerk env vars (already removed from `.env.local`)

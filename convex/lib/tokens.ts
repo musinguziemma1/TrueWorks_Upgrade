@@ -4,6 +4,18 @@ export function normalizeEmail(email: string): string {
   return `${local.toLowerCase()}@${domain}`.trim();
 }
 
+export function isSuperAdminEmail(email: string): boolean {
+  const normalized = normalizeEmail(email);
+  return (process.env.SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => normalizeEmail(e.trim()))
+    .includes(normalized);
+}
+
+export function initialRoleForEmail(email: string): "superadmin" | "viewer" {
+  return isSuperAdminEmail(email) ? "superadmin" : "viewer";
+}
+
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }

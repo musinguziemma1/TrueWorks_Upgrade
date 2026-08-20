@@ -11,6 +11,8 @@ import {
   parseUserAgent,
   checkPasswordStrength,
   anonymizeIp,
+  isSuperAdminEmail,
+  initialRoleForEmail,
 } from "./lib/tokens";
 import {
   SESSION_ABSOLUTE_MS,
@@ -126,7 +128,7 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
     emailVerified: false,
     passwordHash,
     name,
-    role: "viewer",
+    role: initialRoleForEmail(normalized),
     status: "active",
     createdAt: now,
     updatedAt: now,
@@ -234,6 +236,14 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
       userAgent: ua,
     });
     return json({ error: "Invalid credentials." }, 401);
+  }
+
+  if (isSuperAdminEmail(normalized) && user.role !== "superadmin") {
+    await ctx.runMutation(internal.iamDb.patchDoc, {
+      id: user._id,
+      fields: { role: "superadmin", updatedAt: Date.now() },
+    });
+    user.role = "superadmin";
   }
 
   if (user.status === "suspended") {

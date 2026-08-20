@@ -2,7 +2,7 @@ import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { createSession, recordSecurityEvent } from "./lib/sessions";
-import { normalizeEmail } from "./lib/tokens";
+import { normalizeEmail, isSuperAdminEmail, initialRoleForEmail } from "./lib/tokens";
 
 export const finalizeGoogleLogin = internalMutation({
   args: {
@@ -26,10 +26,11 @@ export const finalizeGoogleLogin = internalMutation({
     if (existing) {
       userId = existing._id;
       await ctx.db.patch(existing._id, {
-        emailVerified: true,
-        name: existing.name ?? args.name,
-        avatar: existing.avatar ?? args.avatar,
-        lastLoginAt: now,
+emailVerified: true,
+      name: existing.name ?? args.name,
+      avatar: existing.avatar ?? args.avatar,
+      role: isSuperAdminEmail(email) ? "superadmin" : existing.role,
+      lastLoginAt: now,
         loginCount: (existing.loginCount ?? 0) + 1,
         updatedAt: now,
       });
@@ -44,7 +45,7 @@ export const finalizeGoogleLogin = internalMutation({
         emailVerified: true,
         name: args.name,
         avatar: args.avatar,
-        role: "viewer",
+        role: initialRoleForEmail(email),
         status: "active",
         createdAt: now,
         updatedAt: now,
