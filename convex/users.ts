@@ -197,7 +197,9 @@ export const list = query({
   },
 });
 
-export function stripPasswordHash<T extends { passwordHash?: string }>(user: T | null) {
+export function stripPasswordHash<T extends { passwordHash?: string }>(user: T): Omit<T, "passwordHash">;
+export function stripPasswordHash<T extends { passwordHash?: string }>(user: T | null | undefined): Omit<T, "passwordHash"> | null;
+export function stripPasswordHash<T extends { passwordHash?: string }>(user: T | null | undefined) {
   if (!user) return null;
   const { passwordHash: _ph, ...rest } = user;
   return rest;
