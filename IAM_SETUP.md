@@ -13,25 +13,32 @@ The IAM mints short-lived RS256 JWTs for the Convex client. The private key live
 in a Convex environment variable; the public key is served automatically via
 `/.well-known/jwks.json` for Convex to validate tokens against.
 
-**Where the generated key already is:** `trueworks/.env.local`
+> ⚠️ **Critical:** the value must contain **real newlines**, never literal `\n`
+> escape sequences. A value with literal `\n` parses as a broken PEM and makes
+> `/.well-known/jwks.json` and `/iam/token` fail with 500. If you copied the key
+> from a one-line string, replace every `\n` with an actual line break before
+> saving.
+
+The key is a PKCS#8 PEM blob, e.g.:
 
 ```bash
-IAM_JWT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIEvgIBADA...-----END PRIVATE KEY-----
+IAM_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+MIIEvg... (base64 body lines) ...41w==
+-----END PRIVATE KEY-----"
 ```
 
 **Action — set it in the Convex dashboard:**
 https://dashboard.convex.dev/t/emmanuel-musinguzi/trueworks-upgrade/disciplined-clownfish-256/settings/environment-variables
 
-1. Copy the entire `IAM_JWT_PRIVATE_KEY=` value from `.env.local` (it is a single
-   line; newlines are already escaped as literal `\n`).
+1. Paste the **entire** PEM (header line, base64 body, footer line) with real
+   newlines between every line.
 2. Variable name: `IAM_JWT_PRIVATE_KEY`
-3. Paste the value <b>exactly as-is</b> (single line with `\n` escapes).
-   If the dashboard forces multi-line, replace every `\n` with an actual newline
-   before pasting.
-4. Save.
+3. Save.
 
-**Verify:** `curl -s https://disciplined-clownfish-256.convex.cloud/.well-known/jwks.json`
+**Verify:** `curl -s https://disciplined-clownfish-256.convex.site/.well-known/jwks.json`
 returns a `keys` array (public side only — the private key is never exposed).
+Note the `.convex.site` domain — HTTP routes are served there, not on
+`.convex.cloud`.
 
 ---
 

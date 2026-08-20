@@ -3,26 +3,16 @@
 
 import { internal } from "./_generated/api";
 import {
-  normalizeEmail,
   isValidEmail,
+  normalizeEmail,
   randomToken,
   toBase64Url,
   sha256Hex,
-  checkPasswordStrength,
   parseUserAgent,
+  checkPasswordStrength,
   anonymizeIp,
 } from "./lib/tokens";
 import {
-  createSession,
-  revokeSession,
-  revokeAllSessions,
-  listSessions,
-  validateSession,
-  createVerificationToken,
-  consumeVerificationToken,
-  recordSecurityEvent,
-  recordLoginAttempt,
-  checkRateLimit,
   SESSION_ABSOLUTE_MS,
   SESSION_ABSOLUTE_REMEMBER_MS,
 } from "./lib/sessions";
@@ -91,9 +81,6 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
   const ip = getClientIp(request);
   const ua = request.headers.get("user-agent") ?? "";
 
-  const rl = await checkRateLimit(ctx, `register:${ip ?? "unknown"}`, 60 * 60 * 1000, 5);
-  if (!rl.allowed) return forbidden("Too many registration attempts. Please try again later.");
-
   const body = await parseJsonBody(request);
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
@@ -105,15 +92,18 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
   const pwCheck = checkPasswordStrength(password, email);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
 
-  const normalized = normalizeEmail(email);
+  const rl = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `register:${ip ?? "unknown"}`,
+    windowMs: 60 * 60 * 1000,
+    maxAttempts: 5,
+  });
+  if (!rl.allowed) return forbidden("Too many registration attempts. Please try again later.");
 
-  const existing = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const normalized = normalizeEmail(email);
+  const existing = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (existing) {
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: existing._id,
       action: "registration_attempt",
       result: "email_exists",
@@ -128,7 +118,7 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
   const clerkId = `tw_${randomToken(16)}`;
   const tokenIdentifier = `${process.env.CONVEX_AUTH_ISSUER ?? "https://trueworks.app"}|${clerkId}`;
 
-  const userId = await ctx.db.insert("users", {
+  const userId = await ctx.runMutation(internal.iamDb.insertUser, {
     clerkId,
     tokenIdentifier,
     email,
@@ -144,7 +134,11 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
     loginCount: 0,
   });
 
-  const { rawToken: verifyToken } = await createVerificationToken(ctx, email, "email_verify", 24 * 60 * 60 * 1000);
+  const { rawToken: verifyToken } = await ctx.runMutation(internal.iamDb.createVerificationToken, {
+    email,
+    type: "email_verify",
+    expiresInMs: 24 * 60 * 60 * 1000,
+  });
 
   await ctx.scheduler.runAfter(0, internal.email.sendVerificationEmail, {
     to: email,
@@ -152,7 +146,7 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
     token: verifyToken,
   });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId,
     action: "registration",
     result: "success",
@@ -179,50 +173,60 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
   const password = typeof body?.password === "string" ? body.password : "";
   const rememberMe = !!body?.rememberMe;
 
+  const normalized = normalizeEmail(email);
+
   // rate limits
-  const rlEmail = await checkRateLimit(ctx, `login:${normalizeEmail(email)}`, 15 * 60 * 1000, 8);
+  const rlEmail = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `login:${normalized}`,
+    windowMs: 15 * 60 * 1000,
+    maxAttempts: 8,
+  });
   if (!rlEmail.allowed) {
-    await recordSecurityEvent(ctx, {
-      userId: "",
-      action: "login",
-      result: "rate_limited",
-      ipAddress: anonymizeIp(ip),
-      userAgent: ua,
-      metadata: { email },
-    });
     return forbidden("Too many login attempts. Please try again later.");
   }
-  const rlIp = await checkRateLimit(ctx, `login:ip:${ip ?? "unknown"}`, 15 * 60 * 1000, 20);
+  const rlIp = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `login:ip:${ip ?? "unknown"}`,
+    windowMs: 15 * 60 * 1000,
+    maxAttempts: 20,
+  });
   if (!rlIp.allowed) {
     return forbidden("Too many login attempts from this network. Please try again later.");
   }
 
-  const normalized = normalizeEmail(email);
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (!user || !user.passwordHash) {
-    await recordLoginAttempt(ctx, normalized, false, anonymizeIp(ip), ua);
-    await recordSecurityEvent(ctx, {
-      userId: user?._id ?? "",
-      action: "login",
-      result: "invalid_credentials",
+    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+      email: normalized,
+      success: false,
       ipAddress: anonymizeIp(ip),
       userAgent: ua,
-      metadata: { email: normalized },
     });
+    if (user?._id) {
+      await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
+        userId: user._id,
+        action: "login",
+        result: "invalid_credentials",
+        ipAddress: anonymizeIp(ip),
+        userAgent: ua,
+        metadata: { email: normalized },
+      });
+    }
     return json({ error: "Invalid credentials." }, 401);
   }
 
   const passwordOk = await ctx.runAction(internal.lib.password.verifyPassword, {
-    hash: user.passwordHash ?? "",
+    hash: user.passwordHash,
     plain: password,
   });
   if (!passwordOk) {
-    await recordLoginAttempt(ctx, normalized, false, anonymizeIp(ip), ua);
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+      email: normalized,
+      success: false,
+      ipAddress: anonymizeIp(ip),
+      userAgent: ua,
+    });
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: user._id,
       action: "login",
       result: "invalid_credentials",
@@ -233,26 +237,35 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
   }
 
   if (user.status === "suspended") {
-    await recordLoginAttempt(ctx, normalized, false, anonymizeIp(ip), ua);
+    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+      email: normalized,
+      success: false,
+      ipAddress: anonymizeIp(ip),
+      userAgent: ua,
+    });
     return json({ error: "This account has been suspended." }, 403);
   }
 
   if (!user.emailVerified) {
-    await recordLoginAttempt(ctx, normalized, true, anonymizeIp(ip), ua);
+    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+      email: normalized,
+      success: true,
+      ipAddress: anonymizeIp(ip),
+      userAgent: ua,
+    });
     return json({ error: "Email not verified.", requiresVerification: true }, 403);
   }
 
   if (user.mfaEnabled) {
     const mfaRaw = randomToken(32);
     const mfaHash = await sha256Hex(mfaRaw);
-    await ctx.db.insert("verificationTokens", {
+    await ctx.runMutation(internal.iamDb.insertVerificationToken, {
       email: normalized,
       tokenHash: mfaHash,
       type: "mfa_pending",
       expiresAt: Date.now() + 5 * 60 * 1000,
-      createdAt: Date.now(),
     });
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: user._id,
       action: "login",
       result: "mfa_required",
@@ -264,7 +277,7 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
 
   // complete login
   const rawToken = randomToken(32);
-  await createSession(ctx, {
+  await ctx.runMutation(internal.iamDb.createSession, {
     userId: user._id,
     rawToken,
     rememberMe,
@@ -272,14 +285,22 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
     userAgent: ua,
   });
 
-  await ctx.db.patch(user._id, {
-    lastLoginAt: Date.now(),
-    loginCount: (user.loginCount ?? 0) + 1,
-    updatedAt: Date.now(),
+  await ctx.runMutation(internal.iamDb.patchDoc, {
+    id: user._id,
+    fields: {
+      lastLoginAt: Date.now(),
+      loginCount: (user.loginCount ?? 0) + 1,
+      updatedAt: Date.now(),
+    },
   });
 
-  await recordLoginAttempt(ctx, normalized, true, anonymizeIp(ip), ua);
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+    email: normalized,
+    success: true,
+    ipAddress: anonymizeIp(ip),
+    userAgent: ua,
+  });
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: user._id,
     action: "login",
     result: "success",
@@ -319,27 +340,21 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
 
   if (!mfaSessionToken || !code) return badRequest("Missing fields.");
 
+  const ip = getClientIp(request);
+  const ua = request.headers.get("user-agent") ?? "";
+
   const mfaHash = await sha256Hex(mfaSessionToken);
-  const all = await ctx.db
-    .query("verificationTokens")
-    .withIndex("by_tokenHash", (q: any) => q.eq("tokenHash", mfaHash))
-    .collect();
+  const all = await ctx.runQuery(internal.iamDb.findVerificationTokensByHash, { tokenHash: mfaHash });
 
   const pending = all.find((t: any) => t.type === "mfa_pending" && !t.usedAt && t.expiresAt > Date.now());
   if (!pending) return unauthorized("Invalid or expired MFA session.");
 
   const normalized = normalizeEmail(pending.email);
-  const userRow = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const userRow = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (!userRow) return unauthorized("Invalid MFA session.");
 
-  const factor = await ctx.db
-    .query("mfaFactors")
-    .withIndex("by_userId", (q: any) => q.eq("userId", userRow._id))
-    .first();
+  const factor = await ctx.runQuery(internal.iamDb.findMfaFactorByUser, { userId: userRow._id });
 
   if (!factor?.verified) return unauthorized("MFA not set up.");
 
@@ -350,19 +365,16 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
   let usedRecovery = false;
   if (!ok) {
     const codeHash = await sha256Hex(code.toUpperCase());
-    const rc = await ctx.db
-      .query("recoveryCodes")
-      .withIndex("by_codeHash", (q: any) => q.eq("codeHash", codeHash))
-      .first();
+    const rc = await ctx.runQuery(internal.iamDb.findRecoveryCodeByHash, { codeHash });
     if (rc && rc.userId === userRow._id && !rc.used) {
       ok = true;
       usedRecovery = true;
-      await ctx.db.patch(rc._id, { used: true, usedAt: Date.now() });
+      await ctx.runMutation(internal.iamDb.patchDoc, { id: rc._id, fields: { used: true, usedAt: Date.now() } });
     }
   }
 
   if (!ok) {
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: userRow._id,
       action: "mfa_challenge",
       result: "failed",
@@ -371,12 +383,10 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
     return json({ error: "Invalid MFA code." }, 401);
   }
 
-  await ctx.db.patch(pending._id, { usedAt: Date.now() });
+  await ctx.runMutation(internal.iamDb.patchDoc, { id: pending._id, fields: { usedAt: Date.now() } });
 
-  const ip = getClientIp(request);
-  const ua = request.headers.get("user-agent") ?? "";
   const rawToken = randomToken(32);
-  await createSession(ctx, {
+  await ctx.runMutation(internal.iamDb.createSession, {
     userId: userRow._id,
     rawToken,
     rememberMe: false,
@@ -384,13 +394,16 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
     userAgent: ua,
   });
 
-  await ctx.db.patch(userRow._id, {
-    lastLoginAt: Date.now(),
-    loginCount: (userRow.loginCount ?? 0) + 1,
-    updatedAt: Date.now(),
+  await ctx.runMutation(internal.iamDb.patchDoc, {
+    id: userRow._id,
+    fields: {
+      lastLoginAt: Date.now(),
+      loginCount: (userRow.loginCount ?? 0) + 1,
+      updatedAt: Date.now(),
+    },
   });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: userRow._id,
     action: "mfa_challenge",
     result: usedRecovery ? "recovery_code_used" : "success",
@@ -428,13 +441,10 @@ export async function logoutHandler(ctx: Ctx, request: Request): Promise<Respons
   const rawToken = getCookie(request, "tw_session");
   if (rawToken) {
     const tokenHash = await sha256Hex(rawToken);
-    const session = await ctx.db
-      .query("sessions")
-      .withIndex("by_tokenHash", (q: any) => q.eq("tokenHash", tokenHash))
-      .first();
+    const session = await ctx.runQuery(internal.iamDb.findSessionByTokenHash, { tokenHash });
     if (session) {
-      await revokeSession(ctx, session._id);
-      await recordSecurityEvent(ctx, {
+      await ctx.runMutation(internal.iamDb.revokeSession, { id: session._id });
+      await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
         userId: session.userId,
         action: "logout",
         result: "success",
@@ -456,20 +466,17 @@ export async function verifyEmailHandler(ctx: Ctx, request: Request): Promise<Re
   const body = await parseJsonBody(request);
   const token = typeof body?.token === "string" ? body.token.trim() : "";
 
-  const result = await consumeVerificationToken(ctx, token, "email_verify");
-  if (!result) return badRequest("Invalid or expired verification token.");
+  const consumed = await ctx.runMutation(internal.iamDb.consumeVerificationToken, { token, type: "email_verify" });
+  if (!consumed) return badRequest("Invalid or expired verification token.");
 
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalizeEmail(result.email)))
-    .first();
+  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalizeEmail(consumed.email) });
 
   if (!user) return badRequest("User not found.");
   if (user.emailVerified) return json({ ok: true, alreadyVerified: true });
 
-  await ctx.db.patch(user._id, { emailVerified: true, updatedAt: Date.now() });
+  await ctx.runMutation(internal.iamDb.patchDoc, { id: user._id, fields: { emailVerified: true, updatedAt: Date.now() } });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: user._id,
     action: "email_verified",
     result: "success",
@@ -488,7 +495,12 @@ export async function verifyEmailHandler(ctx: Ctx, request: Request): Promise<Re
 export async function resendVerificationHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
   const ip = getClientIp(request);
-  const rl = await checkRateLimit(ctx, `resend:${ip ?? "unknown"}`, 60 * 60 * 1000, 3);
+
+  const rl = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `resend:${ip ?? "unknown"}`,
+    windowMs: 60 * 60 * 1000,
+    maxAttempts: 3,
+  });
   if (!rl.allowed) return forbidden("Too many requests. Please try again later.");
 
   const body = await parseJsonBody(request);
@@ -496,14 +508,15 @@ export async function resendVerificationHandler(ctx: Ctx, request: Request): Pro
   if (!isValidEmail(email)) return badRequest("Invalid email.");
 
   const normalized = normalizeEmail(email);
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (!user || user.emailVerified) return json({ ok: true }); // don't reveal
 
-  const { rawToken } = await createVerificationToken(ctx, normalized, "email_verify", 24 * 60 * 60 * 1000);
+  const { rawToken } = await ctx.runMutation(internal.iamDb.createVerificationToken, {
+    email: normalized,
+    type: "email_verify",
+    expiresInMs: 24 * 60 * 60 * 1000,
+  });
   await ctx.scheduler.runAfter(0, internal.email.sendVerificationEmail, {
     to: normalized,
     name: user.name ?? "User",
@@ -518,17 +531,19 @@ export async function resendVerificationHandler(ctx: Ctx, request: Request): Pro
 export async function forgotPasswordHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
   const ip = getClientIp(request);
-  const rl = await checkRateLimit(ctx, `forgot:${ip ?? "unknown"}`, 60 * 60 * 1000, 3);
+
+  const rl = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `forgot:${ip ?? "unknown"}`,
+    windowMs: 60 * 60 * 1000,
+    maxAttempts: 3,
+  });
   if (!rl.allowed) return forbidden("Too many requests.");
 
   const body = await parseJsonBody(request);
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const normalized = normalizeEmail(email);
 
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (user && !user.emailVerified) {
     // don't send if unverified
@@ -536,7 +551,11 @@ export async function forgotPasswordHandler(ctx: Ctx, request: Request): Promise
   }
 
   if (user) {
-    const { rawToken } = await createVerificationToken(ctx, normalized, "password_reset", 60 * 60 * 1000);
+    const { rawToken } = await ctx.runMutation(internal.iamDb.createVerificationToken, {
+      email: normalized,
+      type: "password_reset",
+      expiresInMs: 60 * 60 * 1000,
+    });
     await ctx.scheduler.runAfter(0, internal.email.sendPasswordResetEmail, {
       to: normalized,
       name: user.name ?? "User",
@@ -561,14 +580,11 @@ export async function resetPasswordHandler(ctx: Ctx, request: Request): Promise<
   const pwCheck = checkPasswordStrength(newPassword);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
 
-  const result = await consumeVerificationToken(ctx, token, "password_reset");
-  if (!result) return badRequest("Invalid or expired reset token.");
+  const consumed = await ctx.runMutation(internal.iamDb.consumeVerificationToken, { token, type: "password_reset" });
+  if (!consumed) return badRequest("Invalid or expired reset token.");
 
-  const normalized = normalizeEmail(result.email);
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_normalizedEmail", (q: any) => q.eq("normalizedEmail", normalized))
-    .first();
+  const normalized = normalizeEmail(consumed.email);
+  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
 
   if (!user) return badRequest("User not found.");
 
@@ -576,16 +592,19 @@ export async function resetPasswordHandler(ctx: Ctx, request: Request): Promise<
   const now = Date.now();
   const newSecurityVersion = (user.securityVersion ?? 0) + 1;
 
-  await ctx.db.patch(user._id, {
-    passwordHash,
-    updatedAt: now,
-    lastPasswordChangeAt: now,
-    securityVersion: newSecurityVersion,
+  await ctx.runMutation(internal.iamDb.patchDoc, {
+    id: user._id,
+    fields: {
+      passwordHash,
+      updatedAt: now,
+      lastPasswordChangeAt: now,
+      securityVersion: newSecurityVersion,
+    },
   });
 
-  await revokeAllSessions(ctx, user._id);
+  await ctx.runMutation(internal.iamDb.revokeAllSessions, { userId: user._id });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: user._id,
     action: "password_reset",
     result: "success",
@@ -609,17 +628,17 @@ export async function changePasswordHandler(ctx: Ctx, request: Request): Promise
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
 
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
-
   const body = await parseJsonBody(request);
   const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
   const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
 
   if (!currentPassword || !newPassword) return badRequest("Missing fields.");
 
-  const pwCheck = checkPasswordStrength(newPassword, session.user.email);
+  const pwCheck = checkPasswordStrength(newPassword);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const ok = await ctx.runAction(internal.lib.password.verifyPassword, {
     hash: session.user.passwordHash ?? "",
@@ -631,16 +650,22 @@ export async function changePasswordHandler(ctx: Ctx, request: Request): Promise
   const now = Date.now();
   const newSecurityVersion = (session.user.securityVersion ?? 0) + 1;
 
-  await ctx.db.patch(session.user._id, {
-    passwordHash,
-    updatedAt: now,
-    lastPasswordChangeAt: now,
-    securityVersion: newSecurityVersion,
+  await ctx.runMutation(internal.iamDb.patchDoc, {
+    id: session.user._id,
+    fields: {
+      passwordHash,
+      updatedAt: now,
+      lastPasswordChangeAt: now,
+      securityVersion: newSecurityVersion,
+    },
   });
 
-  await revokeAllSessions(ctx, session.user._id, session.session._id);
+  await ctx.runMutation(internal.iamDb.revokeAllSessions, {
+    userId: session.user._id,
+    exceptSessionId: session.session._id,
+  });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: session.user._id,
     action: "password_changed",
     result: "success",
@@ -664,8 +689,8 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
 
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
@@ -673,10 +698,10 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
   if (action === "revoke") {
     const id = url.searchParams.get("id");
     if (!id) return badRequest("Missing id.");
-    const target = await ctx.db.get(id);
+    const target = await ctx.runQuery(internal.iamDb.getDoc, { id });
     if (!target || target.userId !== session.user._id) return json({ error: "Not found" }, 404);
-    await revokeSession(ctx, id);
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.revokeSession, { id });
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: session.user._id,
       action: "session_revoked",
       result: "success",
@@ -686,8 +711,11 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
   }
 
   if (action === "revoke-others") {
-    const count = await revokeAllSessions(ctx, session.user._id, session.session._id);
-    await recordSecurityEvent(ctx, {
+    const count = await ctx.runMutation(internal.iamDb.revokeAllSessions, {
+      userId: session.user._id,
+      exceptSessionId: session.session._id,
+    });
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: session.user._id,
       action: "all_sessions_revoked",
       result: "success",
@@ -698,8 +726,8 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
   }
 
   if (action === "revoke-all") {
-    const count = await revokeAllSessions(ctx, session.user._id);
-    await recordSecurityEvent(ctx, {
+    const count = await ctx.runMutation(internal.iamDb.revokeAllSessions, { userId: session.user._id });
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: session.user._id,
       action: "all_sessions_revoked",
       result: "success",
@@ -709,7 +737,7 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
     return json({ ok: true, count });
   }
 
-  const all = await listSessions(ctx, session.user._id, true);
+  const all = await ctx.runQuery(internal.iamDb.listSessionsForUser, { userId: session.user._id });
   return json({ sessions: all.map((s: any) => ({ ...s, _id: s._id })) });
 }
 
@@ -718,17 +746,12 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
 export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const secret = generateBase32Secret();
-  await ctx.db.insert("mfaFactors", {
-    userId: session.user._id,
-    secret,
-    verified: false,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
+  await ctx.runMutation(internal.iamDb.insertMfaFactor, { userId: session.user._id, secret });
 
   const otpauth = `otpauth://totp/TrueWorks:${session.user.email}?secret=${secret}&issuer=TrueWorks&period=30&digits=6`;
   return json({ secret, otpauth });
@@ -737,22 +760,20 @@ export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Respo
 export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
 
   const body = await parseJsonBody(request);
   const code = typeof body?.code === "string" ? body.code.trim() : "";
 
-  const factor = await ctx.db
-    .query("mfaFactors")
-    .withIndex("by_userId", (q: any) => q.eq("userId", session.user._id))
-    .first();
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const factor = await ctx.runQuery(internal.iamDb.findMfaFactorByUser, { userId: session.user._id });
 
   if (!factor || factor.verified) return badRequest("MFA already enabled or not started.");
 
   const ok = await verifyTOTP(factor.secret, code);
   if (!ok) {
-    await recordSecurityEvent(ctx, {
+    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: session.user._id,
       action: "mfa_enable",
       result: "failed",
@@ -761,21 +782,14 @@ export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Resp
   }
 
   const codes = generateRecoveryCodes(10);
-  const now = Date.now();
-  for (const c of codes) {
-    const codeHash = await hashRecoveryCode(c);
-    await ctx.db.insert("recoveryCodes", {
-      userId: session.user._id,
-      codeHash,
-      used: false,
-      createdAt: now,
-    });
-  }
+  const codeHashes: string[] = [];
+  for (const c of codes) codeHashes.push(await hashRecoveryCode(c));
 
-  await ctx.db.patch(factor._id, { verified: true, updatedAt: Date.now() });
-  await ctx.db.patch(session.user._id, { mfaEnabled: true, updatedAt: Date.now() });
+  await ctx.runMutation(internal.iamDb.insertRecoveryCodes, { userId: session.user._id, codeHashes });
+  await ctx.runMutation(internal.iamDb.patchDoc, { id: factor._id, fields: { verified: true, updatedAt: Date.now() } });
+  await ctx.runMutation(internal.iamDb.patchDoc, { id: session.user._id, fields: { mfaEnabled: true, updatedAt: Date.now() } });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: session.user._id,
     action: "mfa_enabled",
     result: "success",
@@ -794,12 +808,13 @@ export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Resp
 export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
 
   const body = await parseJsonBody(request);
   const password = typeof body?.password === "string" ? body.password : "";
   const code = typeof body?.code === "string" ? body.code.trim() : "";
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const ok = await ctx.runAction(internal.lib.password.verifyPassword, {
     hash: session.user.passwordHash ?? "",
@@ -807,26 +822,19 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
   });
   if (!ok) return badRequest("Password is incorrect.");
 
-  const factor = await ctx.db
-    .query("mfaFactors")
-    .withIndex("by_userId", (q: any) => q.eq("userId", session.user._id))
-    .first();
+  const factor = await ctx.runQuery(internal.iamDb.findMfaFactorByUser, { userId: session.user._id });
 
   if (!factor?.verified) return badRequest("MFA is not enabled.");
 
   const codeOk = await verifyTOTP(factor.secret, code);
   if (!codeOk) return json({ error: "Invalid MFA code." }, 401);
 
-  await ctx.db.delete(factor._id);
-  const codes = await ctx.db
-    .query("recoveryCodes")
-    .withIndex("by_userId_used", (q: any) => q.eq("userId", session.user._id))
-    .collect();
-  for (const c of codes) await ctx.db.delete(c._id);
+  await ctx.runMutation(internal.iamDb.deleteDoc, { id: factor._id });
+  await ctx.runMutation(internal.iamDb.deleteRecoveryCodesForUser, { userId: session.user._id });
 
-  await ctx.db.patch(session.user._id, { mfaEnabled: false, updatedAt: Date.now() });
+  await ctx.runMutation(internal.iamDb.patchDoc, { id: session.user._id, fields: { mfaEnabled: false, updatedAt: Date.now() } });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: session.user._id,
     action: "mfa_disabled",
     result: "success",
@@ -845,12 +853,13 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
 export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
 
   const body = await parseJsonBody(request);
   const password = typeof body?.password === "string" ? body.password : "";
   const code = typeof body?.code === "string" ? body.code.trim() : "";
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const ok = await ctx.runAction(internal.lib.password.verifyPassword, {
     hash: session.user.passwordHash ?? "",
@@ -858,10 +867,7 @@ export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): 
   });
   if (!ok) return badRequest("Password is incorrect.");
 
-  const factor = await ctx.db
-    .query("mfaFactors")
-    .withIndex("by_userId", (q: any) => q.eq("userId", session.user._id))
-    .first();
+  const factor = await ctx.runQuery(internal.iamDb.findMfaFactorByUser, { userId: session.user._id });
 
   if (!factor?.verified) return badRequest("MFA is not enabled.");
 
@@ -869,24 +875,13 @@ export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): 
   if (!codeOk) return json({ error: "Invalid MFA code." }, 401);
 
   const codes = generateRecoveryCodes(10);
-  const now = Date.now();
-  const existing = await ctx.db
-    .query("recoveryCodes")
-    .withIndex("by_userId_used", (q: any) => q.eq("userId", session.user._id))
-    .collect();
-  for (const c of existing) await ctx.db.delete(c._id);
+  const codeHashes: string[] = [];
+  for (const c of codes) codeHashes.push(await hashRecoveryCode(c));
 
-  for (const c of codes) {
-    const codeHash = await hashRecoveryCode(c);
-    await ctx.db.insert("recoveryCodes", {
-      userId: session.user._id,
-      codeHash,
-      used: false,
-      createdAt: now,
-    });
-  }
+  await ctx.runMutation(internal.iamDb.deleteRecoveryCodesForUser, { userId: session.user._id });
+  await ctx.runMutation(internal.iamDb.insertRecoveryCodes, { userId: session.user._id, codeHashes });
 
-  await recordSecurityEvent(ctx, {
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
     userId: session.user._id,
     action: "recovery_codes_regenerated",
     result: "success",
@@ -1002,7 +997,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
       }).toString(),
     });
     if (!tokenRes.ok) {
-      await ctx.db.insert("loginAttempts", { email: "", success: false, ipAddress: anonymizeIp(ip), userAgent: ua, createdAt: Date.now() });
+      await ctx.runMutation(internal.iamDb.recordFailedLoginAttempt, { ipAddress: anonymizeIp(ip), userAgent: ua });
       console.error(`Google OAuth ${phase} failed with status ${tokenRes.status}`);
       return invalidOauthResponse("Google sign-in could not be completed. Please try again.", 401);
     }
@@ -1065,8 +1060,8 @@ export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
 
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
 
   const user = { ...session.user };
   delete user.passwordHash;
@@ -1078,14 +1073,11 @@ export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
 export async function securityEventsHandler(ctx: Ctx, request: Request): Promise<Response> {
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
-  const session = await validateSession(ctx, rawToken);
-  if (!session.valid) return unauthorized();
 
-  const events = await ctx.db
-    .query("securityEvents")
-    .withIndex("by_userId", (q: any) => q.eq("userId", session.user._id))
-    .order("desc")
-    .take(50);
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const events = await ctx.runQuery(internal.iamDb.listSecurityEventsForUser, { userId: session.user._id });
 
   return json({ events });
 }
@@ -1100,7 +1092,7 @@ export async function tokenHandler(ctx: Ctx, request: Request): Promise<Response
   const rawToken = getCookie(request, "tw_session");
   if (!rawToken) return unauthorized();
 
-  const session = await validateSession(ctx, rawToken);
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
   if (!session.valid || !session.user) return unauthorized();
 
   const privateKey = process.env.IAM_JWT_PRIVATE_KEY;

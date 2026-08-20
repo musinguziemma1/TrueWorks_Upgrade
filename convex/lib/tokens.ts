@@ -137,7 +137,7 @@ export function parseJwtClaims(token: string): Record<string, unknown> | null {
 
 export async function generateJwks(privateKeyPem: string): Promise<Record<string, unknown>> {
   const { importPKCS8, exportJWK } = await import("jose");
-  const key = await importPKCS8(privateKeyPem, "RS256");
+  const key = await importPKCS8(privateKeyPem, "RS256", { extractable: true });
   const jwk = await exportJWK(key);
   return {
     keys: [
