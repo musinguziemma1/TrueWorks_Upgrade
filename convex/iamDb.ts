@@ -9,12 +9,46 @@
 
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { normalizeEmail, sha256Hex } from "./lib/tokens";
+import { normalizeEmail, sha256Hex, randomToken } from "./lib/tokens";
 import {
   SESSION_IDLE_MS,
   SESSION_ABSOLUTE_MS,
   SESSION_ABSOLUTE_REMEMBER_MS,
 } from "./lib/sessions";
+
+const USER_ROLE = v.union(
+  v.literal("superadmin"),
+  v.literal("owner"),
+  v.literal("admin"),
+  v.literal("editor"),
+  v.literal("viewer")
+);
+
+// ======================== SHARED HELPERS ========================
+
+async function rateLimitState(
+  ctx: any,
+  key: string,
+  now: number,
+  windowMs: number,
+  maxAttempts: number
+): Promise<{ allowed: boolean; remaining: number }> {
+  const windowStart = now - windowMs;
+  const existing = await (ctx.db.query("rateLimits") as any)
+    .withIndex("by_key", (q: any) => q.eq("key", key))
+    .first();
+
+  if (existing && existing.windowStart > windowStart) {
+    if (existing.count >= maxAttempts) {
+      return { allowed: false, remaining: 0 };
+    }
+    await ctx.db.patch(existing._id, { count: existing.count + 1 });
+    return { allowed: true, remaining: maxAttempts - existing.count - 1 };
+  }
+
+  await ctx.db.insert("rateLimits", { key, windowStart: now, count: 1 });
+  return { allowed: true, remaining: maxAttempts - 1 };
+}
 
 // ======================== QUERIES ========================
 
@@ -129,24 +163,7 @@ export const validateSession = internalMutation({
 export const checkRateLimit = internalMutation({
   args: { key: v.string(), windowMs: v.number(), maxAttempts: v.number() },
   handler: async (ctx, { key, windowMs, maxAttempts }) => {
-    const now = Date.now();
-    const windowStart = now - windowMs;
-
-    const existing = await ctx.db
-      .query("rateLimits")
-      .withIndex("by_key", (q) => q.eq("key", key))
-      .first();
-
-    if (existing && existing.windowStart > windowStart) {
-      if (existing.count >= maxAttempts) {
-        return { allowed: false, remaining: 0 };
-      }
-      await ctx.db.patch(existing._id, { count: existing.count + 1 });
-      return { allowed: true, remaining: maxAttempts - existing.count - 1 };
-    }
-
-    await ctx.db.insert("rateLimits", { key, windowStart: now, count: 1 });
-    return { allowed: true, remaining: maxAttempts - 1 };
+    return await rateLimitState(ctx, key, Date.now(), windowMs, maxAttempts);
   },
 });
 
@@ -209,6 +226,197 @@ export const deleteDoc = internalMutation({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id as any);
+  },
+});
+
+// ======================== BATCHED AUTH FLOWS ========================
+// These combine several fine-grained operations into a single round trip so
+// the IAM handlers make far fewer Convex calls per request (the login flow
+// drops from ~7 sequential calls to ~3).
+
+export const beginLogin = internalMutation({
+  args: { email: v.string(), ipAddress: v.optional(v.string()) },
+  handler: async (ctx, { email, ipAddress }) => {
+    const now = Date.now();
+    const normalized = normalizeEmail(email);
+
+    const rlEmail = await rateLimitState(ctx, `login:${normalized}`, now, 15 * 60 * 1000, 8);
+    if (!rlEmail.allowed) return { allowed: false, user: null };
+
+    const rlIp = await rateLimitState(ctx, `login:ip:${ipAddress ?? "unknown"}`, now, 15 * 60 * 1000, 20);
+    if (!rlIp.allowed) return { allowed: false, user: null };
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
+      .first();
+    return { allowed: true, user: user as any };
+  },
+});
+
+export const completeLogin = internalMutation({
+  args: {
+    email: v.string(),
+    userId: v.optional(v.string()),
+    rawToken: v.optional(v.string()),
+    rememberMe: v.boolean(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    outcome: v.string(),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const normalized = normalizeEmail(args.email);
+    const { userId, outcome } = args;
+    const isSuccess = outcome === "success";
+
+    if (isSuccess && userId && args.rawToken) {
+      const tokenHash = await sha256Hex(args.rawToken);
+      const absoluteMs = args.rememberMe ? SESSION_ABSOLUTE_REMEMBER_MS : SESSION_ABSOLUTE_MS;
+      await ctx.db.insert("sessions", {
+        tokenHash,
+        userId: userId as any,
+        createdAt: now,
+        lastActiveAt: now,
+        idleExpiresAt: now + SESSION_IDLE_MS,
+        absoluteExpiresAt: now + absoluteMs,
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+        revoked: false,
+      });
+      const user = (await ctx.db.get(userId as any)) as any;
+      if (user) {
+        await ctx.db.patch(user._id, {
+          lastLoginAt: now,
+          loginCount: (user.loginCount ?? 0) + 1,
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.insert("loginAttempts", {
+      email: normalized,
+      success: isSuccess || outcome === "email_not_verified",
+      ipAddress: args.ipAddress,
+      userAgent: args.userAgent,
+      createdAt: now,
+    });
+
+    if (userId) {
+      await ctx.db.insert("securityEvents", {
+        userId: userId as any,
+        action: "login",
+        result: outcome,
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+        metadata: args.metadata,
+        createdAt: now,
+      });
+    }
+
+    return { ok: true };
+  },
+});
+
+export const beginRegister = internalMutation({
+  args: { email: v.string(), ipAddress: v.optional(v.string()) },
+  handler: async (ctx, { email, ipAddress }) => {
+    const now = Date.now();
+    const normalized = normalizeEmail(email);
+
+    const rl = await rateLimitState(ctx, `register:${ipAddress ?? "unknown"}`, now, 60 * 60 * 1000, 5);
+    if (!rl.allowed) return { allowed: false, existing: undefined };
+
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
+      .first();
+    return { allowed: true, existing: existing as any };
+  },
+});
+
+export const registerUser = internalMutation({
+  args: {
+    email: v.string(),
+    normalizedEmail: v.string(),
+    passwordHash: v.string(),
+    name: v.string(),
+    role: USER_ROLE,
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const clerkId = `tw_${randomToken(16)}`;
+    const tokenIdentifier = `${process.env.CONVEX_AUTH_ISSUER ?? "https://trueworks.app"}|${clerkId}`;
+
+    const userId = await ctx.db.insert("users", {
+      clerkId,
+      tokenIdentifier,
+      email: args.email,
+      normalizedEmail: args.normalizedEmail,
+      emailVerified: false,
+      passwordHash: args.passwordHash,
+      name: args.name,
+      role: args.role,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+      securityVersion: 0,
+      loginCount: 0,
+    });
+
+    const verifyToken = await sha256Hex(`${args.email}:email_verify:${now}:${Math.random()}`);
+    const tokenHash = await sha256Hex(verifyToken);
+    await ctx.db.insert("verificationTokens", {
+      email: args.email,
+      tokenHash,
+      type: "email_verify",
+      expiresAt: now + 24 * 60 * 60 * 1000,
+      createdAt: now,
+    });
+
+    await ctx.db.insert("securityEvents", {
+      userId,
+      action: "registration",
+      result: "success",
+      ipAddress: args.ipAddress,
+      userAgent: args.userAgent,
+      createdAt: now,
+    });
+
+    return { userId, verifyToken };
+  },
+});
+
+export const beginMfa = internalMutation({
+  args: {
+    email: v.string(),
+    userId: v.string(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, { email, userId, ipAddress, userAgent }) => {
+    const now = Date.now();
+    const mfaSessionToken = randomToken(32);
+    const mfaHash = await sha256Hex(mfaSessionToken);
+    await ctx.db.insert("verificationTokens", {
+      email,
+      tokenHash: mfaHash,
+      type: "mfa_pending",
+      expiresAt: now + 5 * 60 * 1000,
+      createdAt: now,
+    });
+    await ctx.db.insert("securityEvents", {
+      userId: userId as any,
+      action: "login",
+      result: "mfa_required",
+      ipAddress,
+      userAgent,
+      createdAt: now,
+    });
+    return { mfaSessionToken };
   },
 });
 

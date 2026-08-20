@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Logo } from "@/components/logo"
 import { useAdminSidebar } from "./admin-sidebar-context"
+import { hasPermission, type Permission } from "@/lib/permissions"
 
 const ROLE_LABELS: Record<string, string> = {
   superadmin: "Super Admin",
@@ -55,6 +56,7 @@ interface NavItem {
   icon: React.ReactNode
   badge?: string
   adminOnly?: boolean
+  perm?: Permission
 }
 
 interface NavSection {
@@ -90,20 +92,20 @@ const navSections: NavSection[] = [
     title: "Data",
     items: [
       { label: "Analytics", href: "/admin/analytics", icon: <BarChart3 className="h-4 w-4" /> },
-      { label: "Payments", href: "/admin/payments", icon: <Wallet className="h-4 w-4" />, adminOnly: true },
-      { label: "Refunds", href: "/admin/returns", icon: <RotateCcw className="h-4 w-4" />, adminOnly: true },
-      { label: "Reports", href: "/admin/reports", icon: <FileBarChart className="h-4 w-4" />, adminOnly: true },
+      { label: "Payments", href: "/admin/payments", icon: <Wallet className="h-4 w-4" />, perm: "payments:read" },
+      { label: "Refunds", href: "/admin/returns", icon: <RotateCcw className="h-4 w-4" />, perm: "returns:manage" },
+      { label: "Reports", href: "/admin/reports", icon: <FileBarChart className="h-4 w-4" />, perm: "reports:read" },
     ],
   },
   {
     title: "System",
     items: [
       { label: "Profile", href: "/admin/profile", icon: <UserCircle className="h-4 w-4" /> },
-      { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" />, adminOnly: true },
-      { label: "Auth & Security", href: "/admin/auth", icon: <KeyRound className="h-4 w-4" />, adminOnly: true },
-      { label: "Audit Log", href: "/admin/audit", icon: <ClipboardList className="h-4 w-4" />, adminOnly: true },
-      { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" />, adminOnly: true },
-      { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" />, adminOnly: true },
+      { label: "Users", href: "/admin/users", icon: <Shield className="h-4 w-4" />, perm: "users:manage" },
+      { label: "Auth & Security", href: "/admin/auth", icon: <KeyRound className="h-4 w-4" />, perm: "auth:manage" },
+      { label: "Audit Log", href: "/admin/audit", icon: <ClipboardList className="h-4 w-4" />, perm: "audit:read" },
+      { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" />, perm: "settings:manage" },
+      { label: "Notifications", href: "/admin/notifications", icon: <Bell className="h-4 w-4" />, perm: "notifications:manage" },
       { label: "Support", href: "/admin/support", icon: <LifeBuoy className="h-4 w-4" /> },
     ],
   },
@@ -123,7 +125,11 @@ export default function AdminSidebar() {
   const { user } = useAuth()
   const me = useQuery(api.users.current)
 
-  const isAdminUser = me && ["superadmin", "admin", "owner"].includes(me.role)
+  const canAccess = (item: NavItem) => {
+    if (item.perm) return hasPermission(me?.role, item.perm)
+    if (item.adminOnly) return me && ["superadmin", "admin", "owner"].includes(me.role)
+    return true
+  }
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin"
@@ -168,7 +174,7 @@ export default function AdminSidebar() {
         <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
           <div className="space-y-6">
             {navSections.map((section, sectionIndex) => {
-              const visibleItems = section.items.filter((item) => !item.adminOnly || isAdminUser)
+              const visibleItems = section.items.filter(canAccess)
               if (visibleItems.length === 0) return null
               return (
                 <div key={section.title}>

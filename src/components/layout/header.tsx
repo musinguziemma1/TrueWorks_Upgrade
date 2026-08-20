@@ -31,8 +31,8 @@ export const navLinks = [
 ];
 
 function AdminMenuLink() {
-  const { isAdmin } = useAuth();
-  if (!isAdmin) return null;
+  const { isStaff } = useAuth();
+  if (!isStaff) return null;
   return (
     <Link
       href="/admin"

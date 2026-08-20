@@ -94,15 +94,13 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
   const pwCheck = checkPasswordStrength(password, email);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
 
-  const rl = await ctx.runMutation(internal.iamDb.checkRateLimit, {
-    key: `register:${ip ?? "unknown"}`,
-    windowMs: 60 * 60 * 1000,
-    maxAttempts: 5,
-  });
-  if (!rl.allowed) return forbidden("Too many registration attempts. Please try again later.");
-
   const normalized = normalizeEmail(email);
-  const existing = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
+
+  const { allowed, existing } = await ctx.runMutation(internal.iamDb.beginRegister, {
+    email: normalized,
+    ipAddress: ip,
+  });
+  if (!allowed) return forbidden("Too many registration attempts. Please try again later.");
 
   if (existing) {
     await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
@@ -116,44 +114,21 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
   }
 
   const passwordHash = await ctx.runAction(internal.lib.password.hashPassword, { plain: password });
-  const now = Date.now();
-  const clerkId = `tw_${randomToken(16)}`;
-  const tokenIdentifier = `${process.env.CONVEX_AUTH_ISSUER ?? "https://trueworks.app"}|${clerkId}`;
 
-  const userId = await ctx.runMutation(internal.iamDb.insertUser, {
-    clerkId,
-    tokenIdentifier,
+  const { verifyToken } = await ctx.runMutation(internal.iamDb.registerUser, {
     email,
     normalizedEmail: normalized,
-    emailVerified: false,
     passwordHash,
     name,
     role: initialRoleForEmail(normalized),
-    status: "active",
-    createdAt: now,
-    updatedAt: now,
-    securityVersion: 0,
-    loginCount: 0,
-  });
-
-  const { rawToken: verifyToken } = await ctx.runMutation(internal.iamDb.createVerificationToken, {
-    email,
-    type: "email_verify",
-    expiresInMs: 24 * 60 * 60 * 1000,
+    ipAddress: anonymizeIp(ip),
+    userAgent: ua,
   });
 
   await ctx.scheduler.runAfter(0, internal.email.sendVerificationEmail, {
     to: email,
     name,
     token: verifyToken,
-  });
-
-  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
-    userId,
-    action: "registration",
-    result: "success",
-    ipAddress: anonymizeIp(ip),
-    userAgent: ua,
   });
 
   return json({
@@ -177,43 +152,26 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
 
   const normalized = normalizeEmail(email);
 
-  // rate limits
-  const rlEmail = await ctx.runMutation(internal.iamDb.checkRateLimit, {
-    key: `login:${normalized}`,
-    windowMs: 15 * 60 * 1000,
-    maxAttempts: 8,
+  const { allowed, user } = await ctx.runMutation(internal.iamDb.beginLogin, {
+    email: normalized,
+    ipAddress: ip,
   });
-  if (!rlEmail.allowed) {
+  if (!allowed) {
     return forbidden("Too many login attempts. Please try again later.");
   }
-  const rlIp = await ctx.runMutation(internal.iamDb.checkRateLimit, {
-    key: `login:ip:${ip ?? "unknown"}`,
-    windowMs: 15 * 60 * 1000,
-    maxAttempts: 20,
-  });
-  if (!rlIp.allowed) {
-    return forbidden("Too many login attempts from this network. Please try again later.");
-  }
 
-  const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
+  const ipAnon = anonymizeIp(ip);
 
   if (!user || !user.passwordHash) {
-    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+    await ctx.runMutation(internal.iamDb.completeLogin, {
       email: normalized,
-      success: false,
-      ipAddress: anonymizeIp(ip),
+      userId: user?._id,
+      rememberMe,
+      ipAddress: ipAnon,
       userAgent: ua,
+      outcome: "invalid_credentials",
+      metadata: { email: normalized },
     });
-    if (user?._id) {
-      await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
-        userId: user._id,
-        action: "login",
-        result: "invalid_credentials",
-        ipAddress: anonymizeIp(ip),
-        userAgent: ua,
-        metadata: { email: normalized },
-      });
-    }
     return json({ error: "Invalid credentials." }, 401);
   }
 
@@ -222,18 +180,13 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
     plain: password,
   });
   if (!passwordOk) {
-    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+    await ctx.runMutation(internal.iamDb.completeLogin, {
       email: normalized,
-      success: false,
-      ipAddress: anonymizeIp(ip),
-      userAgent: ua,
-    });
-    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: user._id,
-      action: "login",
-      result: "invalid_credentials",
-      ipAddress: anonymizeIp(ip),
+      rememberMe,
+      ipAddress: ipAnon,
       userAgent: ua,
+      outcome: "invalid_credentials",
     });
     return json({ error: "Invalid credentials." }, 401);
   }
@@ -247,75 +200,49 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
   }
 
   if (user.status === "suspended") {
-    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+    await ctx.runMutation(internal.iamDb.completeLogin, {
       email: normalized,
-      success: false,
-      ipAddress: anonymizeIp(ip),
+      userId: user._id,
+      rememberMe,
+      ipAddress: ipAnon,
       userAgent: ua,
+      outcome: "suspended",
     });
     return json({ error: "This account has been suspended." }, 403);
   }
 
   if (!user.emailVerified) {
-    await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
+    await ctx.runMutation(internal.iamDb.completeLogin, {
       email: normalized,
-      success: true,
-      ipAddress: anonymizeIp(ip),
+      userId: user._id,
+      rememberMe,
+      ipAddress: ipAnon,
       userAgent: ua,
+      outcome: "email_not_verified",
     });
     return json({ error: "Email not verified.", requiresVerification: true }, 403);
   }
 
   if (user.mfaEnabled) {
-    const mfaRaw = randomToken(32);
-    const mfaHash = await sha256Hex(mfaRaw);
-    await ctx.runMutation(internal.iamDb.insertVerificationToken, {
+    const { mfaSessionToken } = await ctx.runMutation(internal.iamDb.beginMfa, {
       email: normalized,
-      tokenHash: mfaHash,
-      type: "mfa_pending",
-      expiresAt: Date.now() + 5 * 60 * 1000,
-    });
-    await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
       userId: user._id,
-      action: "login",
-      result: "mfa_required",
-      ipAddress: anonymizeIp(ip),
+      ipAddress: ipAnon,
       userAgent: ua,
     });
-    return json({ mfaRequired: true, mfaSessionToken: mfaRaw });
+    return json({ mfaRequired: true, mfaSessionToken });
   }
 
   // complete login
   const rawToken = randomToken(32);
-  await ctx.runMutation(internal.iamDb.createSession, {
+  await ctx.runMutation(internal.iamDb.completeLogin, {
+    email: normalized,
     userId: user._id,
     rawToken,
     rememberMe,
-    ipAddress: anonymizeIp(ip),
+    ipAddress: ipAnon,
     userAgent: ua,
-  });
-
-  await ctx.runMutation(internal.iamDb.patchDoc, {
-    id: user._id,
-    fields: {
-      lastLoginAt: Date.now(),
-      loginCount: (user.loginCount ?? 0) + 1,
-      updatedAt: Date.now(),
-    },
-  });
-
-  await ctx.runMutation(internal.iamDb.recordLoginAttempt, {
-    email: normalized,
-    success: true,
-    ipAddress: anonymizeIp(ip),
-    userAgent: ua,
-  });
-  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
-    userId: user._id,
-    action: "login",
-    result: "success",
-    ipAddress: anonymizeIp(ip),
-    userAgent: ua,
+    outcome: "success",
     metadata: { device: parsed.device, browser: parsed.browser, os: parsed.os },
   });
 

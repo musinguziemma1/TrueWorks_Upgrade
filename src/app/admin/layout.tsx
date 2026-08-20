@@ -1,47 +1,14 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/layout/admin-sidebar";
 import AdminHeader from "@/components/layout/admin-header";
 import { AdminSidebarProvider } from "@/components/layout/admin-sidebar-context";
 import { AuthGate } from "@/components/auth/auth-gate";
-
-function getConvexSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_CONVEX_SITE_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-  return (process.env.NEXT_PUBLIC_CONVEX_URL ?? "")
-    .replace(/\.convex\.cloud\/?$/, ".convex.site")
-    .replace(/\/$/, "");
-}
-
-const ALLOWED_ROLES = ["superadmin", "admin", "owner", "editor"];
+import { requireStaff } from "@/lib/auth/server";
 
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  const convexSiteUrl = getConvexSiteUrl();
-  if (!convexSiteUrl) redirect("/");
-
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("tw_session")?.value;
-
-  // Server-side session check: forward the HttpOnly session cookie to the IAM
-  // /me endpoint. If there is no valid session (or the role isn't staff), the
-  // request never reaches the admin UI.
-  if (!sessionCookie) redirect("/sign-in");
-
-  let role = "";
-  try {
-    const res = await fetch(`${convexSiteUrl}/iam/me`, {
-      method: "GET",
-      headers: { cookie: `tw_session=${sessionCookie}` },
-      cache: "no-store",
-    });
-    if (!res.ok) redirect("/sign-in");
-    const data = await res.json();
-    role = data?.user?.role ?? "";
-  } catch {
-    redirect("/sign-in");
-  }
-
-  if (!ALLOWED_ROLES.includes(role)) redirect("/");
+  // Server-side session check: validates the HttpOnly IAM session cookie and
+  // only allows staff roles. Unauthenticated users are redirected to sign-in
+  // and non-staff to the homepage before the admin UI is ever rendered.
+  await requireStaff();
 
   return (
     <AdminSidebarProvider>

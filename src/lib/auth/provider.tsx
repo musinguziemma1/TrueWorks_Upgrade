@@ -19,6 +19,7 @@ interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isStaff: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const isAuthenticated = !!user;
   const isAdmin = user ? ["admin", "owner", "superadmin"].includes(user.role) : false;
+  const isStaff = user ? ["superadmin", "admin", "owner", "editor"].includes(user.role) : false;
 
   const refresh = useCallback(async () => {
     try {
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, getToken]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated, isAdmin, login, register, logout, refresh, getToken }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated, isAdmin, isStaff, login, register, logout, refresh, getToken }}>
       {children}
     </AuthContext.Provider>
   );

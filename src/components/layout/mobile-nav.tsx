@@ -21,8 +21,8 @@ const navLinks = [
 ];
 
 function AdminDashboardLink({ onClose }: { onClose: () => void }) {
-  const { isAdmin } = useAuth();
-  if (!isAdmin) return null;
+  const { isStaff } = useAuth();
+  if (!isStaff) return null;
   return (
     <Link
       href="/admin"
