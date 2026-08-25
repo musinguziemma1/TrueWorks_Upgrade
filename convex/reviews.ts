@@ -1,4 +1,4 @@
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { checkRateLimit } from "./rateLimit";
@@ -6,14 +6,15 @@ import { auditLog } from "./lib/audit";
 import { sanitizeSearch } from "./lib/sanitize";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 
-async function recalculateProductRating(ctx: any, productId: Id<"products">) {
+async function recalculateProductRating(ctx: MutationCtx, productId: Id<"products">) {
   const approved = await ctx.db
     .query("reviews")
-    .withIndex("by_productId", (q: any) => q.eq("productId", productId))
+    .withIndex("by_productId", (q) => q.eq("productId", productId))
     .collect()
-    .then((rs: any[]) => rs.filter((r: any) => r.status === "approved"));
-  const totalRating = approved.reduce((sum: number, r: any) => sum + r.rating, 0);
+    .then((rs) => rs.filter((r) => r.status === "approved"));
+  const totalRating = approved.reduce((sum: number, r) => sum + r.rating, 0);
   const count = approved.length;
   await ctx.db.patch(productId, {
     reviewCount: count,

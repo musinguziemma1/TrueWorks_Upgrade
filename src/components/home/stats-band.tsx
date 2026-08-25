@@ -18,7 +18,7 @@ export default function StatsBand() {
       <div className="absolute inset-0 bg-gradient-to-r from-[#071A33] via-transparent to-[#071A33]" aria-hidden />
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 divide-y divide-white/10 px-6 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:px-8">
-        {stats.map((stat, i) => (
+        {stats.map((stat) => (
           <div key={stat.label} className="flex items-center justify-center gap-4 px-6 py-6 lg:py-2">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/20">
               <stat.icon className="h-5 w-5 text-accent" />

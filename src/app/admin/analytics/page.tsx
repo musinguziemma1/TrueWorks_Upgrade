@@ -234,8 +234,8 @@ export default function AnalyticsPage() {
   const totalOrdersCount = paymentMethods?.reduce((sum: number, p: { name: string; value: number }) => sum + p.value, 0) ?? 0
   const ltvTotal = ltvSegments?.reduce((sum: number, s: { label: string; count: number }) => sum + s.count, 0) ?? 0
 
-  const safeSummary = summary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }
-  const safePrev = prevSummary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }
+  const safeSummary = useMemo(() => summary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [summary])
+  const safePrev = useMemo(() => prevSummary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [prevSummary])
   const avgOrderValue = totalOrdersCount > 0 ? safeSummary.totalRevenue / totalOrdersCount : 0
   const conversionRate = safeSummary.totalVisitors > 0
     ? ((totalOrdersCount / safeSummary.totalVisitors) * 100).toFixed(1)

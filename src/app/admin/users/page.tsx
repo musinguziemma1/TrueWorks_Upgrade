@@ -70,13 +70,6 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
   viewer: "Read-only access to the dashboard.",
 };
 
-const INVITATION_STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  accepted: "bg-green-100 text-green-800 border-green-200",
-  revoked: "bg-red-100 text-red-800 border-red-200",
-  expired: "bg-gray-100 text-gray-600 border-gray-200",
-};
-
 function initials(name?: string, email?: string) {
   const src = (name || email || "?").trim();
   const parts = src.split(/\s+|@/).filter(Boolean);
@@ -119,6 +112,8 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
+  // Captured once per mount so invitation expiry checks stay pure during render.
+  const [nowTs] = useState(() => Date.now());
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "editor" | "viewer">("viewer");
   const [deleteTarget, setDeleteTarget] = useState<Id<"users"> | null>(null);
@@ -143,7 +138,7 @@ export default function UsersPage() {
 
   // Pending invitations (not accepted, not expired, not revoked)
   const pendingInvitations = (invitations ?? []).filter(
-    (inv) => inv.status === "pending" && inv.expiresAt > Date.now()
+    (inv) => inv.status === "pending" && inv.expiresAt > nowTs
   );
 
   async function changeRole(userId: Id<"users">, role: "superadmin" | "owner" | "admin" | "editor" | "viewer") {

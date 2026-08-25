@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Clock, Calendar, ArrowRight, ChevronRight, FileText, CheckCircle2, Download, ExternalLink, BookOpen, Video } from "lucide-react";
+import { Search, Calendar, ArrowRight, ChevronRight, FileText, CheckCircle2, Download, ExternalLink, BookOpen, Video } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,8 @@ function ResourcesContentInner() {
   const allResources = useQuery(api.resources.listPublished, {});
 
   const isLoading = allResources === undefined;
-  const resources: Array<{
+  // Wrapped in useMemo so downstream hooks get a stable identity.
+  const resources = useMemo<Array<{
     _id: string;
     title: string;
     slug: string;
@@ -68,7 +69,7 @@ function ResourcesContentInner() {
     downloadCount: number;
     createdAt: number;
     updatedAt: number;
-  }> = allResources ?? [];
+  }>>(() => allResources ?? [], [allResources]);
 
   const categories = useMemo(() => {
     const cats = new Set(resources.map((r) => r.category));

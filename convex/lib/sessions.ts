@@ -1,44 +1,50 @@
 "use node";
 
-import { internalQuery, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { api, internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { sha256Hex, parseUserAgent } from "./tokens";
+
+/** Any context that can read from the database. */
+type ReadCtx = QueryCtx | MutationCtx;
+
+export type SessionDoc = Doc<"sessions">;
+export type UserDoc = Doc<"users">;
+export type SessionId = Id<"sessions">;
 
 export const SESSION_IDLE_MS = 30 * 60 * 1000; // 30 min
 export const SESSION_ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const SESSION_ABSOLUTE_REMEMBER_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 export async function getSessionByTokenHash(
-  ctx: any,
+  ctx: ReadCtx,
   tokenHash: string
-): Promise<any | null> {
+): Promise<SessionDoc | null> {
   const session = await ctx.db
     .query("sessions")
-    .withIndex("by_tokenHash", (q: any) => q.eq("tokenHash", tokenHash))
+    .withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash))
     .first();
   return session ?? null;
 }
 
-export async function getSession(ctx: any, sessionId: string): Promise<any | null> {
-  return await ctx.db.get(sessionId);
+export async function getSession(ctx: ReadCtx, sessionId: string): Promise<SessionDoc | null> {
+  return await ctx.db.get(sessionId as SessionId);
 }
 
 export async function touchSession(
-  ctx: any,
+  ctx: MutationCtx,
   sessionId: string
 ): Promise<void> {
   const now = Date.now();
-  await ctx.db.patch(sessionId, {
+  await ctx.db.patch(sessionId as SessionId, {
     lastActiveAt: now,
     idleExpiresAt: now + SESSION_IDLE_MS,
   });
 }
 
 export async function createSession(
-  ctx: any,
+  ctx: MutationCtx,
   args: {
-    userId: string;
+    userId: Id<"users">;
     rawToken: string;
     rememberMe?: boolean;
     ipAddress?: string;
@@ -53,7 +59,7 @@ export async function createSession(
 
   const sessionId = await ctx.db.insert("sessions", {
     tokenHash,
-    userId: args.userId as any,
+    userId: args.userId,
     createdAt: now,
     lastActiveAt: now,
     idleExpiresAt: now + SESSION_IDLE_MS,
@@ -67,25 +73,25 @@ export async function createSession(
 }
 
 export async function revokeSession(
-  ctx: any,
+  ctx: MutationCtx,
   sessionId: string
 ): Promise<void> {
   const now = Date.now();
-  await ctx.db.patch(sessionId, {
+  await ctx.db.patch(sessionId as SessionId, {
     revoked: true,
     revokedAt: now,
   });
 }
 
 export async function revokeAllSessions(
-  ctx: any,
-  userId: string,
+  ctx: MutationCtx,
+  userId: Id<"users">,
   exceptSessionId?: string
 ): Promise<number> {
   const now = Date.now();
   const all = await ctx.db
     .query("sessions")
-    .withIndex("by_userId_revoked", (q: any) =>
+    .withIndex("by_userId_revoked", (q) =>
       q.eq("userId", userId).eq("revoked", false)
     )
     .collect();
@@ -100,23 +106,23 @@ export async function revokeAllSessions(
 }
 
 export async function listSessions(
-  ctx: any,
-  userId: string,
+  ctx: ReadCtx,
+  userId: Id<"users">,
   includeRevoked = false
-): Promise<any[]> {
+): Promise<SessionDoc[]> {
   const all = await ctx.db
     .query("sessions")
-    .withIndex("by_userId", (q: any) => q.eq("userId", userId))
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
     .order("desc")
     .collect();
 
-  return all.filter((s: any) => includeRevoked || !s.revoked);
+  return all.filter((s) => includeRevoked || !s.revoked);
 }
 
 export async function validateSession(
-  ctx: any,
+  ctx: MutationCtx,
   rawToken: string
-): Promise<{ valid: boolean; session?: any; user?: any }> {
+): Promise<{ valid: boolean; session?: SessionDoc; user?: UserDoc }> {
   const tokenHash = await sha256Hex(rawToken);
   const session = await getSessionByTokenHash(ctx, tokenHash);
   if (!session) return { valid: false };
@@ -134,7 +140,7 @@ export async function validateSession(
 }
 
 export async function createVerificationToken(
-  ctx: any,
+  ctx: MutationCtx,
   email: string,
   type: string,
   expiresInMs = 24 * 60 * 60 * 1000
@@ -157,17 +163,17 @@ export async function createVerificationToken(
 }
 
 export async function consumeVerificationToken(
-  ctx: any,
+  ctx: MutationCtx,
   rawToken: string,
   type: string
 ): Promise<{ email: string } | null> {
   const tokenHash = await sha256Hex(rawToken);
   const all = await ctx.db
     .query("verificationTokens")
-    .withIndex("by_tokenHash", (q: any) => q.eq("tokenHash", tokenHash))
+    .withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash))
     .collect();
 
-  const token = all.find((t: any) => t.type === type && !t.usedAt && t.expiresAt > Date.now());
+  const token = all.find((t) => t.type === type && !t.usedAt && t.expiresAt > Date.now());
   if (!token) return null;
 
   await ctx.db.patch(token._id, { usedAt: Date.now() });
@@ -175,21 +181,21 @@ export async function consumeVerificationToken(
 }
 
 export async function recordSecurityEvent(
-  ctx: any,
+  ctx: MutationCtx,
   args: {
-    userId: string;
+    userId: Id<"users">;
     action: string;
     result: string;
-    actorId?: string;
+    actorId?: Id<"users">;
     ipAddress?: string;
     userAgent?: string;
-    metadata?: any;
+    metadata?: unknown;
   }
 ): Promise<void> {
   const parsed = typeof args.userAgent === "string" ? parseUserAgent(args.userAgent) : { device: "Unknown", browser: "Unknown", os: "Unknown" };
   await ctx.db.insert("securityEvents", {
-    userId: args.userId as any,
-    actorId: args.actorId as any,
+    userId: args.userId,
+    actorId: args.actorId,
     action: args.action,
     result: args.result,
     ipAddress: args.ipAddress,
@@ -203,7 +209,7 @@ export async function recordSecurityEvent(
 }
 
 export async function recordLoginAttempt(
-  ctx: any,
+  ctx: MutationCtx,
   email: string,
   success: boolean,
   ipAddress?: string,
@@ -219,7 +225,7 @@ export async function recordLoginAttempt(
 }
 
 export async function checkRateLimit(
-  ctx: any,
+  ctx: MutationCtx,
   key: string,
   windowMs: number,
   maxAttempts: number
@@ -229,7 +235,7 @@ export async function checkRateLimit(
 
   const existing = await ctx.db
     .query("rateLimits")
-    .withIndex("by_key", (q: any) => q.eq("key", key))
+    .withIndex("by_key", (q) => q.eq("key", key))
     .first();
 
   if (existing && existing.windowStart > windowStart) {
@@ -240,7 +246,7 @@ export async function checkRateLimit(
     return { allowed: true, remaining: maxAttempts - existing.count - 1 };
   }
 
-  const id = await ctx.db.insert("rateLimits", {
+  await ctx.db.insert("rateLimits", {
     key,
     windowStart: now,
     count: 1,
@@ -248,10 +254,10 @@ export async function checkRateLimit(
   return { allowed: true, remaining: maxAttempts - 1 };
 }
 
-export async function resetRateLimit(ctx: any, key: string): Promise<void> {
+export async function resetRateLimit(ctx: MutationCtx, key: string): Promise<void> {
   const existing = await ctx.db
     .query("rateLimits")
-    .withIndex("by_key", (q: any) => q.eq("key", key))
+    .withIndex("by_key", (q) => q.eq("key", key))
     .first();
   if (existing) {
     await ctx.db.patch(existing._id, { count: 0, windowStart: Date.now() });

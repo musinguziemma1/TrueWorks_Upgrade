@@ -57,6 +57,8 @@ export default function ProductDetail() {
   const [showSticky, setShowSticky] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Captured once per mount so relative date formatting stays pure during render.
+  const [nowTs] = useState(() => Date.now());
 
   const preview = useSignedPreviewUrl();
 
@@ -193,7 +195,7 @@ export default function ProductDetail() {
       setReviewRating(0);
       setReviewTitle("");
       setReviewContent("");
-    } catch (err) {
+    } catch {
       toast.error("Failed to submit review", { description: "Please try again later." });
     } finally {
       setSubmitting(false);
@@ -201,7 +203,7 @@ export default function ProductDetail() {
   };
 
   const formatDate = (ts: number) => {
-    const diff = Date.now() - ts;
+    const diff = nowTs - ts;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     if (days === 0) return "Today";
     if (days === 1) return "Yesterday";

@@ -250,10 +250,9 @@ export const dispatchEvent = action({
       (e) => e.events.includes(args.event) || e.events.includes("*")
     );
     const now = Date.now();
-    const secret = process.env.RESELLER_SIGNING_SECRET ?? "";
     for (const ep of matching) {
       const bodyObj = { event: args.event, data: args.payload, timestamp: now };
-      const endpointId = ep._id as any;
+      const endpointId = ep._id;
       try {
         const signature = await ctx.runQuery(api.webhooks.signDelivery, {
           payload: JSON.stringify(bodyObj),

@@ -1,5 +1,4 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { auditLog } from "./lib/audit";
 
@@ -21,7 +20,7 @@ export const exportMyData = query({
       .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
-    const [orders, downloads, reviews, cart, returns, subscriber] = await Promise.all([
+    const [orders, downloads, reviews, , returns, subscriber] = await Promise.all([
       // Orders by email
       ctx.db
         .query("orders")

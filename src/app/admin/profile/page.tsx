@@ -11,9 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { LogOut, Shield, Calendar, Mail, User, Edit, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 
@@ -44,7 +42,6 @@ const roleColors: Record<string, string> = {
 export default function AdminProfilePage() {
   const { user } = useAuth();
   const { logout } = useAuth();
-  const router = useRouter();
   const me = useQuery(api.users.current);
   const updateUser = useMutation(api.users.update);
   const [editing, setEditing] = useState(false);

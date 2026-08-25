@@ -1,5 +1,12 @@
 import { internalAction } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
+
+type AbandonedCart = {
+  recovered?: boolean;
+  recoveryEmailSentAt?: number;
+  createdAt: number;
+  items: Array<{ slug: string; name: string; quantity: number; price: number }>;
+};
 
 export const sendRecoveryEmails = internalAction({
   args: {},
@@ -9,7 +16,7 @@ export const sendRecoveryEmails = internalAction({
     const carts = await ctx.runQuery(internal.abandonedCarts.listInternal, {});
 
     const abandoned = carts.filter(
-      (cart: any) => !cart.recovered && !cart.recoveryEmailSentAt && cart.createdAt < oneHourAgo
+      (cart: AbandonedCart) => !cart.recovered && !cart.recoveryEmailSentAt && cart.createdAt < oneHourAgo
     );
 
     let sent = 0;
@@ -17,7 +24,7 @@ export const sendRecoveryEmails = internalAction({
       const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
       const itemsHtml = cart.items
         .map(
-          (item: any) =>
+          (item: AbandonedCart["items"][number]) =>
             `<tr>
               <td style="padding:12px;border-bottom:1px solid #e2e8f0;">
                 <a href="${SITE_URL}/store/${item.slug}" style="color:#0b2545;text-decoration:none;font-weight:600;">${item.name}</a>

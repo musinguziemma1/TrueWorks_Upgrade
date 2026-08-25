@@ -1,4 +1,5 @@
 import { internalQuery, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import {
   paginationOptsValidator,
@@ -7,7 +8,7 @@ import {
   type NamedTableInfo,
   type OrderedQuery,
 } from "convex/server";
-import { Doc, Id, type DataModel } from "./_generated/dataModel";
+import { Doc, type DataModel } from "./_generated/dataModel";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog, performanceLog } from "./lib/audit";
 import { sanitizeSearch, sanitizeText, pickFromWhitelist, slugify } from "./lib/sanitize";
@@ -41,16 +42,16 @@ function publicProduct(p: Doc<"products">): PublicProduct {
   return { ...rest, hasDownloadableFile: !!(p.downloadableFileStorageId ?? downloadableFile) };
 }
 
-async function syncCategoryProductCount(ctx: any, categoryName: string) {
+async function syncCategoryProductCount(ctx: MutationCtx, categoryName: string) {
   const cats = await ctx.db
     .query("categories")
     .collect();
-  const category = cats.find((c: any) => c.name === categoryName);
+  const category = cats.find((c) => c.name === categoryName);
   if (!category) return;
   const count = await ctx.db
     .query("products")
     .collect()
-    .then((ps: any[]) => ps.filter((p: any) => p.category === categoryName).length);
+    .then((ps) => ps.filter((p) => p.category === categoryName).length);
   await ctx.db.patch(category._id, { productCount: count });
 }
 
@@ -308,20 +309,20 @@ minPrice: minPrice === Infinity ? 0 : minPrice,
  * relatedProductIds on the source product).
  */
 export const getRelatedByIds = query({
-  args: { ids: v.array(v.string()) },
+  args: { ids: v.array(v.id("products")) },
   handler: async (ctx, args) => {
     const docs = await Promise.all(
-      args.ids.map((id) => ctx.db.get(id as Id<"products">).catch(() => null))
+      args.ids.map((id) => ctx.db.get(id).catch(() => null))
     );
     return docs.filter((d): d is NonNullable<typeof d> => d !== null && d.status === "published");
   },
 });
 
 export const getBundleMembers = query({
-  args: { ids: v.array(v.string()) },
+  args: { ids: v.array(v.id("products")) },
   handler: async (ctx, args) => {
     const docs = await Promise.all(
-      args.ids.map((id) => ctx.db.get(id as Id<"products">).catch(() => null))
+      args.ids.map((id) => ctx.db.get(id).catch(() => null))
     );
     return docs.filter((d): d is NonNullable<typeof d> => d !== null && d.status === "published");
   },
@@ -366,7 +367,7 @@ export const create = mutation({
     demoVideo: v.optional(v.string()),
     featured: v.boolean(),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
-    bundleProductIds: v.optional(v.array(v.string())),
+    bundleProductIds: v.optional(v.array(v.id("products"))),
   },
   handler: async (ctx, args) => {
     await requireEditor(ctx);
@@ -445,7 +446,7 @@ export const update = mutation({
     demoVideo: v.optional(v.string()),
     featured: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
-    bundleProductIds: v.optional(v.array(v.string())),
+    bundleProductIds: v.optional(v.array(v.id("products"))),
   },
   handler: async (ctx, args) => {
     await requireEditor(ctx);

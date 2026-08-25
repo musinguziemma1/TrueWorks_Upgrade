@@ -19,7 +19,8 @@ export const testSmtp = action({
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
 
-      const response = await fetch(`https://${args.host}:${args.port}`, {
+      // Best-effort reachability probe; result intentionally ignored.
+      await fetch(`https://${args.host}:${args.port}`, {
         method: "HEAD",
         signal: controller.signal,
       }).catch(() => null);

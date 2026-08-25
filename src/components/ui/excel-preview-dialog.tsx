@@ -31,8 +31,14 @@ const ROWS_PER_PAGE = 100;
 const MIN_COL_WIDTH = 80;
 const MAX_COL_WIDTH = 300;
 
-function parseMerges(merges: any[]): SheetData["merges"] {
-  return (merges ?? []).map((m: any) => ({
+/** Shape of an `!merges` entry produced by SheetJS worksheets. */
+interface SheetMerge {
+  s: { r: number; c: number };
+  e: { r: number; c: number };
+}
+
+function parseMerges(merges: SheetMerge[] | undefined): SheetData["merges"] {
+  return (merges ?? []).map((m) => ({
     startRow: m.s.r,
     startCol: m.s.c,
     endRow: m.e.r,
@@ -114,7 +120,7 @@ export function ExcelPreviewDialog({
           blankrows: true,
         });
 
-        const data = jsonData.map((row: any) =>
+        const data = jsonData.map((row: unknown) =>
           Array.isArray(row) ? row.map(String) : [String(row)]
         );
 
@@ -131,7 +137,7 @@ export function ExcelPreviewDialog({
         allSheets.push({
           name: sheetName,
           data,
-          merges: parseMerges(worksheet["!merges"] as any[] ?? []),
+          merges: parseMerges(worksheet["!merges"] as SheetMerge[] | undefined),
           colWidths,
         });
       }
@@ -145,10 +151,16 @@ export function ExcelPreviewDialog({
     } finally {
       setLoading(false);
     }
-  }, [url]);
+  }, [url, loadingUrl]);
 
   useEffect(() => {
-    if (open) loadFile();
+    // Load asynchronously when the dialog opens; state updates happen inside
+    // the async callback, not synchronously in the effect body.
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      void loadFile();
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [open, loadFile]);
 
   const currentSheet = sheets[activeSheet];

@@ -176,6 +176,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const { toggleItem, isInWishlist } = useWishlist();
   const { track } = useAnalytics();
   const router = useRouter();
+  // Captured once per mount so "New" badge logic stays pure during render.
+  const [nowTs] = useState(() => Date.now());
   const [shareOpen, setShareOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -282,7 +284,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                   Featured
                 </Badge>
               )}
-              {!product.reviewCount && product.createdAt > Date.now() - 30 * 24 * 60 * 60 * 1000 && (
+              {!product.reviewCount && product.createdAt > nowTs - 30 * 24 * 60 * 60 * 1000 && (
                 <Badge className="bg-emerald-500 text-white border-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 w-fit">
                   New
                 </Badge>

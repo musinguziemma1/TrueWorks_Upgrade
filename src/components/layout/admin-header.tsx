@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/command"
 import { useAdminSidebar } from "./admin-sidebar-context"
 import { useSettings } from "@/lib/settings-context"
-import { formatPrice } from "@/lib/utils"
+
 
 const searchLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -86,8 +86,11 @@ export default function AdminHeader() {
   const pageTitle = getPageTitle(pathname)
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
 
+  // Captured once per mount so relative timestamps stay pure during render.
+  const [nowMs] = useState(() => Date.now())
+
   function timeAgo(timestamp: number) {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000)
+    const seconds = Math.floor((nowMs - timestamp) / 1000)
     if (seconds < 60) return "Just now"
     const minutes = Math.floor(seconds / 60)
     if (minutes < 60) return `${minutes}m ago`

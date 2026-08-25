@@ -20,7 +20,6 @@ import {
   ArrowRight,
   Loader2,
   Shield,
-  UserCog,
   CalendarDays,
   Monitor,
 } from "lucide-react";

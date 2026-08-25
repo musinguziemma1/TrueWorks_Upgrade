@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireAdminSilent } from "./users";
 
 /**
@@ -33,7 +34,7 @@ export const track = mutation({
     await ctx.db.insert("analyticsEvents", {
       event: args.event as "view_product",
       sessionId: args.sessionId,
-      productId: args.productId as any,
+      productId: args.productId as Id<"products"> | undefined,
       productName: args.productName,
       category: args.category,
       value: args.value,
@@ -92,7 +93,7 @@ export const funnel = query({
 
     for (const e of events) {
       if (!counts.has(e.event)) continue;
-      if (args.productId && e.productId !== (args.productId as any)) continue;
+      if (args.productId && e.productId !== args.productId) continue;
       counts.set(e.event, (counts.get(e.event) ?? 0) + 1);
     }
 

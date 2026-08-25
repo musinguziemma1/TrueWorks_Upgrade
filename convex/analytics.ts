@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 
 export const get = query({
@@ -60,10 +61,10 @@ export const recordDownload = internalMutation({
   },
 });
 
-async function ensureDayRow(ctx: any, date: string) {
+async function ensureDayRow(ctx: MutationCtx, date: string) {
   const existing = await ctx.db
     .query("analytics")
-    .withIndex("by_date", (q: any) => q.eq("date", date))
+    .withIndex("by_date", (q) => q.eq("date", date))
     .first();
   if (existing) return existing._id;
   return await ctx.db.insert("analytics", {

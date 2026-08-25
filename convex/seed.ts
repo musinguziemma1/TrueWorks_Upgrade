@@ -836,8 +836,6 @@ export const run = internalMutation({
         downloadLinks: [
           {
             productId: product,
-            url: productDoc.downloadableFile ?? "",
-            expiresAt: now + 365 * oneDay,
             downloadCount: 0,
           },
         ],

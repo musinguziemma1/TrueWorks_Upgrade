@@ -70,7 +70,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         className="grid grid-cols-2 lg:grid-cols-4 gap-6"
         variants={staggerChildren}
       >
-        {featureIcons.map((feature, index) => {
+        {featureIcons.map((feature) => {
           const IconComponent = iconComponents[feature.icon as keyof typeof iconComponents];
           
           return (

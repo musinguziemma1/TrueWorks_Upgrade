@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query } from "./_generated/server";
+﻿import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { MutationCtx, QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -61,7 +61,7 @@ async function findUserByIdentity(ctx: QueryCtx | MutationCtx) {
     .collect();
   if (users[0]) return users[0];
 
-  // Fallback: lookup by Clerk ID (sub claim)
+  // Fallback: lookup by legacy external ID (sub claim)
   if (identity.subject) {
     users = await ctx.db
       .query("users")
@@ -166,7 +166,7 @@ export async function getCurrentUser(ctx: QueryCtx) {
     .collect();
   if (users[0]) return users[0];
 
-  // Fallback: lookup by Clerk ID (sub claim)
+  // Fallback: lookup by legacy external ID (sub claim)
   if (identity.subject) {
     users = await ctx.db
       .query("users")
@@ -463,7 +463,7 @@ export const seedAdmin = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized: No authenticated user");
 
-    // Check if user already exists — if so, just ensure they have a role
+    // Check if user already exists â€” if so, just ensure they have a role
     const existing = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -483,7 +483,7 @@ export const seedAdmin = mutation({
       // SECURITY: Only allow token update if:
       // 1. The caller's identity email matches the found user's email (self-linking), OR
       // 2. The caller is already an admin/superadmin
-      // The identity email is verified by Clerk — never trust args.email for
+      // The identity email is verified by Clerk â€” never trust args.email for
       // authorization decisions.
       const identityEmail = identity.email ?? "";
       const callerEmail = identityEmail.toLowerCase();
@@ -507,7 +507,7 @@ export const seedAdmin = mutation({
       }
 
       // SECURITY: Role escalation to superadmin requires the CALLER to actually
-      // be a superadmin — never base it on args.email (attacker-controlled).
+      // be a superadmin â€” never base it on args.email (attacker-controlled).
       const callerIsSuperAdmin = !!callerUser &&
         ROLE_HIERARCHY[callerUser.role] >= ROLE_HIERARCHY.superadmin;
       const newRole = callerIsSuperAdmin && isCallerAdmin ? "superadmin" : foundUser.role;
@@ -526,7 +526,7 @@ export const seedAdmin = mutation({
       return foundUser._id;
     }
 
-    // New user — check permissions.
+    // New user â€” check permissions.
     // SECURITY: All authorization must be derived from the identity verified
     // by the IAM JWT, never from client-supplied args.email.
     const identityEmail = (identity.email ?? "").toLowerCase();
@@ -597,7 +597,7 @@ export const syncMyAccount = mutation({
     if (user) return { synced: true, id: user._id };
 
     // SECURITY: only rebind a record via clerkId when the supplied clerkId
-    // matches the identity's own subject claim (verified by Clerk). This
+    // matches the identity's own subject claim (signed by the IAM issuer). This
     // prevents claiming another user's record by guessing/stealing their id.
     const identitySubject = identity.subject ?? identity.clerkId;
     if (args.clerkId && identitySubject && args.clerkId === identitySubject) {
@@ -618,8 +618,8 @@ export const syncMyAccount = mutation({
       }
     }
 
-    // Find by email — SECURITY: only claim a record whose email matches the
-    // identity verified by Clerk. Never rebind based on client-supplied args.email.
+    // Find by email â€” SECURITY: only claim a record whose email matches the
+    // identity verified by the IAM JWT issuer. Never rebind based on client-supplied args.email.
     const identityEmail = (identity.email ?? "").toLowerCase();
     if (args.email && identityEmail && args.email.toLowerCase() === identityEmail) {
       user = await ctx.db
@@ -639,7 +639,7 @@ export const syncMyAccount = mutation({
       }
     }
 
-    // Not found — let seedAdmin handle new user creation
+    // Not found â€” let seedAdmin handle new user creation
     return { synced: false };
   },
 });

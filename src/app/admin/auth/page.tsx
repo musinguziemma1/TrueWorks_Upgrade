@@ -78,6 +78,8 @@ export default function AdminAuthPage() {
   const events = useQuery(api.authAdmin.listAllSecurityEvents, { limit: 100 });
   const revokeSession = useMutation(api.authAdmin.revokeAnySession);
   const [revoking, setRevoking] = useState<string | null>(null);
+  // Captured once per mount so expiry checks stay pure during render.
+  const [nowTs] = useState(() => Date.now());
 
   const handleRevoke = async (id: string) => {
     if (!confirm("Revoke this session? The user will be signed out on that device.")) return;
@@ -161,7 +163,7 @@ export default function AdminAuthPage() {
                         <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted">No sessions recorded yet.</TableCell></TableRow>
                       ) : sessions.map((s) => {
                         const device = parseDevice(s.userAgent);
-                        const expired = !s.revoked && s.absoluteExpiresAt < Date.now();
+                        const expired = !s.revoked && s.absoluteExpiresAt < nowTs;
                         return (
                           <TableRow key={s._id}>
                             <TableCell>

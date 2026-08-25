@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { SlideData } from './data';
 import { slideTransition, kenBurnsEffect } from './animations';
 import FloatingKPICards from './FloatingKPICards';

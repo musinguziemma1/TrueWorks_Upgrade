@@ -111,10 +111,10 @@ function MapChartInner({ data }: MapChartProps) {
         viewBox="0 0 800 450"
       >
         <Geographies geography={topology}>
-          {({ geographies }: { geographies: any[] }) =>
-            geographies.map((geo: any) => {
+          {({ geographies }) =>
+            geographies.map((geo) => {
               const geoName =
-                (geo.properties as { name?: string })?.name ?? ""
+                (geo.properties as { name?: string } | undefined)?.name ?? ""
               const match = dataMap.get(geoName)
               const fill = match
                 ? getColorScale(match.orders, maxOrders)

@@ -83,8 +83,8 @@ export default function ReviewsPage() {
     try {
       await approve({ id: id as never });
       toast.success("Review approved");
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to approve");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to approve");
     }
   };
 
@@ -92,8 +92,8 @@ export default function ReviewsPage() {
     try {
       await reject({ id: id as never });
       toast.success("Review rejected");
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to reject");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reject");
     }
   };
 
@@ -101,8 +101,8 @@ export default function ReviewsPage() {
     try {
       await toggleFeatured({ id: id as never });
       toast.success("Updated featured status");
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to update");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update");
     }
   };
 
@@ -112,8 +112,8 @@ export default function ReviewsPage() {
       await remove({ id: deleteId as never });
       toast.success("Review deleted");
       setDeleteId(null);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to delete");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete");
     }
   };
 

@@ -80,6 +80,7 @@ export function GeneralTab({ form, uploading, onUpload }: GeneralTabProps) {
                 )}
                 <p className="text-sm text-muted-foreground">Upload logo (PNG, SVG, max 2MB)</p>
                 {form.values.siteLogo && (
+                  /* eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URLs are not next/image remote patterns */
                   <img
                     src={String(form.values.siteLogo)}
                     alt="Current logo"
@@ -113,6 +114,7 @@ export function GeneralTab({ form, uploading, onUpload }: GeneralTabProps) {
                 )}
                 <p className="text-sm text-muted-foreground">Upload favicon (32x32px ICO/PNG)</p>
                 {form.values.siteFavicon && (
+                  /* eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URLs are not next/image remote patterns */
                   <img
                     src={String(form.values.siteFavicon)}
                     alt="Current favicon"

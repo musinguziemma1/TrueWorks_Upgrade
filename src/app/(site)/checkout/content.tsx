@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,7 +16,6 @@ import {
   MapPin,
   Loader2,
   Tag,
-  Globe,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/lib/auth/provider";
@@ -83,7 +82,6 @@ const pesapalMethods: {
 ];
 
 function StripePaymentForm({
-  clientSecret,
   onSuccess,
   onError,
 }: {
@@ -195,20 +193,20 @@ export default function CheckoutContent() {
     }
   }, [user, email, firstName, lastName]);
 
-  const getConvexToken = async (): Promise<string | null> => {
+  const getConvexToken = useCallback(async (): Promise<string | null> => {
     try {
       return await getToken();
     } catch {
       return null;
     }
-  };
+  }, [getToken]);
 
-  const authHeaders = async (): Promise<Record<string, string>> => {
+  const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
     const token = await getConvexToken();
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
-  };
+  }, [getConvexToken]);
 
   const discountAmount = appliedCoupon?.discount ?? 0;
   const displayTotal = Math.max(0, totalPrice - discountAmount);
@@ -260,7 +258,7 @@ export default function CheckoutContent() {
     setStripeClientSecret(null);
   };
 
-  const createStripePaymentIntent = async () => {
+  const createStripePaymentIntent = useCallback(async () => {
     try {
       const response = await fetch(`/api/stripe/create-payment-intent`, {
         method: "POST",
@@ -281,13 +279,16 @@ export default function CheckoutContent() {
         description: err instanceof Error ? err.message : "Please try again",
       });
     }
-  };
+  }, [authHeaders, convexOrderId]);
 
   useEffect(() => {
-    if (paymentProvider === "stripe" && convexOrderId && !stripeClientSecret) {
-      createStripePaymentIntent();
-    }
-  }, [paymentProvider, convexOrderId]);
+    if (paymentProvider !== "stripe" || !convexOrderId || stripeClientSecret) return;
+    // Defer to a macrotask so state updates happen outside the effect body.
+    const t = window.setTimeout(() => {
+      void createStripePaymentIntent();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [paymentProvider, convexOrderId, stripeClientSecret, createStripePaymentIntent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

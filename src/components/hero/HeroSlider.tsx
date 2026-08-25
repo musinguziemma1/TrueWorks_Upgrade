@@ -28,7 +28,7 @@ export default function HeroSlider({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-  const [canNavigate, setCanNavigate] = useState(true);
+  const [canNavigate] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Auto-advance slides

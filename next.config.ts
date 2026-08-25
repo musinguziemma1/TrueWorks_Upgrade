@@ -38,7 +38,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' https://images.unsplash.com https://lh3.googleusercontent.com data: blob:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.stripe.com https://ip-api.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
+      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
       "frame-src https://js.stripe.com https://www.youtube.com https://player.vimeo.com https://www.google.com https://pay.pesapal.com https://*.pesapal.com",
       "worker-src 'self' blob:",
       "object-src 'none'",

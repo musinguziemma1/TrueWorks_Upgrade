@@ -1,6 +1,5 @@
 import { ActionCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
 
 export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   try {
@@ -21,9 +20,9 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     // SECURITY: The customer must be signed in to complete checkout. The
-    // Convex token from the Authorization header (Clerk "convex" template)
-    // resolves to the user identity below. The order's email is bound to this
-    // identity, never to client-supplied values.
+    // Convex token from the Authorization header (issued by the first-party
+    // IAM JWKS endpoint) resolves to the user identity below. The order's
+    // email is bound to this identity, never to client-supplied values.
     let identity = null;
     try {
       identity = await ctx.auth.getUserIdentity();
@@ -62,12 +61,14 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
     if ((!country || !city) && ip && ip !== "unknown") {
       try {
-        const geoRes = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,regionName,city`);
+        // ipwho.is is used because it offers a free HTTPS endpoint (ip-api.com's
+        // free tier is HTTP-only and blocked in browser/server HTTPS contexts).
+        const geoRes = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`);
         const geo = await geoRes.json();
-        if (geo.status === "success") {
-          if (!country) country = geo.country || "";
-          if (!region) region = geo.regionName || "";
-          if (!city) city = geo.city || "";
+        if (geo.success === true) {
+          if (!country) country = typeof geo.country === "string" ? geo.country : "";
+          if (!region) region = typeof geo.region === "string" ? geo.region : "";
+          if (!city) city = typeof geo.city === "string" ? geo.city : "";
         }
       } catch {
         // Geolocation failure should not block checkout
@@ -123,7 +124,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       const isBundle = product.bundleProductIds && product.bundleProductIds.length > 0;
       if (isBundle) {
         for (const memberId of product.bundleProductIds!) {
-          const member = await ctx.runQuery(api.products.getById, { id: memberId as Id<"products"> });
+          const member = await ctx.runQuery(api.products.getById, { id: memberId });
           if (!member || member.status !== "published") {
             return new Response(JSON.stringify({ error: `Bundle contains an unavailable product` }), { status: 400, headers: { "Content-Type": "application/json" } });
           }

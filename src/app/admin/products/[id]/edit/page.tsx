@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import NextImage from "next/image"
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Save, Upload, Plus, X, Image, FileText, Settings, Eye, Trash2, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Upload, Plus, X, Image as ImageIcon, FileText, Settings, Eye, Trash2, Loader2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -97,7 +96,6 @@ export default function EditProductPage() {
 
   const fileTypes = ["PDF", "ZIP", "MP4", "AI", "PSD", "Figma", "HTML", "JS", "Excel", "CSV", "XLSX", "XLS"]
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (product) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -133,7 +131,7 @@ export default function EditProductPage() {
       setThumbnail(product.thumbnail)
       setGalleryImages(product.galleryImages)
       setDownloadableFileUrl(product.downloadableFile ?? "")
-      setDownloadableFileStorageId((product as any).downloadableFileStorageId ?? undefined)
+      setDownloadableFileStorageId((product as { downloadableFileStorageId?: string }).downloadableFileStorageId ?? undefined)
       setFileSize(product.fileSize ?? "")
       setFaqs(product.faqs.length > 0 ? product.faqs : [{ question: "", answer: "" }])
       setBundleProductIds(product.bundleProductIds ? [...product.bundleProductIds] : [])
@@ -454,12 +452,13 @@ export default function EditProductPage() {
 
             <TabsContent value="media">
               <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Image className="h-5 w-5" /> Media</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Media</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Thumbnail</Label>
                     {thumbnail ? (
                       <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URLs are not next/image remote patterns */}
                         <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
                         <button onClick={() => setThumbnail("")} className="absolute top-1 right-1 p-1 bg-white/80 rounded-md hover:bg-white">
                           <Trash2 className="h-3 w-3" />
@@ -467,7 +466,7 @@ export default function EditProductPage() {
                       </div>
                     ) : (
                       <div className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50" onClick={() => thumbInputRef.current?.click()}>
-                        {uploadingThumb ? <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" /> : <Image className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />}
+                        {uploadingThumb ? <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" /> : <ImageIcon className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />}
                         <p className="text-sm text-muted-foreground">Click to upload thumbnail</p>
                       </div>
                     )}
@@ -479,6 +478,7 @@ export default function EditProductPage() {
                     <div className="grid grid-cols-4 gap-2">
                       {galleryImages.map((url, i) => (
                         <div key={i} className="relative w-full h-20 rounded-lg overflow-hidden border">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URLs are not next/image remote patterns */}
                           <img src={url} alt="" className="w-full h-full object-cover" />
                           <button onClick={() => setGalleryImages(galleryImages.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 p-1 bg-white/80 rounded-md">
                             <Trash2 className="h-3 w-3" />

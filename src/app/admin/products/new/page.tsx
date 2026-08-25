@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import NextImage from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Send, Upload, Plus, X, Image, FileText, Settings, Eye, Download, Loader2, Trash2 } from "lucide-react"
+import { ArrowLeft, Save, Send, Upload, Plus, X, Image as ImageIcon, FileText, Settings, Eye, Loader2, Trash2 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,7 +37,6 @@ function slugify(value: string): string {
 
 export default function NewProductPage() {
   const router = useRouter()
-  const [publishing, setPublishing] = useState(false)
 
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -372,7 +371,7 @@ export default function NewProductPage() {
 
             <TabsContent value="media">
               <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Image className="h-5 w-5" /> Media</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Media</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Thumbnail *</Label>
@@ -391,7 +390,7 @@ export default function NewProductPage() {
                         {uploadingThumb ? (
                           <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
                         ) : (
-                          <Image className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                          <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                         )}
                         <p className="text-sm text-muted-foreground">Click to upload thumbnail</p>
                       </div>

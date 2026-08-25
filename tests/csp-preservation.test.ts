@@ -84,7 +84,7 @@ const REQUIRED_SECURITY_HEADERS = {
 /**
  * Security constraints that MUST remain enforced
  */
-const SECURITY_CONSTRAINTS = {
+const _SECURITY_CONSTRAINTS = {
   objectSrc: "none", // Must block plugins
   baseUri: "'self'", // Must restrict base URI
   formAction: "'self'", // Must restrict form submissions
@@ -150,7 +150,7 @@ function parseSecurityConfiguration(): PreservationTestResult {
 
     for (const line of directiveLines) {
       const cleaned = line.replace(/"/g, "");
-      const [directiveName, ...values] = cleaned.split(/\s+/);
+      const [directiveName, ..._values] = cleaned.split(/\s+/);
       if (directiveName) {
         result.baselineSnapshot.cspDirectives[directiveName] = cleaned;
       }

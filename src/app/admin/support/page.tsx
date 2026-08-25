@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { LifeBuoy, Search, Loader2, Eye, Mail, MailOpen, Trash2 } from "lucide-react"
+import { LifeBuoy, Search, Loader2, Mail, MailOpen, Trash2 } from "lucide-react"
 import { api } from "@convex/_generated/api"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"

@@ -38,6 +38,11 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# local logs and generated artifacts
+*.log
+*-output.txt
+lint-report.*
 next-env.d.ts
 
 .vercel

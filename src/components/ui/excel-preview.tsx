@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Eye, Download, Loader2, Search, ChevronLeft, ChevronRight, X, Maximize2 } from "lucide-react";
+import { Eye, Download, Loader2, Search, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,18 +27,15 @@ interface ExcelPreviewProps {
 const ROWS_PER_PAGE = 100;
 const MIN_COL_WIDTH = 80;
 const MAX_COL_WIDTH = 300;
-const HEADER_HEIGHT = 36;
-const ROW_HEIGHT = 32;
 
-function detectFileType(url: string): "excel" | "csv" | "unknown" {
-  const ext = url.split(".").pop()?.toLowerCase()?.split("?")[0] ?? "";
-  if (["xlsx", "xls", "xlsm", "xlsb"].includes(ext)) return "excel";
-  if (ext === "csv") return "csv";
-  return "unknown";
+/** Shape of an `!merges` entry produced by SheetJS worksheets. */
+interface SheetMerge {
+  s: { r: number; c: number };
+  e: { r: number; c: number };
 }
 
-function parseMerges(merges: any[], XLSX: any): SheetData["merges"] {
-  return (merges ?? []).map((m: any) => ({
+function parseMerges(merges: SheetMerge[] | undefined): SheetData["merges"] {
+  return (merges ?? []).map((m) => ({
     startRow: m.s.r,
     startCol: m.s.c,
     endRow: m.e.r,
@@ -116,7 +113,7 @@ export function ExcelPreview({ url, fileName }: ExcelPreviewProps) {
           blankrows: true,
         });
 
-        const data = jsonData.map((row: any) =>
+        const data = jsonData.map((row: unknown) =>
           Array.isArray(row) ? row.map(String) : [String(row)]
         );
 
@@ -134,7 +131,7 @@ export function ExcelPreview({ url, fileName }: ExcelPreviewProps) {
         allSheets.push({
           name: sheetName,
           data,
-          merges: parseMerges(worksheet["!merges"] as any[] ?? [], XLSX),
+          merges: parseMerges(worksheet["!merges"] as SheetMerge[] | undefined),
           colWidths,
         });
       }
@@ -151,7 +148,13 @@ export function ExcelPreview({ url, fileName }: ExcelPreviewProps) {
   }, [url]);
 
   useEffect(() => {
-    if (open) loadFile();
+    // Load asynchronously when the dialog opens; state updates happen inside
+    // the async callback, not synchronously in the effect body.
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      void loadFile();
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [open, loadFile]);
 
   const currentSheet = sheets[activeSheet];

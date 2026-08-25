@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useCart } from "@/components/layout/cart-context";
@@ -11,8 +11,8 @@ export function CartSync() {
   const { isAuthenticated, loading } = useAuth();
   const cart = useCart();
   const wishlist = useWishlist();
-  const [synced, setSynced] = useState(false);
   const pushedLocal = useRef(false);
+  const pulledRemote = useRef(false);
   const lastTrackedRef = useRef<string>("");
 
   const serverCart = useQuery(api.carts.getMine, loading || !isAuthenticated ? "skip" : {});
@@ -20,8 +20,14 @@ export function CartSync() {
   const trackAbandoned = useMutation(api.abandonedCarts.track);
   const currentUser = useQuery(api.users.current, loading || !isAuthenticated ? "skip" : {});
 
+  // Derived readiness flag — replaces the previous `synced` state so that
+  // effects never need to call setState synchronously.
+  const ready = isAuthenticated && !loading && serverCart !== undefined && currentUser !== undefined;
+
   useEffect(() => {
-    if (!isAuthenticated || synced || serverCart === undefined || currentUser === undefined) return;
+    // One-time pull of the server cart (or push of the local one) per session.
+    if (!ready || pulledRemote.current) return;
+    pulledRemote.current = true;
 
     if (serverCart && (serverCart.items.length > 0 || serverCart.wishlist.length > 0)) {
       cart.replaceItems(serverCart.items);
@@ -30,25 +36,24 @@ export function CartSync() {
       pushedLocal.current = true;
       saveMine({ items: cart.items, wishlist: wishlist.items }).catch(() => {});
     }
-    setSynced(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, serverCart, currentUser, synced]);
+  }, [ready, serverCart, currentUser, cart, wishlist, saveMine]);
 
   useEffect(() => {
-    if (!synced || !isAuthenticated || !currentUser) return;
+    // Debounced push of subsequent local edits while signed in.
+    if (!ready || !pulledRemote.current) return;
     const t = setTimeout(() => {
       saveMine({ items: cart.items, wishlist: wishlist.items }).catch(() => {});
     }, 1000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart.items, wishlist.items, synced, isAuthenticated, currentUser]);
+  }, [cart.items, wishlist.items, ready, saveMine]);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && synced) {
-      setSynced(false);
+    // Reset session refs on sign-out so the next sign-in re-syncs.
+    if (!loading && !isAuthenticated) {
+      pulledRemote.current = false;
       pushedLocal.current = false;
     }
-  }, [loading, isAuthenticated, synced]);
+  }, [loading, isAuthenticated]);
 
   useEffect(() => {
     if (loading || isAuthenticated || cart.items.length === 0) return;

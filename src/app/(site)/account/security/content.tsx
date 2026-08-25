@@ -117,13 +117,15 @@ export default function SecurityContent() {
     mfaEnabled ? "idle" : "idle"
   );
   const [mfaSecret, setMfaSecret] = useState("");
-  const [otpauth, setOtpauth] = useState("");
+  const [_otpauth, setOtpauth] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [mfaBusy, setMfaBusy] = useState(false);
   const [disablePassword, setDisablePassword] = useState("");
   const [disableCode, setDisableCode] = useState("");
+  // Captured once per mount so expiry checks stay pure during render.
+  const [nowTs] = useState(() => Date.now());
 
   const loadSecurity = useCallback(async () => {
     setLoading(true);
@@ -149,7 +151,11 @@ export default function SecurityContent() {
   }, []);
 
   useEffect(() => {
-    loadSecurity();
+    // Defer to a macrotask so state updates happen outside the effect body.
+    const t = window.setTimeout(() => {
+      void loadSecurity();
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [loadSecurity]);
 
   const revokeSession = async (id: string) => {
@@ -315,7 +321,7 @@ export default function SecurityContent() {
   }
 
   const activeSessions = sessions.filter(
-    (s) => !s.revoked && s.absoluteExpiresAt > Date.now()
+    (s) => !s.revoked && s.absoluteExpiresAt > nowTs
   );
 
   return (

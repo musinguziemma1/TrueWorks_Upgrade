@@ -166,9 +166,9 @@ export default defineSchema({
     totalSales: v.number(),
     rating: v.number(),
     reviewCount: v.number(),
-    relatedProductIds: v.optional(v.array(v.string())),
-    upsellIds: v.optional(v.array(v.string())),
-    bundleProductIds: v.optional(v.array(v.string())),
+    relatedProductIds: v.optional(v.array(v.id("products"))),
+    upsellIds: v.optional(v.array(v.id("products"))),
+    bundleProductIds: v.optional(v.array(v.id("products"))),
     versionHistory: v.optional(v.array(v.object({
       version: v.string(),
       changelog: v.string(),
@@ -226,10 +226,12 @@ export default defineSchema({
       country: v.optional(v.string()),
       postalCode: v.optional(v.string()),
     })),
+    // Download grants for this order. Signed file URLs are NEVER persisted —
+    // they are generated on demand by the secure downloads flow
+    // (convex/downloads.ts -> ctx.storage.getUrl), because stored URLs expire
+    // and leak long-lived access in the database.
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
-      url: v.string(),
-      expiresAt: v.number(),
       downloadCount: v.number(),
     })),
     notes: v.optional(v.string()),

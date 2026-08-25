@@ -1,7 +1,7 @@
 "use node";
 
 import { sha256Hex } from "./tokens";
-import { generateSecret, generate, verify } from "otplib";
+import { generateSecret, verify } from "otplib";
 
 export function generateBase32Secret(): string {
   return generateSecret({ length: 20 });

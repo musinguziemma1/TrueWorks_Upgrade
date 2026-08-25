@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Menu, ArrowRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -73,7 +72,7 @@ export function MobileNav({ open: externalOpen, onClose, onToggle }: MobileNavPr
 
 function MobileNavPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
-  const { isAuthenticated, loading, user, logout } = useAuth();
+  const { isAuthenticated, loading, logout } = useAuth();
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 

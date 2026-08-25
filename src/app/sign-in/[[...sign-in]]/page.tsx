@@ -15,7 +15,7 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
-  const [mfaToken, setMfaToken] = useState("");
+  const [mfaToken] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();

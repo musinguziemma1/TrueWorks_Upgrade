@@ -45,6 +45,12 @@ function getConvexSiteUrl(): string {
     .replace(/\/$/, "");
 }
 
+function redirectToSignIn(req: NextRequest): NextResponse {
+  const signInUrl = new URL("/sign-in", req.url);
+  signInUrl.searchParams.set("redirect", req.nextUrl.pathname);
+  return NextResponse.redirect(signInUrl);
+}
+
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
@@ -54,14 +60,18 @@ export default async function proxy(req: NextRequest) {
 
   const sessionCookie = req.cookies.get("tw_session")?.value;
   if (!sessionCookie) {
-    const signInUrl = new URL("/sign-in", req.url);
-    signInUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(signInUrl);
+    return redirectToSignIn(req);
   }
 
   try {
     const convexSiteUrl = getConvexSiteUrl();
-    if (!convexSiteUrl) return NextResponse.next();
+    // SECURITY: fail closed. If the Convex site URL cannot be resolved we must
+    // NOT let the request through — an unvalidated session must never reach a
+    // protected route.
+    if (!convexSiteUrl) {
+      console.error("Auth middleware misconfigured: CONVEX site URL is not set");
+      return redirectToSignIn(req);
+    }
 
     const res = await fetch(`${convexSiteUrl}/iam/me`, {
       method: "GET",
@@ -70,14 +80,11 @@ export default async function proxy(req: NextRequest) {
     });
 
     if (!res.ok) {
-      const signInUrl = new URL("/sign-in", req.url);
-      signInUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(signInUrl);
+      return redirectToSignIn(req);
     }
   } catch {
-    const signInUrl = new URL("/sign-in", req.url);
-    signInUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(signInUrl);
+    // Network failure validating the session also fails closed.
+    return redirectToSignIn(req);
   }
 
   return NextResponse.next();
