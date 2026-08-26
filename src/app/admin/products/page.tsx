@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import {
   useProducts,
   deleteProduct,
@@ -51,6 +52,9 @@ export default function ProductsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)
   const [fileName, setFileName] = useState("")
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const [bulkBusy, setBulkBusy] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const products = useProducts()
@@ -58,6 +62,7 @@ export default function ProductsPage() {
   const removeProduct = deleteProduct.useMutation()
   const importProducts = bulkImportProducts.useMutation()
   const setStatusBulk = useMutation(api.products.bulkSetStatus)
+  const bulkRemove = useMutation(api.products.bulkRemove)
 
   const isLoading = products === undefined
 
@@ -89,22 +94,29 @@ export default function ProductsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product?")) return
     try {
       await removeProduct({ id: id as never })
       toast.success("Product deleted")
     } catch (e) {
       toast.error(String(e))
+    } finally {
+      setDeleteId(null)
     }
   }
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} products?`)) return
-    for (const id of selected) {
-      await removeProduct({ id: id as never })
+    if (selected.size === 0) return
+    try {
+      setBulkBusy(true)
+      const deleted = await bulkRemove({ ids: Array.from(selected) as never })
+      setSelected(new Set())
+      toast.success(`Deleted ${deleted} product${deleted === 1 ? "" : "s"}`)
+    } catch (e) {
+      toast.error(String(e))
+    } finally {
+      setBulkBusy(false)
+      setConfirmBulkDelete(false)
     }
-    setSelected(new Set())
-    toast.success("Products deleted")
   }
 
   const handleBulkStatus = async (status: ProductStatus) => {
@@ -271,7 +283,9 @@ export default function ProductsPage() {
               <SelectItem value="archived">Archive selected</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="destructive" size="sm" onClick={handleBulkDelete}>Delete Selected</Button>
+          <Button variant="destructive" size="sm" onClick={() => setConfirmBulkDelete(true)} disabled={bulkBusy}>
+            Delete Selected
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
       )}
@@ -341,14 +355,15 @@ export default function ProductsPage() {
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/admin/products/${product._id}/edit`}>
-                          <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Edit">
+                          <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Edit" aria-label={`Edit ${product.name}`}>
                             <Edit3 className="h-4 w-4" />
                           </button>
                         </Link>
                         <button
                           className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors"
                           title="Delete"
-                          onClick={() => handleDelete(product._id)}
+                          aria-label={`Delete ${product.name}`}
+                          onClick={() => setDeleteId(product._id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -414,6 +429,26 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        title="Delete this product?"
+        description="This permanently removes the product, its files, and detaches it from any categories. This action cannot be undone."
+        confirmLabel="Delete product"
+        destructive
+        onConfirm={async () => { if (deleteId) await handleDelete(deleteId) }}
+      />
+
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        onOpenChange={(open) => { if (!open && !bulkBusy) setConfirmBulkDelete(false) }}
+        title={`Delete ${selected.size} product${selected.size === 1 ? "" : "s"}?`}
+        description="This permanently removes all selected products in a single transaction. Any associated downloads and license records will remain but become orphaned. This action cannot be undone."
+        confirmLabel={`Delete ${selected.size} product${selected.size === 1 ? "" : "s"}`}
+        destructive
+        onConfirm={handleBulkDelete}
+      />
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="sm:max-w-md">

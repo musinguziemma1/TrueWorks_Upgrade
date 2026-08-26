@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Search, Mail, Phone, Calendar, DollarSign, ShoppingCart, MapPin, ChevronRight, Loader2, Trash2, FileSpreadsheet, UserCheck } from "lucide-react"
+import { Users, Search, Mail, Phone, Calendar, DollarSign, ShoppingCart, ChevronRight, Trash2, FileSpreadsheet, UserCheck } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
+import type { Doc } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -13,6 +14,9 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { TableSkeleton } from "@/components/admin/table-skeleton"
 import { toast } from "sonner"
 import {
   useCustomers,
@@ -22,50 +26,36 @@ import {
 const fmtLTV = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n)
 
-interface CustomerDoc {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  totalOrders: number;
-  lifetimeValue: number;
-  newsletterSubscribed: boolean;
-  createdAt: number;
-  location?: string;
-  avatar?: string;
-}
+type CustomerDoc = Doc<"customers">
 
 export default function CustomersPage() {
-  const [search, setSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300)
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDoc | null>(null)
   const [page, setPage] = useState(1)
+  const [deleteTarget, setDeleteTarget] = useState<CustomerDoc | null>(null)
 
   const customers = useCustomers({ search: search || undefined })
   const customerStats = useQuery(api.customers.stats)
-  const customerOrders = useQuery(api.orders.listByCustomerEmail, {
-    email: selectedCustomer?.email ?? "",
-  })
+  const customerOrders = useQuery(
+    api.orders.listByCustomerEmail,
+    selectedCustomer ? { email: selectedCustomer.email } : "skip"
+  )
   const removeCustomer = deleteCustomer.useMutation()
 
   const isLoading = customers === undefined
-
-  const filtered = (customers ?? []).filter((c) =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()) || (c.phone ?? "").includes(search)
-  )
+  const filtered = customers ?? []
 
   const perPage = 8
-  const totalPages = Math.ceil(filtered.length / perPage)
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage)
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this customer?")) return
-    try {
-      await removeCustomer({ id: id as never })
-      toast.success("Customer deleted")
-      if (selectedCustomer?._id === id) setSelectedCustomer(null)
-    } catch (e) {
-      toast.error(String(e))
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await removeCustomer({ id: deleteTarget._id as never })
+    toast.success("Customer deleted")
+    if (selectedCustomer?._id === deleteTarget._id) setSelectedCustomer(null)
   }
 
   const handleExportCsv = () => {
@@ -119,13 +109,13 @@ export default function CustomersPage() {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search customers..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+        <Input placeholder="Search customers..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setPage(1) }} className="pl-10" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+            <TableSkeleton rows={6} cols={5} />
           ) : (
             <Card>
               <CardHeader>
@@ -147,7 +137,7 @@ export default function CustomersPage() {
                   </TableHeader>
                   <TableBody>
                     {paginated.map((customer) => (
-                      <TableRow key={customer._id} className="cursor-pointer" onClick={() => setSelectedCustomer(customer as CustomerDoc)}>
+                      <TableRow key={customer._id} className="cursor-pointer" onClick={() => setSelectedCustomer(customer)}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
@@ -181,10 +171,12 @@ export default function CustomersPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
+              <p className="text-sm text-muted-foreground">
+                Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} of {filtered.length} customers
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+                <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+                <Button variant="outline" size="sm" disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
               </div>
             </div>
           )}
@@ -200,11 +192,13 @@ export default function CustomersPage() {
                       <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">{getInitials(selectedCustomer.name)}</AvatarFallback>
                     </Avatar>
                     <h3 className="text-lg font-semibold text-primary">{selectedCustomer.name}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
-                      <MapPin className="h-3.5 w-3.5" /> {selectedCustomer.location ?? "—"}
-                    </p>
+                    {selectedCustomer.phone ? (
+                      <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
+                        <Phone className="h-3.5 w-3.5" /> {selectedCustomer.phone}
+                      </p>
+                    ) : null}
                   </div>
-                  <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => handleDelete(selectedCustomer._id)}>
+                  <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleteTarget(selectedCustomer)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -247,6 +241,16 @@ export default function CustomersPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={`Delete ${deleteTarget?.name ?? "this customer"}?`}
+        description="This permanently removes the customer record. Their orders remain in history but will no longer be linked. This action cannot be undone."
+        confirmLabel="Delete customer"
+        destructive
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

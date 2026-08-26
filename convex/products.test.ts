@@ -6,6 +6,11 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
 
+// `requireAdmin` reads from process.env.ADMIN_EMAILS; install a known admin
+// before each test so admin-gated mutations are authorized.
+process.env.ADMIN_EMAILS = "admin@example.com";
+process.env.SUPERADMIN_EMAILS = "admin@example.com";
+
 type ProductSeed = {
   name: string;
   slug: string;
@@ -100,5 +105,35 @@ describe("products.getBySlug", () => {
       slug: "hospital-finance-kit",
     });
     expect(product).toBeNull();
+  });
+});
+
+describe("products.bulkRemove", () => {
+  test("deletes the requested products and returns the count", async () => {
+    const t = convexTest(schema, modules);
+    const ids: import("./_generated/dataModel").Id<"products">[] = [];
+    await t.run(async (ctx) => {
+      ids.push(await ctx.db.insert("products", makeProduct({ sku: "TW-A" })));
+      ids.push(await ctx.db.insert("products", makeProduct({ sku: "TW-B" })));
+      await ctx.db.insert("products", makeProduct({ sku: "TW-KEEP" }));
+    });
+    // bulkRemove is admin-gated; create a user, mark as admin, and authenticate.
+    const asAdmin = t.withIdentity({ tokenIdentifier: "admin|test", email: "admin@example.com", name: "Admin" });
+    const deleted = await asAdmin.mutation(api.products.bulkRemove, { ids });
+    expect(deleted).toBe(2);
+    const remaining = await t.run(async (ctx) => ctx.db.query("products").collect());
+    expect(remaining.map((p) => p.sku)).toEqual(["TW-KEEP"]);
+  });
+
+  test("skips missing ids without throwing", async () => {
+    const t = convexTest(schema, modules);
+    const ids: import("./_generated/dataModel").Id<"products">[] = [];
+    await t.run(async (ctx) => {
+      ids.push(await ctx.db.insert("products", makeProduct({ sku: "TW-X" })));
+    });
+    const asAdmin = t.withIdentity({ tokenIdentifier: "admin|test", email: "admin@example.com", name: "Admin" });
+    const fakeId = ids[0];
+    const deleted = await asAdmin.mutation(api.products.bulkRemove, { ids: [fakeId, fakeId] });
+    expect(deleted).toBe(1);
   });
 });
