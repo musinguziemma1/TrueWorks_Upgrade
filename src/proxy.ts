@@ -58,7 +58,10 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = req.cookies.get("tw_session")?.value;
+  // Accept both the legacy and hardened `__Host-` prefixed session cookies
+  // during the transition window.
+  const sessionCookie =
+    req.cookies.get("__Host-tw_session")?.value ?? req.cookies.get("tw_session")?.value;
   if (!sessionCookie) {
     return redirectToSignIn(req);
   }
