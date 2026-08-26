@@ -51,3 +51,5 @@ next-env.d.ts
 .agents/skills/convex-*
 .claude/skills/convex-*
 convex/_generated/ai/
+
+test-results/
