@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState } from "react"
-import { Search, ChevronDown, ChevronUp, CreditCard, Loader2, FileSpreadsheet, DollarSign, CheckCircle2, Clock, RotateCcw } from "lucide-react"
-import { useQuery } from "convex/react"
+import React, { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Search, ChevronDown, ChevronUp, CreditCard, FileSpreadsheet, DollarSign, CheckCircle2, Clock, RotateCcw, CalendarRange } from "lucide-react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
@@ -16,7 +17,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { TableSkeleton } from "@/components/admin/table-skeleton"
 import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 import {
   useOrders,
@@ -28,33 +32,63 @@ const fmtPrice = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n)
 
 export default function OrdersPage() {
-  const [search, setSearch] = useState("")
-  const [paymentFilter, setPaymentFilter] = useState("All")
-  const [orderFilter, setOrderFilter] = useState("All")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Filters are URL-synced: refresh keeps them and views are shareable.
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "")
+  const search = useDebouncedValue(searchInput, 300)
+  const [paymentFilter, setPaymentFilter] = useState(searchParams.get("payment") ?? "All")
+  const [orderFilter, setOrderFilter] = useState(searchParams.get("status") ?? "All")
+  const [range, setRange] = useState(searchParams.get("range") ?? "all")
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1)
+
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [page, setPage] = useState(1)
   const [statusDialogId, setStatusDialogId] = useState<string | null>(null)
   const [newPaymentStatus, setNewPaymentStatus] = useState("")
   const [newOrderStatus, setNewOrderStatus] = useState("")
   const [notes, setNotes] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [confirmBulk, setConfirmBulk] = useState(false)
 
-  const orders = useOrders({ paymentStatus: paymentFilter !== "All" ? paymentFilter : undefined })
+  // Pure render: the server converts daysAgo to a timestamp cutoff.
+
+  // Server-side search + filters (debounced) instead of re-filtering the
+  // entire table client-side on every keystroke.
+  const orders = useOrders({
+    paymentStatus: paymentFilter !== "All" ? paymentFilter : undefined,
+    orderStatus: orderFilter !== "All" ? orderFilter.toLowerCase() : undefined,
+    search: search || undefined,
+    daysAgo: range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : undefined,
+    limit: 500,
+  })
   const orderStats = useQuery(api.orders.stats)
   const updateStatus = updateOrderStatus.useMutation()
+  const bulkUpdate = useMutation(api.orders.bulkUpdateStatus)
   const removeOrder = deleteOrder.useMutation()
 
   const isLoading = orders === undefined
-
-  const filtered = (orders ?? []).filter((o) => {
-    if (search && !o.orderNumber.toLowerCase().includes(search.toLowerCase()) && !o.customerName.toLowerCase().includes(search.toLowerCase())) return false
-    if (orderFilter !== "All" && o.orderStatus !== orderFilter.toLowerCase()) return false
-    return true
-  })
+  const filtered = orders ?? []
 
   const perPage = 8
-  const totalPages = Math.ceil(filtered.length / perPage)
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage)
+
+  // Keep the URL in sync with the active view (refresh-safe, shareable).
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (search) params.set("q", search)
+    if (paymentFilter !== "All") params.set("payment", paymentFilter)
+    if (orderFilter !== "All") params.set("status", orderFilter)
+    if (range !== "all") params.set("range", range)
+    if (safePage > 1) params.set("page", String(safePage))
+    const qs = params.toString()
+    router.replace(qs ? `/admin/orders?${qs}` : "/admin/orders", { scroll: false })
+  }, [search, paymentFilter, orderFilter, range, safePage, router])
+
+  const resetPage = () => setPage(1)
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected)
@@ -90,14 +124,10 @@ export default function OrdersPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this order?")) return
-    try {
-      await removeOrder({ id: id as never })
-      toast.success("Order deleted")
-    } catch (e) {
-      toast.error(String(e))
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await removeOrder({ id: deleteTarget as never })
+    toast.success("Order deleted")
   }
 
   const handleExportCsv = () => {
@@ -119,16 +149,10 @@ export default function OrdersPage() {
 
   const handleBulkComplete = async () => {
     if (selected.size === 0) return
-    if (!confirm(`Mark ${selected.size} order(s) as completed?`)) return
-    try {
-      for (const id of selected) {
-        await updateStatus({ id: id as never, orderStatus: "completed" as never })
-      }
-      toast.success("Orders marked completed")
-      setSelected(new Set())
-    } catch (e) {
-      toast.error(String(e))
-    }
+    // One atomic transaction — no partial-failure states.
+    const result = await bulkUpdate({ ids: [...selected] as never, orderStatus: "completed" as never })
+    toast.success(`${result.updated} order(s) marked completed`)
+    setSelected(new Set())
   }
 
   return (
@@ -167,18 +191,27 @@ export default function OrdersPage() {
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search orders or customer..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+          <Input placeholder="Search orders or customer..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); resetPage() }} className="pl-10" />
         </div>
-        <Select value={paymentFilter} onValueChange={(v) => { if (v) { setPaymentFilter(v); setPage(1) } }}>
+        <Select value={paymentFilter} onValueChange={(v) => { if (v) { setPaymentFilter(v); resetPage() } }}>
           <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {["All", "pending", "completed", "failed", "refunded"].map((s) => <SelectItem key={s} value={s}>Payment: {s}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={orderFilter} onValueChange={(v) => { if (v) { setOrderFilter(v); setPage(1) } }}>
+        <Select value={orderFilter} onValueChange={(v) => { if (v) { setOrderFilter(v); resetPage() } }}>
           <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {["All", "Processing", "Completed", "Pending", "Cancelled"].map((s) => <SelectItem key={s} value={s}>Status: {s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={range} onValueChange={(v) => { if (v) { setRange(v); resetPage() } }}>
+          <SelectTrigger className="w-[150px]"><CalendarRange className="h-4 w-4 mr-1 text-muted-foreground" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All time</SelectItem>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="90d">Last 90 days</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -186,7 +219,7 @@ export default function OrdersPage() {
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-[#0B2545]/5 rounded-lg border border-[#0B2545]/10">
           <span className="text-sm font-medium">{selected.size} selected</span>
-          <Button variant="outline" size="sm" onClick={handleBulkComplete}>
+          <Button variant="outline" size="sm" onClick={() => setConfirmBulk(true)}>
             <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Mark Completed
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
@@ -194,7 +227,7 @@ export default function OrdersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+        <TableSkeleton rows={6} cols={6} />
       ) : (
         <Card>
           <CardHeader>
@@ -252,7 +285,7 @@ export default function OrdersPage() {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Button variant="link" size="sm" onClick={() => openStatusDialog(order._id, order.paymentStatus, order.orderStatus, order.notes)}>Edit</Button>
-                          <Button variant="link" size="sm" className="text-destructive" onClick={() => handleDelete(order._id)}>Delete</Button>
+                          <Button variant="link" size="sm" className="text-destructive" onClick={() => setDeleteTarget(order._id)}>Delete</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -288,13 +321,34 @@ export default function OrdersPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
+          <p className="text-sm text-muted-foreground">
+            Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} of {filtered.length} orders
+          </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+            <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+            <Button variant="outline" size="sm" disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title="Delete this order?"
+        description="This permanently removes the order and its history. This action cannot be undone."
+        confirmLabel="Delete order"
+        destructive
+        onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={confirmBulk}
+        onOpenChange={setConfirmBulk}
+        title={`Mark ${selected.size} order(s) as completed?`}
+        description="All selected orders will be updated in a single atomic operation."
+        confirmLabel="Mark completed"
+        onConfirm={handleBulkComplete}
+      />
 
       <Dialog open={!!statusDialogId} onOpenChange={() => setStatusDialogId(null)}>
         <DialogContent className="sm:max-w-md">

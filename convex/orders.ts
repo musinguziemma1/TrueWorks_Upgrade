@@ -13,17 +13,20 @@ export const list = query({
     orderStatus: v.optional(v.string()),
     search: v.optional(v.string()),
     startDate: v.optional(v.number()),
+    daysAgo: v.optional(v.number()),
     endDate: v.optional(v.number()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
     const limit = args.limit ?? 100;
+    // Pure relative cutoff so clients never compute timestamps during render.
+    const startDate = args.startDate ?? (args.daysAgo ? Date.now() - args.daysAgo * 24 * 60 * 60 * 1000 : undefined);
 
     // Fast path: no filters at all means "most recent N", which the createdAt
     // index serves directly without scanning the whole table. The dashboard
     // uses this for its "Recent Orders" panel.
-    if (!args.paymentStatus && !args.orderStatus && !args.search && !args.startDate && !args.endDate) {
+    if (!args.paymentStatus && !args.orderStatus && !args.search && !startDate && !args.endDate) {
       return await ctx.db
         .query("orders")
         .withIndex("by_createdAt", (q) => q)
@@ -255,6 +258,51 @@ export const createInternal = internalMutation({
   args: orderCreateArgs,
   handler: async (ctx, args) => {
     return await insertOrder(ctx, args);
+  },
+});
+
+export const bulkUpdateStatus = mutation({
+  args: {
+    ids: v.array(v.id("orders")),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"), v.literal("refunded"))),
+    orderStatus: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("cancelled"))),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const { ids, paymentStatus, orderStatus } = args;
+    if (ids.length === 0) return { updated: 0 };
+    if (ids.length > 100) throw new Error("Too many orders selected (max 100 per bulk update)");
+    if (!paymentStatus && !orderStatus) throw new Error("Nothing to update");
+
+    const now = Date.now();
+    let updated = 0;
+    // A single mutation is a single transaction: either every selected order
+    // is patched or none are — no partial-failure states.
+    for (const id of ids) {
+      const order = await ctx.db.get(id);
+      if (!order) continue;
+      const fields: {
+        updatedAt: number;
+        orderStatus?: "pending" | "processing" | "completed" | "cancelled";
+        paymentStatus?: "pending" | "completed" | "failed" | "refunded";
+      } = { updatedAt: now };
+      if (orderStatus && order.orderStatus !== orderStatus) fields.orderStatus = orderStatus;
+      if (paymentStatus && order.paymentStatus !== paymentStatus) fields.paymentStatus = paymentStatus;
+      if (fields.orderStatus || fields.paymentStatus) {
+        await ctx.db.patch(id, fields);
+        updated++;
+      }
+    }
+
+    await auditLog(ctx, {
+      action: "order.bulk_update",
+      entityType: "order",
+      entityId: ids[0],
+      summary: `Bulk updated ${updated} order(s) — orderStatus: ${orderStatus ?? "unchanged"}, paymentStatus: ${paymentStatus ?? "unchanged"}`,
+      changes: { ids, orderStatus, paymentStatus },
+    });
+
+    return { updated };
   },
 });
 

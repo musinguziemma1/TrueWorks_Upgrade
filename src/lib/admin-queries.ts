@@ -110,6 +110,10 @@ export function useOrders(args?: {
   paymentStatus?: string;
   orderStatus?: string;
   search?: string;
+  startDate?: number;
+  endDate?: number;
+  daysAgo?: number;
+  limit?: number;
 }) {
   return useQuery(api.orders.list, args ?? {});
 }

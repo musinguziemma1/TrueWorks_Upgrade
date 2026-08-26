@@ -15,10 +15,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 
 export default function DownloadsPage() {
-  const [search, setSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState("all")
   const [confirmAction, setConfirmAction] = useState<{ id: Doc<"downloads">["_id"]; type: "reset" | "revoke" } | null>(null)
   const downloads = useQuery(api.downloads.listAll, {
@@ -108,7 +110,7 @@ export default function DownloadsPage() {
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by product or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder="Search by product or email..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pl-10" />
         </div>
         <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useQuery } from "convex/react";
@@ -12,22 +12,20 @@ import {
   CheckCircle,
   Download,
   Users,
-  BarChart3,
-  Star,
-  Clock,
   ShoppingBag,
-  Activity,
   ArrowRight,
   Loader2,
   Shield,
-  CalendarDays,
   Monitor,
+  TrendingUp,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPrice } from "@/lib/utils";
-import { useAuth } from "@/lib/auth/provider";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { buttonVariants } from "@/components/ui/button";
+import { StatCard } from "@/components/admin/stat-card";
+import { formatPrice, cn } from "@/lib/utils";
 
 const AdminRevenueChart = dynamic(
   () => import("@/components/admin/admin-revenue-chart").then((m) => m.default),
@@ -41,53 +39,50 @@ const AdminRevenueChart = dynamic(
   }
 );
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    processing: "bg-blue-50 text-blue-700 border-blue-200",
-    pending: "bg-amber-50 text-amber-700 border-amber-200",
-    cancelled: "bg-red-50 text-red-700 border-red-200",
-    refunded: "bg-orange-50 text-orange-700 border-orange-200",
-    failed: "bg-red-50 text-red-700 border-red-200",
-  };
-  return (
-    <Badge variant="outline" className={`${styles[status] || ""} font-medium capitalize`}>
-      {status}
-    </Badge>
-  );
+/** Signed % change between two values, guarding against a zero baseline. */
+function pctChange(current: number, previous: number): number {
+  if (previous === 0) return current === 0 ? 0 : 100;
+  return ((current - previous) / previous) * 100;
 }
 
+const RANGE_OPTIONS = [
+  { label: "7D", days: 7 },
+  { label: "14D", days: 14 },
+  { label: "30D", days: 30 },
+] as const;
+
+type Range = (typeof RANGE_OPTIONS)[number]["days"];
+
 export default function AdminDashboard() {
-  const { user } = useAuth();
   const dash = useQuery(api.dashboard.summary);
+  const [range, setRange] = useState<Range>(7);
 
   const orderStats = dash?.orderStats;
   const productStats = dash?.productStats;
   const recentOrders = dash?.recentOrders ?? [];
   const totalSubscribers = dash?.subscriberCount ?? 0;
-  const analyticsSummary = {
-    totalDownloads: dash?.totalDownloads ?? 0,
-    dailyData: dash?.dailyRevenue ?? [],
-  };
+  const totalDownloads = dash?.totalDownloads ?? 0;
 
-  const today = useMemo(() => {
-    return new Date().toLocaleDateString("en-GB", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }, []);
+  const today = useMemo(
+    () =>
+      new Date().toLocaleDateString("en-GB", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    []
+  );
+
+  const revenueSeries = useMemo(
+    () => [...(dash?.dailyRevenue ?? [])].sort((a, b) => a.date.localeCompare(b.date)),
+    [dash]
+  );
+  const revenueRecent7 = revenueSeries.slice(-7).reduce((s, d) => s + d.revenue, 0);
+  const revenuePrev7 = revenueSeries.slice(-14, -7).reduce((s, d) => s + d.revenue, 0);
+  const revenueDelta = pctChange(revenueRecent7, revenuePrev7);
 
   const isLoading = dash === undefined;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
-      </div>
-    );
-  }
 
   const revenue = orderStats?.totalRevenue ?? 0;
   const totalOrders = orderStats?.total ?? 0;
@@ -98,208 +93,218 @@ export default function AdminDashboard() {
   const publishedProducts = productStats?.published ?? 0;
   const draftProducts = productStats?.draft ?? 0;
 
-  const revenue45 = analyticsSummary?.dailyData?.reduce((sum, d) => sum + d.revenue, 0) ?? 0;
+  const rangeSeries = revenueSeries.slice(-range);
+  const revenueChartData = rangeSeries.length
+    ? rangeSeries.map((d) => ({ month: d.date.slice(5), revenue: d.revenue }))
+    : [];
 
-  const revenueData = analyticsSummary?.dailyData?.slice(-12) ?? [];
-  const revenueChartData = revenueData.map((d) => ({
-    month: d.date.slice(5),
-    revenue: d.revenue,
-  }));
+  const attentionItems = [
+    {
+      label: "Pending orders",
+      detail: "Waiting to be processed",
+      count: pendingOrders,
+      href: "/admin/orders?status=pending",
+      tone: "text-amber-700 bg-amber-50 border-amber-200",
+      dot: "bg-amber-500",
+    },
+    {
+      label: "Draft products",
+      detail: "Not visible to customers",
+      count: draftProducts,
+      href: "/admin/products",
+      tone: "text-blue-700 bg-blue-50 border-blue-200",
+      dot: "bg-blue-500",
+    },
+    {
+      label: "Refunds",
+      detail: "Orders that were refunded",
+      count: refundedOrders,
+      href: "/admin/orders?payment=refunded",
+      tone: "text-red-700 bg-red-50 border-red-200",
+      dot: "bg-red-500",
+    },
+  ].filter((item) => item.count > 0);
+  const hasAttention = attentionItems.length > 0;
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#0B2545] font-heading">
-            Welcome back{user?.name ? `, ${user.name}` : ""}
-          </h1>
-          <p className="text-sm text-muted-foreground font-body flex items-center gap-2 mt-1">
-            <CalendarDays className="h-4 w-4" />
-            {today}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex items-center gap-6 rounded-xl bg-card border border-border px-5 py-3 shadow-soft">
-            <div>
-              <p className="text-xs text-muted-foreground font-body">Revenue (45d)</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{formatPrice(revenue45)}</p>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div>
-              <p className="text-xs text-muted-foreground font-body">Pending Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{pendingOrders}</p>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div>
-              <p className="text-xs text-muted-foreground font-body">Products</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{publishedProducts}</p>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div>
-              <p className="text-xs text-muted-foreground font-body">Subscribers</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalSubscribers}</p>
-            </div>
-          </div>
-        </div>
+      <AdminPageHeader
+        title="Dashboard"
+        description={`${today} · A live snapshot of your TrueWorks storefront.`}
+        action={
+          <Link
+            href="/admin/analytics"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <TrendingUp className="h-4 w-4" /> View analytics
+          </Link>
+        }
+      />
+
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-5">
+<StatCard
+          label="Total Revenue"
+          value={formatPrice(revenue)}
+          icon={DollarSign}
+          tint="text-primary bg-primary/10"
+          href="/admin/analytics"
+          delta={{ value: revenueDelta, label: "vs prev 7d" }}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Orders"
+          value={totalOrders}
+          icon={ShoppingCart}
+          tint="text-accent bg-accent/10"
+          href="/admin/orders"
+          footnote={`${completedOrders} completed`}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Customers"
+          value={totalSubscribers}
+          icon={Users}
+          tint="text-secondary bg-secondary/10"
+          href="/admin/customers"
+          footnote="Newsletter sign-ups"
+          loading={isLoading}
+        />
+        <StatCard
+          label="Downloads"
+          value={totalDownloads}
+          icon={Download}
+          tint="text-slate-600 bg-slate-100"
+          loading={isLoading}
+        />
+        <StatCard
+          label="Products"
+          value={totalProducts}
+          icon={Package}
+          tint="text-emerald-700 bg-emerald-50"
+          href="/admin/products"
+          footnote={`${publishedProducts} live · ${draftProducts} draft`}
+          loading={isLoading}
+        />
       </div>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Key Performance Indicators</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
-                  <DollarSign className="h-6 w-6" />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground font-body mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{formatPrice(revenue)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Revenue in last 45 days: {formatPrice(revenue45)}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#3E6990]/10 text-[#3E6990]">
-                  <ShoppingCart className="h-6 w-6" />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground font-body mb-1">Total Orders</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{totalOrders}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-[#C9A227]/10 text-[#C9A227]">
-                  <Package className="h-6 w-6" />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground font-body mb-1">Active Products</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{publishedProducts}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-600">
-                  <CheckCircle className="h-6 w-6" />
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground font-body mb-1">Completed Orders</p>
-              <p className="text-3xl font-bold text-[#0B2545] font-heading">{completedOrders}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Metric Overview</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-amber-500/10 text-amber-600">
-                  <Clock className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Draft Products</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{draftProducts}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
-                  <Star className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Total Products</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{totalProducts}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#3E6990]/10 text-[#3E6990]">
-                  <Download className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Total Downloads</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{analyticsSummary?.totalDownloads ?? 0}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-red-500/10 text-red-600">
-                  <Clock className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Refunded Orders</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">{refundedOrders}</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-full bg-[#0B2545]/10 text-[#0B2545]">
-                  <Activity className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-body mb-1">Avg Order Value</p>
-              <p className="text-lg font-bold text-[#0B2545] font-heading">
-                {completedOrders > 0 ? formatPrice(revenue / completedOrders) : "$0"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-[#0B2545] font-heading">Analytics</h2>
-        <Card className="transition-shadow duration-200 hover:shadow-card">
+{/* Revenue + needs attention */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="transition-shadow duration-200 hover:shadow-card lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-              <BarChart3 className="h-5 w-5 text-[#3E6990]" />
-              Revenue Trend
-            </CardTitle>
-            <CardDescription>Daily revenue over the last 45 days</CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>Revenue</CardTitle>
+                <CardDescription>Completed orders over the selected period</CardDescription>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-0.5">
+                {RANGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.days}
+                    type="button"
+                    onClick={() => setRange(opt.days)}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                      range === opt.days
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex items-end justify-between">
+              <div>
+                <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                  {formatPrice(revenueSeries.reduce((s, d) => s + d.revenue, 0))}
+                </p>
+                <p className="text-xs text-muted-foreground">total tracked revenue</p>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                  revenueDelta >= 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                )}
+              >
+                {revenueDelta >= 0 ? "▲" : "▼"} {Math.abs(revenueDelta).toFixed(0)}%
+                <span className="font-normal text-muted-foreground">vs prev 7d</span>
+              </span>
+            </div>
             <AdminRevenueChart data={revenueChartData} />
           </CardContent>
         </Card>
-      </section>
 
-      <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-card">
+        <Card>
+          <CardHeader>
+            <CardTitle>Needs attention</CardTitle>
+            <CardDescription>Items that may need your input</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3 py-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-14 animate-pulse rounded-xl bg-muted/50" />
+                ))}
+              </div>
+            ) : hasAttention ? (
+              <ul className="space-y-2.5">
+                {attentionItems.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "group flex items-center justify-between gap-3 rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-soft",
+                        item.tone
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={cn("h-2.5 w-2.5 rounded-full", item.dot)} />
+                        <div>
+                          <p className="text-sm font-semibold">{item.label}</p>
+                          <p className="text-xs opacity-80">{item.detail}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold tabular-nums">{item.count}</span>
+                        <ArrowRight className="h-4 w-4 opacity-50 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <CheckCircle className="h-6 w-6" />
+                </span>
+                <p className="text-sm font-medium">You&rsquo;re all caught up</p>
+                <p className="max-w-[220px] text-xs text-muted-foreground">
+                  Nothing is waiting for review right now. Nice work.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+{/* Recent orders */}
+      <Card className="transition-shadow duration-200 hover:shadow-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#0B2545]">
-            <ShoppingCart className="h-5 w-5 text-[#3E6990]" />
-            Recent Orders
-          </CardTitle>
-          <CardDescription>Latest customer orders</CardDescription>
-          <CardAction>
-            <Link
-              href="/admin/orders"
-              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#3E6990] transition-colors hover:bg-muted"
-            >
-              View All
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </CardAction>
+          <CardTitle>Recent orders</CardTitle>
+          <CardDescription>Latest 5 orders across your storefront</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-heading text-[#0B2545]">Order #</TableHead>
-                <TableHead className="font-heading text-[#0B2545]">Customer</TableHead>
-                <TableHead className="text-right font-heading text-[#0B2545]">Total</TableHead>
-                <TableHead className="text-center font-heading text-[#0B2545]">Payment</TableHead>
-                <TableHead className="text-center font-heading text-[#0B2545]">Status</TableHead>
-                <TableHead className="text-right font-heading text-[#0B2545]">Date</TableHead>
+              <TableRow>
+                <TableHead className="text-primary">Order</TableHead>
+                <TableHead className="text-primary">Customer</TableHead>
+                <TableHead className="text-right text-primary">Total</TableHead>
+                <TableHead className="text-center text-primary">Payment</TableHead>
+                <TableHead className="text-center text-primary">Status</TableHead>
+                <TableHead className="text-right text-primary">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -307,15 +312,14 @@ export default function AdminDashboard() {
                 recentOrders.slice(0, 5).map((order) => (
                   <TableRow key={order._id} className="transition-colors hover:bg-muted/40">
                     <TableCell>
-                      <Link
-                        href={`/admin/orders`}
-                        className="font-medium text-[#0B2545] hover:underline"
-                      >
+                      <Link href="/admin/orders" className="font-medium text-primary hover:underline">
                         {order.orderNumber}
                       </Link>
                     </TableCell>
                     <TableCell>{order.customerName}</TableCell>
-                    <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatPrice(order.total)}
+                    </TableCell>
                     <TableCell className="text-center">
                       <StatusBadge status={order.paymentStatus} />
                     </TableCell>
@@ -329,8 +333,11 @@ export default function AdminDashboard() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted">
-                    No orders yet
+                  <TableCell colSpan={6} className="py-8 text-center text-muted">
+                    <div className="flex flex-col items-center gap-2">
+                      <ShoppingCart className="h-8 w-8 opacity-40" />
+                      <p>No orders yet</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -339,17 +346,18 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="transition-shadow duration-200 hover:shadow-card">
+      {/* Quick actions */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-[#0B2545]">Quick Actions</CardTitle>
+          <CardTitle>Quick actions</CardTitle>
           <CardDescription>Frequently used admin tools</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-3">
             {[
-              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-[#0B2545]" },
-              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-[#3E6990]" },
-              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-[#C9A227]" },
+              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-primary" },
+              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary" },
+              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent" },
               { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600" },
               { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600" },
               { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600" },
@@ -357,9 +365,9 @@ export default function AdminDashboard() {
               <Link
                 key={action.label}
                 href={action.href}
-                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:bg-muted hover:border-[#3E6990]/30 hover:shadow-card"
+                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:-translate-y-0.5 hover:bg-muted hover:border-secondary/30 hover:shadow-card"
               >
-                <span className={`p-2 rounded-lg text-white ${action.color}`}>
+                <span className={`rounded-lg p-2 text-white ${action.color}`}>
                   <action.icon className="h-4 w-4" />
                 </span>
                 <span className="font-medium text-foreground">{action.label}</span>

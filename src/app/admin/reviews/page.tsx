@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner";
 import {
   useReviews,
@@ -55,7 +56,8 @@ import { Stars } from "@/components/product/stars";
 type ReviewDoc = Doc<"reviews">;
 
 export default function ReviewsPage() {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300);
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [previewReview, setPreviewReview] = useState<ReviewDoc | null>(null);
@@ -174,9 +176,9 @@ export default function ReviewsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <Input
                   placeholder="Search reviews..."
-                  value={search}
+                  value={searchInput}
                   onChange={(e) => {
-                    setSearch(e.target.value);
+                    setSearchInput(e.target.value);
                     setPage(1);
                   }}
                   className="pl-9 md:w-64"
