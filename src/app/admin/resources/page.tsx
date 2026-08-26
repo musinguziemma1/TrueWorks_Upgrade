@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Edit3, Trash2, Search, BookOpen, Loader2, ExternalLink, Download, Eye, Star, Upload, X, FileIcon } from "lucide-react"
+import { Plus, Edit3, Trash2, Search, BookOpen, Loader2, ExternalLink, Download, Eye, Star, Upload, X, FileIcon, Copy, FileSpreadsheet } from "lucide-react"
+import type { Doc } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -15,37 +16,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 import {
   useResources,
   createResource,
   updateResource,
   deleteResource,
+  duplicateResource,
   ResourceInput,
   ResourceStatus,
   ResourceType,
   uploadFile,
 } from "@/lib/admin-queries"
 
-interface ResourceDoc {
-  _id: string
-  title: string
-  slug: string
-  description: string
-  content: string
-  category: string
-  type: ResourceType
-  status: ResourceStatus
-  featured: boolean
-  featuredImage?: string
-  attachments?: { name: string; url: string; size: number }[]
-  externalUrl?: string
-  thumbnail?: string
-  tags: string[]
-  downloadCount: number
-  createdAt: number
-  updatedAt: number
-}
+type ResourceDoc = Doc<"resources">
 
 const resourceCategories = [
   "Guide",
@@ -82,11 +69,15 @@ function formatFileSize(bytes: number) {
 }
 
 export default function ResourcesPage() {
-  const [search, setSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [editResource, setEditResource] = useState<ResourceDoc | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [uploading, setUploading] = useState(false)
 
@@ -111,6 +102,7 @@ export default function ResourcesPage() {
   const create = createResource.useMutation()
   const update = updateResource.useMutation()
   const remove = deleteResource.useMutation()
+  const duplicate = duplicateResource.useMutation()
   const doUpload = uploadFile.useAction()
 
   const isLoading = resources === undefined
@@ -257,14 +249,49 @@ export default function ResourcesPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this resource?")) return
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await remove({ id: id as never })
+      setDeleting(true)
+      await remove({ id: deleteId as never })
       toast.success("Resource deleted")
     } catch (e) {
       toast.error(String(e))
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
     }
+  }
+
+  const handleDuplicate = async (id: string) => {
+    try {
+      setDuplicatingId(id)
+      const newId = await duplicate({ id: id as never })
+      toast.success(`Duplicated as draft`)
+      // surface the new id via a no-op consumer to satisfy linters
+      void newId
+    } catch (e) {
+      toast.error(String(e))
+    } finally {
+      setDuplicatingId(null)
+    }
+  }
+
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((r) => ({
+        title: r.title,
+        slug: r.slug,
+        category: r.category,
+        type: r.type,
+        status: r.status,
+        featured: r.featured ? "yes" : "no",
+        tags: r.tags.join("|"),
+        downloads: r.downloadCount,
+        createdAt: new Date(r.createdAt).toISOString().slice(0, 10),
+      }))
+    )
+    downloadCsv(`resources-${new Date().toISOString().slice(0, 10)}`, csv)
   }
 
   const autoSlug = (value: string) => {
@@ -296,9 +323,14 @@ export default function ResourcesPage() {
         description="Manage guides, templates, articles, and other resources"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Resources" }]}
         action={
-          <Button onClick={openNewDialog}>
-            <Plus className="h-4 w-4" /> Add Resource
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button onClick={openNewDialog}>
+              <Plus className="h-4 w-4" /> Add Resource
+            </Button>
+          </div>
         }
       />
 
@@ -308,9 +340,9 @@ export default function ResourcesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search resources..."
-            value={search}
+            value={searchInput}
             onChange={(e) => {
-              setSearch(e.target.value)
+              setSearchInput(e.target.value)
               setPage(1)
             }}
             className="pl-10"
@@ -440,14 +472,25 @@ export default function ResourcesPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatDate(res.createdAt)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(res)}>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDuplicate(res._id)}
+                          disabled={duplicatingId === res._id}
+                          title="Duplicate as draft"
+                          aria-label={`Duplicate ${res.title}`}
+                        >
+                          {duplicatingId === res._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(res)} aria-label={`Edit ${res.title}`}>
                           <Edit3 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon-sm"
                           className="text-destructive"
-                          onClick={() => handleDelete(res._id)}
+                          onClick={() => setDeleteId(res._id)}
+                          aria-label={`Delete ${res.title}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -494,6 +537,16 @@ export default function ResourcesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null) }}
+        title="Delete this resource?"
+        description="This permanently removes the resource, its attachments, and any external link. This action cannot be undone."
+        confirmLabel="Delete resource"
+        destructive
+        onConfirm={handleDelete}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

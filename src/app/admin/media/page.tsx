@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { toast } from "sonner"
 import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog"
 import {
@@ -56,6 +57,8 @@ export default function MediaPage() {
   const [previewName, setPreviewName] = useState("")
   const [excelPreviewUrl, setExcelPreviewUrl] = useState<string | null>(null)
   const [excelPreviewName, setExcelPreviewName] = useState("")
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFolder, setSelectedFolder] = useState("General")
 
@@ -92,13 +95,17 @@ export default function MediaPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this file?")) return
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await remove({ id: id as never })
+      setDeleting(true)
+      await remove({ id: deleteId as never })
       toast.success("File deleted")
     } catch (err) {
       toast.error(String(err))
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
     }
   }
 
@@ -209,7 +216,7 @@ export default function MediaPage() {
                       </div>
                     )}
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="absolute top-2 right-2 p-1 rounded-md bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenuTrigger className="absolute top-2 right-2 p-1 rounded-md bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Actions for ${file.name}`}>
                         <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -219,7 +226,7 @@ export default function MediaPage() {
                         <DropdownMenuItem onClick={() => { if (file.url) window.open(file.url, '_blank') }}>
                           <Download className="h-4 w-4 mr-2" /> Download
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(file._id)}>
+                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(file._id)}>
                           <Trash2 className="h-4 w-4 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -269,6 +276,16 @@ export default function MediaPage() {
         fileName={excelPreviewName}
         open={!!excelPreviewUrl}
         onOpenChange={(v) => { if (!v) { setExcelPreviewUrl(null); setExcelPreviewName("") } }}
+      />
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null) }}
+        title="Delete this file?"
+        description="The file will be removed from storage immediately. Any public link to it will start returning 404. This action cannot be undone."
+        confirmLabel="Delete file"
+        destructive
+        onConfirm={handleDelete}
       />
     </div>
   )

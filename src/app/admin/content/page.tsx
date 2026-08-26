@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { FileText, Search, Plus, Trash2, Eye, Loader2, X } from "lucide-react"
+import type { Id } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -17,8 +19,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
-import type { Id } from "@convex/_generated/dataModel"
 
 interface ContentItem {
   _id: Id<"pages">
@@ -49,7 +52,7 @@ const defaultFormData: FormData = {
   status: "draft",
 }
 
-function ContentTable({ items, label, onDelete, onEdit }: { items: ContentItem[]; label: string; onDelete: (id: Id<"pages">) => void; onEdit: (item: ContentItem) => void }) {
+function ContentTable({ items, label, onEdit, onRequestDelete }: { items: ContentItem[]; label: string; onEdit: (item: ContentItem) => void; onRequestDelete: (id: Id<"pages">) => void }) {
   return (
     <Card>
       <CardHeader>
@@ -83,22 +86,23 @@ function ContentTable({ items, label, onDelete, onEdit }: { items: ContentItem[]
                   <TableCell><Badge variant="outline">{item.type}</Badge></TableCell>
                   <TableCell className="text-center"><StatusBadge status={item.status} /></TableCell>
                   <TableCell className="text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {item.type === "resource" && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          title="View public page"
-                          onClick={() => window.open(`/resources/${item.slug}`, "_blank")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon-sm" onClick={() => onEdit(item)}><FileText className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => onDelete(item._id)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        {item.type === "resource" && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            title="View public page"
+                            aria-label={`View ${item.title} publicly`}
+                            onClick={() => window.open(`/resources/${item.slug}`, "_blank")}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon-sm" onClick={() => onEdit(item)} aria-label={`Edit ${item.title}`}><FileText className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => onRequestDelete(item._id)} aria-label={`Delete ${item.title}`}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -110,9 +114,18 @@ function ContentTable({ items, label, onDelete, onEdit }: { items: ContentItem[]
 }
 
 export default function ContentPage() {
-  const [search, setSearch] = useState("")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState(
+    initialTab === "posts" || initialTab === "resources" ? initialTab : "pages"
+  )
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "")
+  const search = useDebouncedValue(searchInput, 300)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null)
+  const [deleteId, setDeleteId] = useState<Id<"pages"> | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<FormData>(defaultFormData)
   const [saving, setSaving] = useState(false)
 
@@ -121,13 +134,32 @@ export default function ContentPage() {
   const createPage = useMutation(api.pages.create)
   const updatePage = useMutation(api.pages.update)
 
+  // Keep URL in sync with the active tab + search so views are shareable.
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (activeTab !== "pages") params.set("tab", activeTab)
+    if (search) params.set("q", search)
+    const qs = params.toString()
+    router.replace(qs ? `/admin/content?${qs}` : "/admin/content", { scroll: false })
+  }, [activeTab, search, router])
+
   const filtered = allPages?.filter((p) => !search || p.title.toLowerCase().includes(search.toLowerCase())) ?? []
   const pages = filtered.filter((c) => c.type === "page")
   const posts = filtered.filter((c) => c.type === "post")
   const resources = filtered.filter((c) => c.type === "resource")
 
-  function handleDelete(id: Id<"pages">) {
-    deletePage({ id }).then(() => toast.success("Deleted")).catch(() => toast.error("Failed to delete"))
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return
+    try {
+      setDeleting(true)
+      await deletePage({ id: deleteId })
+      toast.success("Deleted")
+    } catch {
+      toast.error("Failed to delete")
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
+    }
   }
 
   function openCreateDialog(type: "page" | "post" | "resource") {
@@ -204,7 +236,7 @@ export default function ContentPage() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search content..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder="Search content..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pl-10" />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openCreateDialog("page")}><Plus className="h-4 w-4 mr-1" /> Page</Button>
@@ -218,16 +250,16 @@ export default function ContentPage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : (
-        <Tabs defaultValue="pages">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="pages">Pages ({pages.length})</TabsTrigger>
             <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
             <TabsTrigger value="resources">Resources ({resources.length})</TabsTrigger>
           </TabsList>
           <div className="mt-6">
-            <TabsContent value="pages"><ContentTable items={pages} label="Pages" onDelete={handleDelete} onEdit={openEditDialog} /></TabsContent>
-            <TabsContent value="posts"><ContentTable items={posts} label="Posts" onDelete={handleDelete} onEdit={openEditDialog} /></TabsContent>
-            <TabsContent value="resources"><ContentTable items={resources} label="Resources" onDelete={handleDelete} onEdit={openEditDialog} /></TabsContent>
+            <TabsContent value="pages"><ContentTable items={pages} label="Pages" onEdit={openEditDialog} onRequestDelete={setDeleteId} /></TabsContent>
+            <TabsContent value="posts"><ContentTable items={posts} label="Posts" onEdit={openEditDialog} onRequestDelete={setDeleteId} /></TabsContent>
+            <TabsContent value="resources"><ContentTable items={resources} label="Resources" onEdit={openEditDialog} onRequestDelete={setDeleteId} /></TabsContent>
           </div>
         </Tabs>
       )}
@@ -287,6 +319,16 @@ export default function ContentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null) }}
+        title="Delete this content?"
+        description="This permanently removes the page, post, or resource. The public route will return 404 immediately. This action cannot be undone."
+        confirmLabel="Delete content"
+        destructive
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

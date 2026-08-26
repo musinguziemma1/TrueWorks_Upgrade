@@ -201,6 +201,45 @@ export const remove = mutation({
   },
 });
 
+/** Duplicate a resource as a draft. Slug gets a `-copy` suffix to keep it unique. */
+export const duplicate = mutation({
+  args: { id: v.id("resources") },
+  handler: async (ctx, args) => {
+    await requireEditor(ctx);
+    const source = await ctx.db.get(args.id);
+    if (!source) throw new Error("Resource not found");
+    const now = Date.now();
+    const baseSlug = `${source.slug}-copy`;
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await ctx.db.query("resources").withIndex("by_slug", (q) => q.eq("slug", slug)).first()) {
+      suffix += 1;
+      slug = `${baseSlug}-${suffix}`;
+    }
+    const {
+      _id: _omitId,
+      _creationTime: _omitCreated,
+      ...copy
+    } = source;
+    const newId = await ctx.db.insert("resources", {
+      ...copy,
+      title: `${source.title} (Copy)`,
+      slug,
+      status: "draft",
+      downloadCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await auditLog(ctx, {
+      action: "resource.duplicate",
+      entityType: "resource",
+      entityId: newId,
+      summary: `Duplicated resource "${source.title}" → "${source.title} (Copy)"`,
+    });
+    return newId;
+  },
+});
+
 export const stats = query({
   args: {},
   handler: async (ctx) => {

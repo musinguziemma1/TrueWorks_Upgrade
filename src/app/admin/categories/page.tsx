@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit3, Trash2, Search, Tags, Loader2 } from "lucide-react"
+import { Plus, Edit3, Trash2, Search, Tags, Loader2, FileSpreadsheet } from "lucide-react"
+import type { Doc } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -12,6 +13,9 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 import {
   useCategories,
@@ -21,21 +25,16 @@ import {
   CategoryInput,
 } from "@/lib/admin-queries"
 
-interface CategoryDoc {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  industry?: string;
-  icon?: string;
-  productCount: number;
-}
+type CategoryDoc = Doc<"categories">
 
 export default function CategoriesPage() {
-  const [search, setSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300)
   const [editCategory, setEditCategory] = useState<CategoryDoc | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
   const [description, setDescription] = useState("")
@@ -52,6 +51,19 @@ export default function CategoriesPage() {
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.industry ?? "").toLowerCase().includes(search.toLowerCase())
   )
+
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((c) => ({
+        name: c.name,
+        slug: c.slug,
+        industry: c.industry ?? "",
+        description: c.description ?? "",
+        productCount: c.productCount,
+      }))
+    )
+    downloadCsv(`categories-${new Date().toISOString().slice(0, 10)}`, csv)
+  }
 
   const perPage = 8
   const totalPages = Math.ceil(filtered.length / perPage)
@@ -94,13 +106,17 @@ export default function CategoriesPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this category?")) return
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await remove({ id: id as never })
+      setDeleting(true)
+      await remove({ id: deleteId as never })
       toast.success("Category deleted")
     } catch (e) {
       toast.error(String(e))
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
     }
   }
 
@@ -110,12 +126,19 @@ export default function CategoriesPage() {
         title="Categories"
         description="Manage product categories"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Categories" }]}
-        action={<Button onClick={openNewDialog}><Plus className="h-4 w-4" /> Add Category</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button onClick={openNewDialog}><Plus className="h-4 w-4" /> Add Category</Button>
+          </div>
+        }
       />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search categories..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+        <Input placeholder="Search categories..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setPage(1) }} className="pl-10" />
       </div>
 
       {isLoading ? (
@@ -146,8 +169,8 @@ export default function CategoriesPage() {
                     <TableCell className="text-center">{cat.productCount}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(cat as CategoryDoc)}><Edit3 className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => handleDelete(cat._id)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(cat)} aria-label={`Edit ${cat.name}`}><Edit3 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleteId(cat._id)} aria-label={`Delete ${cat.name}`}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -170,6 +193,16 @@ export default function CategoriesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null) }}
+        title="Delete this category?"
+        description="Products in this category will not be deleted, but their category reference will be orphaned. This action cannot be undone."
+        confirmLabel="Delete category"
+        destructive
+        onConfirm={handleDelete}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">

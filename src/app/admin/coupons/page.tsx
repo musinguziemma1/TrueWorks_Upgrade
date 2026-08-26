@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { Plus, Edit3, Trash2, Search, Ticket, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { Plus, Edit3, Trash2, Search, Ticket, Loader2, FileSpreadsheet } from "lucide-react"
+import type { Doc } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -14,6 +15,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { downloadCsv, toCsv } from "@/lib/csv"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 import {
   useCoupons,
@@ -23,24 +27,18 @@ import {
   CouponInput,
 } from "@/lib/admin-queries"
 
-interface CouponDoc {
-  _id: string;
-  code: string;
-  type: "percentage" | "fixed" | "bundle";
-  value: number;
-  minPurchase?: number;
-  usageLimit?: number;
-  usageCount: number;
-  expiresAt?: number;
-  isActive: boolean;
-  createdAt: number;
-}
+type CouponDoc = Doc<"coupons">
 
 export default function CouponsPage() {
-  const [search, setSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, 300)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editCoupon, setEditCoupon] = useState<CouponDoc | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [page, setPage] = useState(1)
+  // Snapshot once on mount so `getStatus` is pure (no Date.now() in render).
+  const [now] = useState(() => Date.now())
 
   const [code, setCode] = useState("")
   const [type, setType] = useState<"percentage" | "fixed" | "bundle">("percentage")
@@ -56,10 +54,26 @@ export default function CouponsPage() {
   const remove = deleteCoupon.useMutation()
 
   const isLoading = data === undefined
-  // eslint-disable-next-line react-hooks/purity
-  const now = useMemo(() => Date.now(), [])
 
-  const filtered = (data ?? []).filter((c: CouponDoc) => c.code.toLowerCase().includes(search.toLowerCase()))
+  const filtered = (data ?? []).filter((c) => c.code.toLowerCase().includes(search.toLowerCase()))
+
+  const handleExportCsv = () => {
+    const csv = toCsv(
+      filtered.map((c) => ({
+        code: c.code,
+        type: c.type,
+        value: c.value,
+        minPurchase: c.minPurchase ?? "",
+        usageCount: c.usageCount,
+        usageLimit: c.usageLimit ?? "",
+        expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 10) : "",
+        status: getStatus(c),
+        isActive: c.isActive ? "yes" : "no",
+        createdAt: new Date(c.createdAt).toISOString().slice(0, 10),
+      }))
+    )
+    downloadCsv(`coupons-${new Date().toISOString().slice(0, 10)}`, csv)
+  }
 
   const perPage = 8
   const totalPages = Math.ceil(filtered.length / perPage)
@@ -114,13 +128,17 @@ export default function CouponsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this coupon?")) return
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await remove({ id: id as never })
+      setDeleting(true)
+      await remove({ id: deleteId as never })
       toast.success("Coupon deleted")
     } catch (e) {
       toast.error(String(e))
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
     }
   }
 
@@ -144,12 +162,19 @@ export default function CouponsPage() {
         title="Coupons"
         description="Manage discount coupons and promotions"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Coupons" }]}
-        action={<Button onClick={openNew}><Plus className="h-4 w-4" /> Add Coupon</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filtered.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button onClick={openNew}><Plus className="h-4 w-4" /> Add Coupon</Button>
+          </div>
+        }
       />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by coupon code..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+        <Input placeholder="Search by coupon code..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setPage(1) }} className="pl-10" />
       </div>
 
       {isLoading ? (
@@ -186,8 +211,8 @@ export default function CouponsPage() {
                     <TableCell className="text-center"><StatusBadge status={getStatus(c)} /></TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(c)}><Edit3 className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => handleDelete(c._id)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(c)} aria-label={`Edit ${c.code}`}><Edit3 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleteId(c._id)} aria-label={`Delete ${c.code}`}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -210,6 +235,16 @@ export default function CouponsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null) }}
+        title="Delete this coupon?"
+        description="This permanently removes the coupon. Existing orders that already applied it are not affected, but the code can no longer be redeemed. This action cannot be undone."
+        confirmLabel="Delete coupon"
+        destructive
+        onConfirm={handleDelete}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">

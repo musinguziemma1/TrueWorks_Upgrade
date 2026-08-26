@@ -298,6 +298,10 @@ export const deleteResource = {
   useMutation: () => useMutation(api.resources.remove),
 };
 
+export const duplicateResource = {
+  useMutation: () => useMutation(api.resources.duplicate),
+};
+
 export function useMediaFiles(folder?: string) {
   return useQuery(api.storage.listFiles, { folder: folder ?? "" });
 }
