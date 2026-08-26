@@ -2,7 +2,7 @@
 
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual, createHash } from "node:crypto";
 
 /**
  * Password hashing — Node-only helpers exposed as internal actions so the
@@ -57,6 +57,53 @@ export const verifyPassword = internalAction({
       return derived.length === expected.length && timingSafeEqual(derived, expected);
     } catch {
       return false;
+    }
+  },
+});
+
+/**
+ * Breached-password check via Have I Been Pwned (k-anonymity model).
+ *
+ * Only the first 5 characters of the password's SHA-1 hash ever leave the
+ * server; the API returns every suffix sharing that prefix and we match the
+ * remainder locally. FAILS OPEN (returns 0) on any network error or timeout so
+ * an HIBP outage can never block registration or password changes.
+ *
+ * Returns the number of times the password appears in known breaches
+ * (0 = not known to be breached).
+ */
+export const checkPasswordBreached = internalAction({
+  args: { plain: v.string() },
+  handler: async (_ctx, args) => {
+    try {
+      const digest = createHash("sha1").update(args.plain).digest("hex").toUpperCase();
+      const prefix = digest.slice(0, 5);
+      const suffix = digest.slice(5);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      let body: string;
+      try {
+        const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+          headers: { "Add-Padding": "true" },
+          signal: controller.signal,
+        });
+        if (!res.ok) return 0;
+        body = await res.text();
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      for (const line of body.split("\n")) {
+        const [suffixPart, countPart] = line.trim().split(":");
+        if (suffixPart === suffix) {
+          return Number.parseInt(countPart ?? "0", 10) || 0;
+        }
+      }
+      return 0;
+    } catch {
+      // Fail open — availability beats a soft intelligence signal.
+      return 0;
     }
   },
 });

@@ -15,6 +15,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/provider";
+import { PasskeysCard } from "@/components/auth/passkeys-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,8 @@ const EVENT_LABELS: Record<string, string> = {
   mfa_enabled: "MFA enabled",
   mfa_disabled: "MFA disabled",
   mfa_failed: "MFA failed",
+  passkey_registered: "Passkey added",
+  passkey_deleted: "Passkey removed",
   recovery_code_used: "Recovery code used",
   recovery_codes_regenerated: "Recovery codes regenerated",
 };
@@ -448,6 +451,9 @@ export default function SecurityContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Passkeys */}
+      <PasskeysCard />
 
       {/* Sessions */}
       <Card>

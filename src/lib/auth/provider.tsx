@@ -23,7 +23,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ ok: boolean; error?: string; requiresVerification?: boolean; mfaRequired?: boolean }>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ ok: boolean; error?: string; requiresVerification?: boolean; mfaRequired?: boolean; mfaSessionToken?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: typeof data.error === "string" ? data.error : "Unable to sign in. Please try again.",
         requiresVerification: data.requiresVerification,
         mfaRequired: data.mfaRequired,
+        mfaSessionToken: typeof data.mfaSessionToken === "string" ? data.mfaSessionToken : undefined,
       };
     } catch {
       return { ok: false, error: "Unable to reach the authentication service. Please try again." };

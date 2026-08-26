@@ -2,17 +2,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { internal } from "./_generated/api";
+import type { ActionCtx } from "./_generated/server";
 import {
   isValidEmail,
   normalizeEmail,
   randomToken,
   toBase64Url,
+  base64UrlToBytes,
   sha256Hex,
   parseUserAgent,
   checkPasswordStrength,
   anonymizeIp,
   isSuperAdminEmail,
   initialRoleForEmail,
+  SESSION_COOKIE,
+  MFA_COOKIE,
+  sessionCookie,
+  clearSessionCookie,
+  mfaCookie,
+  clearMfaCookie,
 } from "./lib/tokens";
 import {
   SESSION_ABSOLUTE_MS,
@@ -24,10 +32,35 @@ import {
   hashRecoveryCode,
   verifyTOTP,
 } from "./lib/mfa";
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from "@simplewebauthn/server";
 
-type Ctx = any;
+type Ctx = ActionCtx;
 
-const CLEAR_COOKIE = "tw_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;";
+/** MFA "remember this device" window: 30 days. */
+const MFA_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
+/** WebAuthn challenge lifetime. */
+const WEBAUTHN_CHALLENGE_MS = 5 * 60 * 1000;
+
+/** True when the request carries a valid "remember this device" MFA cookie. */
+async function isMfaRemembered(ctx: Ctx, rememberToken: string | undefined, normalizedEmail: string): Promise<boolean> {
+  if (!rememberToken) return false;
+  const tokenHash = await sha256Hex(rememberToken);
+  const all = await ctx.runQuery(internal.iamDb.findVerificationTokensByHash, { tokenHash });
+  return all.some(
+    (t: any) =>
+      t.type === "mfa_remember" &&
+      !t.usedAt &&
+      t.expiresAt > Date.now() &&
+      normalizeEmail(t.email) === normalizedEmail
+  );
+}
+
+const CLEAR_COOKIE = clearSessionCookie();
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -67,13 +100,19 @@ function getCookie(request: Request, name: string): string | undefined {
 }
 
 function setCookieHeader(response: Response, value: string, maxAgeSec: number): Response {
-  const cookie = `tw_session=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec}`;
   const headers = new Headers(response.headers);
-  headers.set("Set-Cookie", cookie);
+  headers.append("Set-Cookie", sessionCookie(value, maxAgeSec));
   return new Response(response.body, {
     status: response.status,
     headers,
   });
+}
+
+/** Append an extra cookie (e.g. the MFA remember-device cookie) to a response. */
+function withExtraCookie(response: Response, cookie: string): Response {
+  const headers = new Headers(response.headers);
+  headers.append("Set-Cookie", cookie);
+  return new Response(response.body, { status: response.status, headers });
 }
 
 // ======================== REGISTER ========================
@@ -93,6 +132,12 @@ export async function registerHandler(ctx: Ctx, request: Request): Promise<Respo
 
   const pwCheck = checkPasswordStrength(password, email);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
+
+  // Breached-password screening (HIBP, k-anonymity, fails open on outage).
+  const breachCount = await ctx.runAction(internal.lib.password.checkPasswordBreached, { plain: password });
+  if (breachCount > 0) {
+    return badRequest("This password has appeared in a known data breach. Please choose a different one.");
+  }
 
   const normalized = normalizeEmail(email);
 
@@ -152,11 +197,17 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
 
   const normalized = normalizeEmail(email);
 
-  const { allowed, user } = await ctx.runMutation(internal.iamDb.beginLogin, {
+  const { allowed, lockedMinutes, user } = await ctx.runMutation(internal.iamDb.beginLogin, {
     email: normalized,
     ipAddress: ip,
   });
   if (!allowed) {
+    if (lockedMinutes > 0) {
+      return json(
+        { error: `Account temporarily locked after too many failed sign-in attempts. Try again in about ${lockedMinutes} minute${lockedMinutes === 1 ? "" : "s"}.` },
+        423
+      );
+    }
     return forbidden("Too many login attempts. Please try again later.");
   }
 
@@ -224,13 +275,17 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
   }
 
   if (user.mfaEnabled) {
-    const { mfaSessionToken } = await ctx.runMutation(internal.iamDb.beginMfa, {
-      email: normalized,
-      userId: user._id,
-      ipAddress: ipAnon,
-      userAgent: ua,
-    });
-    return json({ mfaRequired: true, mfaSessionToken });
+    // "Remember this device": a valid MFA cookie skips the TOTP challenge.
+    const remembered = await isMfaRemembered(ctx, getCookie(request, MFA_COOKIE), normalized);
+    if (!remembered) {
+      const { mfaSessionToken } = await ctx.runMutation(internal.iamDb.beginMfa, {
+        email: normalized,
+        userId: user._id,
+        ipAddress: ipAnon,
+        userAgent: ua,
+      });
+      return json({ mfaRequired: true, mfaSessionToken });
+    }
   }
 
   // complete login
@@ -357,7 +412,8 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
     });
   }
 
-  return setCookieHeader(
+  const rememberDevice = !!body?.rememberDevice;
+  let response = setCookieHeader(
     json({
       ok: true,
       sessionToken: rawToken,
@@ -369,13 +425,28 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
     rawToken,
     SESSION_ABSOLUTE_MS / 1000
   );
+
+  if (rememberDevice) {
+    // Issue a "remember this device" token: future logins skip the TOTP
+    // prompt for 30 days on this browser. The cookie is random; only its
+    // hash is stored, and disabling MFA revokes every remember token.
+    const rememberToken = randomToken(32);
+    await ctx.runMutation(internal.iamDb.createMfaRememberToken, {
+      email: normalized,
+      rawToken: rememberToken,
+      expiresInMs: MFA_REMEMBER_MS,
+    });
+    response = withExtraCookie(response, mfaCookie(rememberToken, MFA_REMEMBER_MS / 1000));
+  }
+
+  return response;
 }
 
 // ======================== LOGOUT ========================
 
 export async function logoutHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (rawToken) {
     const tokenHash = await sha256Hex(rawToken);
     const session = await ctx.runQuery(internal.iamDb.findSessionByTokenHash, { tokenHash });
@@ -517,6 +588,11 @@ export async function resetPasswordHandler(ctx: Ctx, request: Request): Promise<
   const pwCheck = checkPasswordStrength(newPassword);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
 
+  const breachCount = await ctx.runAction(internal.lib.password.checkPasswordBreached, { plain: newPassword });
+  if (breachCount > 0) {
+    return badRequest("This password has appeared in a known data breach. Please choose a different one.");
+  }
+
   const consumed = await ctx.runMutation(internal.iamDb.consumeVerificationToken, { token, type: "password_reset" });
   if (!consumed) return badRequest("Invalid or expired reset token.");
 
@@ -562,7 +638,7 @@ export async function resetPasswordHandler(ctx: Ctx, request: Request): Promise<
 
 export async function changePasswordHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -573,6 +649,11 @@ export async function changePasswordHandler(ctx: Ctx, request: Request): Promise
 
   const pwCheck = checkPasswordStrength(newPassword);
   if (!pwCheck.ok) return badRequest(pwCheck.reason ?? "Weak password.");
+
+  const breachCount = await ctx.runAction(internal.lib.password.checkPasswordBreached, { plain: newPassword });
+  if (breachCount > 0) {
+    return badRequest("This password has appeared in a known data breach. Please choose a different one.");
+  }
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
   if (!session.valid || !session.user) return unauthorized();
@@ -623,7 +704,7 @@ export async function changePasswordHandler(ctx: Ctx, request: Request): Promise
 // ======================== SESSIONS ========================
 
 export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -635,7 +716,7 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
   if (action === "revoke") {
     const id = url.searchParams.get("id");
     if (!id) return badRequest("Missing id.");
-    const target = await ctx.runQuery(internal.iamDb.getDoc, { id });
+    const target = (await ctx.runQuery(internal.iamDb.getDoc, { id })) as any;
     if (!target || target.userId !== session.user._id) return json({ error: "Not found" }, 404);
     await ctx.runMutation(internal.iamDb.revokeSession, { id });
     await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
@@ -681,7 +762,7 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
 // ======================== MFA SETUP ========================
 
 export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -695,7 +776,7 @@ export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Respo
 }
 
 export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -743,7 +824,7 @@ export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Resp
 }
 
 export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -768,6 +849,10 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
 
   await ctx.runMutation(internal.iamDb.deleteDoc, { id: factor._id });
   await ctx.runMutation(internal.iamDb.deleteRecoveryCodesForUser, { userId: session.user._id });
+  // Revoke every "remember this device" token and its cookie.
+  await ctx.runMutation(internal.iamDb.clearMfaRememberTokens, { email: session.user.email });
+  // Revoke every "remember this device" token and its cookie.
+  await ctx.runMutation(internal.iamDb.clearMfaRememberTokens, { email: session.user.email });
 
   await ctx.runMutation(internal.iamDb.patchDoc, { id: session.user._id, fields: { mfaEnabled: false, updatedAt: Date.now() } });
 
@@ -784,11 +869,11 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
     detail: "Multi-factor authentication was removed from your account.",
   });
 
-  return json({ ok: true });
+  return withExtraCookie(json({ ok: true }), clearMfaCookie());
 }
 
 export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -994,7 +1079,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
 // ======================== ME / CURRENT USER ========================
 
 export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1008,7 +1093,7 @@ export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
 // ======================== SECURITY EVENTS ========================
 
 export async function securityEventsHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1026,7 +1111,7 @@ export async function securityEventsHandler(ctx: Ctx, request: Request): Promise
 
 export async function tokenHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, "tw_session");
+  const rawToken = getCookie(request, SESSION_COOKIE);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1053,4 +1138,309 @@ export async function tokenHandler(ctx: Ctx, request: Request): Promise<Response
   );
 
   return json({ token: jwt });
+}
+
+// ======================== PASSKEYS (WebAuthn) ========================
+// Phishing-resistant sign-in using platform authenticators (Touch ID, Windows
+// Hello, security keys). Flow:
+//   POST /iam/passkeys/register/options → registration challenge (authed)
+//   POST /iam/passkeys/register/verify  → verify + store credential (authed)
+//   POST /iam/passkeys/auth/options     → authentication challenge (public)
+//   POST /iam/passkeys/auth/verify      → verify + create session (public)
+// Challenges are stored server-side (hash only) and consumed exactly once.
+
+function webauthnRp(): { rpId: string; origin: string } {
+  const origin = getSiteOrigin();
+  return { rpId: new URL(origin).hostname, origin };
+}
+
+async function storeWebauthnChallenge(
+  ctx: Ctx,
+  challenge: string,
+  type: "passkey_reg" | "passkey_auth",
+  email: string | undefined,
+  userId: string | undefined
+): Promise<void> {
+  await ctx.runMutation(internal.iamDb.insertWebauthnChallenge, {
+    challengeHash: await sha256Hex(challenge),
+    type,
+    email,
+    userId,
+    expiresInMs: WEBAUTHN_CHALLENGE_MS,
+  });
+}
+
+export async function passkeyRegisterOptionsHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const rawToken = getCookie(request, SESSION_COOKIE);
+  if (!rawToken) return unauthorized();
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const { rpId } = webauthnRp();
+  const existing = (await ctx.runQuery(internal.iamDb.listPasskeysForUser, { userId: session.user._id })) as any[];
+
+  const options = await generateRegistrationOptions({
+    rpName: "TrueWorks",
+    rpID: rpId,
+    userID: new TextEncoder().encode(session.user._id),
+    userName: session.user.email,
+    userDisplayName: session.user.name ?? session.user.email,
+    attestationType: "none",
+    excludeCredentials: existing.map((cred) => ({
+      id: cred.credentialId,
+      transports: cred.transports ?? undefined,
+    })),
+    authenticatorSelection: {
+      residentKey: "preferred",
+      userVerification: "preferred",
+    },
+  });
+
+  await storeWebauthnChallenge(ctx, options.challenge, "passkey_reg", session.user.email, session.user._id);
+
+  return json({ options });
+}
+
+export async function passkeyRegisterVerifyHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const rawToken = getCookie(request, SESSION_COOKIE);
+  if (!rawToken) return unauthorized();
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const body = await parseJsonBody(request);
+  const regResponse = body?.response;
+  const name = typeof body?.name === "string" ? body.name.trim().slice(0, 64) : "";
+  if (!regResponse?.challenge || !regResponse?.id) return badRequest("Missing passkey response.");
+
+  // Consume the challenge first: single-use, bound to this user.
+  const challengeHash = await sha256Hex(String(regResponse.challenge));
+  const challenge = await ctx.runMutation(internal.iamDb.consumeWebauthnChallenge, {
+    challengeHash,
+    type: "passkey_reg",
+  });
+  if (!challenge || challenge.userId !== session.user._id) {
+    return badRequest("Invalid or expired passkey registration session.");
+  }
+
+  const { rpId, origin } = webauthnRp();
+  let verification;
+  try {
+    verification = await verifyRegistrationResponse({
+      response: regResponse,
+      expectedChallenge: String(regResponse.challenge),
+      expectedOrigin: origin,
+      expectedRPID: rpId,
+      requireUserVerification: false,
+    });
+  } catch (error) {
+    console.error("Passkey registration verification failed:", error instanceof Error ? error.message : error);
+    return badRequest("Passkey verification failed.");
+  }
+
+  if (!verification.verified || !verification.registrationInfo) {
+    return badRequest("Passkey verification failed.");
+  }
+
+  const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
+  await ctx.runMutation(internal.iamDb.insertPasskeyCredential, {
+    userId: session.user._id,
+    credentialId: credential.id,
+    publicKey: toBase64Url(credential.publicKey),
+    counter: credential.counter,
+    transports: credential.transports as string[] | undefined,
+    deviceType: credentialDeviceType,
+    backedUp: credentialBackedUp,
+    name: name || `${parseUserAgent(request.headers.get("user-agent") ?? "").browser} passkey`,
+  });
+
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
+    userId: session.user._id,
+    action: "passkey_registered",
+    result: "success",
+    ipAddress: anonymizeIp(getClientIp(request)),
+    userAgent: request.headers.get("user-agent") ?? undefined,
+  });
+
+  return json({ ok: true });
+}
+
+export async function passkeyAuthOptionsHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const ip = getClientIp(request);
+
+  const rl = await ctx.runMutation(internal.iamDb.checkRateLimit, {
+    key: `passkey_options:${ip ?? "unknown"}`,
+    windowMs: 15 * 60 * 1000,
+    maxAttempts: 30,
+  });
+  if (!rl.allowed) return forbidden("Too many requests. Please try again later.");
+
+  const body = await parseJsonBody(request);
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+
+  // If an email is provided, scope the challenge to that account's passkeys;
+  // otherwise allow any discoverable credential (username-less sign-in).
+  let allowCredentials: { id: string; transports?: string[] }[] = [];
+  let challengeEmail: string | undefined;
+  if (email) {
+    const normalized = normalizeEmail(email);
+    const user = await ctx.runQuery(internal.iamDb.findUserByEmail, { email: normalized });
+    if (user) {
+      const creds = (await ctx.runQuery(internal.iamDb.listPasskeysForUser, { userId: user._id })) as any[];
+      allowCredentials = creds.map((cred) => ({ id: cred.credentialId, transports: cred.transports ?? undefined }));
+      if (creds.length > 0) challengeEmail = normalized;
+    }
+    // No user / no passkeys → fall through with a generic challenge so the
+    // response shape does not reveal whether the account exists.
+  }
+
+  const { rpId } = webauthnRp();
+  const options = await generateAuthenticationOptions({
+    rpID: rpId,
+    allowCredentials: allowCredentials as any,
+    userVerification: "preferred",
+  });
+
+  await storeWebauthnChallenge(ctx, options.challenge, "passkey_auth", challengeEmail, undefined);
+
+  return json({ options });
+}
+
+export async function passkeyAuthVerifyHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const ip = getClientIp(request);
+  const ua = request.headers.get("user-agent") ?? "";
+  const parsed = parseUserAgent(ua);
+
+  const body = await parseJsonBody(request);
+  const authResponse = body?.response;
+  if (!authResponse?.challenge || !authResponse?.id) return badRequest("Missing passkey response.");
+
+  // Resolve the credential BEFORE consuming the challenge so we can bind the
+  // challenge to the credential's account.
+  const credentialRow = (await ctx.runQuery(internal.iamDb.findPasskeyByCredentialId, {
+    credentialId: String(authResponse.id),
+  })) as any;
+  if (!credentialRow) return unauthorized("Passkey not recognized.");
+
+  const challengeHash = await sha256Hex(String(authResponse.challenge));
+  const challenge = await ctx.runMutation(internal.iamDb.consumeWebauthnChallenge, {
+    challengeHash,
+    type: "passkey_auth",
+  });
+  if (!challenge) return unauthorized("Invalid or expired passkey session.");
+
+  const user = (await ctx.runQuery(internal.iamDb.getDoc, { id: credentialRow.userId })) as any;
+  if (!user || user.status === "suspended") return unauthorized("This account cannot be accessed.");
+
+  // The challenge must belong to the account that owns the credential.
+  if (challenge.email && normalizeEmail(challenge.email) !== normalizeEmail(user.email)) {
+    return unauthorized("Invalid passkey session.");
+  }
+
+  const { rpId, origin } = webauthnRp();
+  let verification;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response: authResponse,
+      expectedChallenge: String(authResponse.challenge),
+      expectedOrigin: origin,
+      expectedRPID: rpId,
+      requireUserVerification: false,
+      credential: {
+        id: credentialRow.credentialId,
+        publicKey: base64UrlToBytes(credentialRow.publicKey),
+        counter: credentialRow.counter,
+        transports: credentialRow.transports as any,
+      },
+    });
+  } catch (error) {
+    console.error("Passkey authentication verification failed:", error instanceof Error ? error.message : error);
+    return unauthorized("Passkey verification failed.");
+  }
+
+  if (!verification.verified) return unauthorized("Passkey verification failed.");
+
+  await ctx.runMutation(internal.iamDb.updatePasskeyCounter, {
+    id: credentialRow._id,
+    counter: verification.authenticationInfo.newCounter,
+    lastUsedAt: Date.now(),
+  });
+
+  const rawToken = randomToken(32);
+  await ctx.runMutation(internal.iamDb.completeLogin, {
+    email: user.email,
+    userId: user._id,
+    rawToken,
+    rememberMe: false,
+    ipAddress: anonymizeIp(ip),
+    userAgent: ua,
+    outcome: "success",
+    metadata: { method: "passkey", device: parsed.device, browser: parsed.browser, os: parsed.os },
+  });
+
+  return setCookieHeader(
+    json({
+      ok: true,
+      sessionToken: rawToken,
+      userId: user._id,
+      role: user.role,
+      email: user.email,
+      name: user.name,
+    }),
+    rawToken,
+    SESSION_ABSOLUTE_MS / 1000
+  );
+}
+
+export async function passkeysListHandler(ctx: Ctx, request: Request): Promise<Response> {
+  const rawToken = getCookie(request, SESSION_COOKIE);
+  if (!rawToken) return unauthorized();
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const creds = (await ctx.runQuery(internal.iamDb.listPasskeysForUser, { userId: session.user._id })) as any[];
+  return json({
+    passkeys: creds.map((cred) => ({
+      id: cred._id,
+      name: cred.name,
+      deviceType: cred.deviceType,
+      backedUp: cred.backedUp,
+      lastUsedAt: cred.lastUsedAt,
+      createdAt: cred.createdAt,
+    })),
+  });
+}
+
+export async function passkeyDeleteHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const rawToken = getCookie(request, SESSION_COOKIE);
+  if (!rawToken) return unauthorized();
+
+  const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
+  if (!session.valid || !session.user) return unauthorized();
+
+  const body = await parseJsonBody(request);
+  const id = typeof body?.id === "string" ? body.id : "";
+  if (!id) return badRequest("Missing passkey id.");
+
+  try {
+    await ctx.runMutation(internal.iamDb.deletePasskey, { id, userId: session.user._id });
+  } catch {
+    return json({ error: "Passkey not found." }, 404);
+  }
+
+  await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
+    userId: session.user._id,
+    action: "passkey_deleted",
+    result: "success",
+    ipAddress: anonymizeIp(getClientIp(request)),
+  });
+
+  return json({ ok: true });
 }

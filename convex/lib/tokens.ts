@@ -4,6 +4,39 @@ export function normalizeEmail(email: string): string {
   return `${local.toLowerCase()}@${domain}`.trim();
 }
 
+/**
+ * Session cookie name. The `__Host-` prefix is a browser hardening guarantee:
+ * the cookie must be Secure, Path=/, and cannot carry a Domain attribute, so
+ * sibling subdomains can never overwrite it.
+ */
+export const SESSION_COOKIE = "__Host-tw_session";
+/** MFA "remember this device" cookie (skips the TOTP prompt for 30 days). */
+export const MFA_COOKIE = "__Host-tw_mfa";
+
+export function sessionCookie(value: string, maxAgeSec: number): string {
+  return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec}`;
+}
+
+export function clearSessionCookie(): string {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;`;
+}
+
+export function mfaCookie(value: string, maxAgeSec: number): string {
+  return `${MFA_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec}`;
+}
+
+export function clearMfaCookie(): string {
+  return `${MFA_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;`;
+}
+
+export async function sha1Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+
 export function isSuperAdminEmail(email: string): boolean {
   const normalized = normalizeEmail(email);
   return (process.env.SUPERADMIN_EMAILS ?? "")
@@ -30,6 +63,15 @@ export function toBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 export function randomToken(byteLength = 32): string {

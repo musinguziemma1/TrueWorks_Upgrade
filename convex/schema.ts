@@ -17,6 +17,8 @@ export default defineSchema({
     loginCount: v.optional(v.number()),
     lastPasswordChangeAt: v.optional(v.number()),
     securityVersion: v.optional(v.number()),
+    failedLoginCount: v.optional(v.number()),
+    lockedUntil: v.optional(v.number()),
     mfaEnabled: v.optional(v.boolean()),
     marketingOptIn: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
@@ -86,6 +88,35 @@ export default defineSchema({
   })
     .index("by_userId_used", ["userId", "used"])
     .index("by_codeHash", ["codeHash"]),
+
+  // WebAuthn / passkey credentials registered by users.
+  // credentialId is the base64url-encoded unique credential ID.
+  passkeyCredentials: defineTable({
+    userId: v.id("users"),
+    credentialId: v.string(),
+    publicKey: v.string(), // base64url-encoded CBOR public key
+    counter: v.number(),
+    transports: v.optional(v.array(v.string())),
+    deviceType: v.optional(v.string()), // "singleDevice" | "multiDevice"
+    backedUp: v.optional(v.boolean()),
+    name: v.optional(v.string()),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_credentialId", ["credentialId"])
+    .index("by_userId", ["userId"]),
+
+  // Short-lived WebAuthn challenges (registration + authentication).
+  // The challenge itself never travels to the client storage — only its hash —
+  // and each challenge is consumed exactly once.
+  webauthnChallenges: defineTable({
+    challengeHash: v.string(),
+    type: v.string(), // "passkey_reg" | "passkey_auth"
+    email: v.optional(v.string()),
+    userId: v.optional(v.id("users")),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  }).index("by_challengeHash", ["challengeHash"]),
 
   securityEvents: defineTable({
     userId: v.id("users"),

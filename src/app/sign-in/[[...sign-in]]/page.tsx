@@ -4,21 +4,25 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Fingerprint } from "lucide-react";
 import { GoogleIcon } from "@/components/brand/google-icon";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { useAuth } from "@/lib/auth/provider";
+import { signInWithPasskey } from "@/lib/auth/passkeys";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
-  const [mfaToken] = useState("");
+  const [mfaToken, setMfaToken] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, refresh } = useAuth();
   const redirect = searchParams.get("redirect") || "/account";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,6 +34,7 @@ export default function SignInPage() {
     if (result.ok) {
       router.push(redirect);
     } else if (result.mfaRequired) {
+      setMfaToken(result.mfaSessionToken ?? "");
       setMfaRequired(true);
     } else if (result.requiresVerification) {
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
@@ -37,6 +42,19 @@ export default function SignInPage() {
       setError(result.error || "Invalid credentials");
     }
     setLoading(false);
+  };
+
+  const handlePasskey = async () => {
+    setError("");
+    setPasskeyLoading(true);
+    const result = await signInWithPasskey(email || undefined);
+    if (result.ok) {
+      await refresh();
+      router.push(redirect);
+    } else {
+      setError(result.error || "Passkey sign-in failed");
+    }
+    setPasskeyLoading(false);
   };
 
   const handleMfaSubmit = async (e: React.FormEvent) => {
@@ -47,7 +65,7 @@ export default function SignInPage() {
     const res = await fetch("/api/auth/mfa/challenge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mfaSessionToken: mfaToken, code: (e.target as HTMLFormElement).code.value }),
+      body: JSON.stringify({ mfaSessionToken: mfaToken, code: (e.target as HTMLFormElement).code.value, rememberDevice }),
       credentials: "include",
     });
     const data = await res.json();
@@ -80,6 +98,15 @@ export default function SignInPage() {
                 placeholder="123456"
               />
             </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              Remember this device for 30 days
+            </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
               type="submit"
@@ -109,6 +136,15 @@ export default function SignInPage() {
           >
             <GoogleIcon className="h-5 w-5" />
             Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={handlePasskey}
+            disabled={passkeyLoading}
+            className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-white text-sm font-medium text-foreground transition-colors hover:bg-surface disabled:opacity-50"
+          >
+            <Fingerprint className="h-5 w-5" />
+            {passkeyLoading ? "Waiting for authenticator…" : "Sign in with a passkey"}
           </button>
           <div className="my-4 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />

@@ -132,6 +132,170 @@ export const listSecurityEventsForUser = internalQuery({
   },
 });
 
+// ======================== PASSKEYS (WebAuthn) ========================
+
+export const findPasskeyByCredentialId = internalQuery({
+  args: { credentialId: v.string() },
+  handler: async (ctx, { credentialId }) => {
+    return await ctx.db
+      .query("passkeyCredentials")
+      .withIndex("by_credentialId", (q) => q.eq("credentialId", credentialId))
+      .first();
+  },
+});
+
+export const listPasskeysForUser = internalQuery({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query("passkeyCredentials")
+      .withIndex("by_userId", (q) => q.eq("userId", userId as any))
+      .collect();
+  },
+});
+
+export const findWebauthnChallenge = internalQuery({
+  args: { challengeHash: v.string() },
+  handler: async (ctx, { challengeHash }) => {
+    return await ctx.db
+      .query("webauthnChallenges")
+      .withIndex("by_challengeHash", (q) => q.eq("challengeHash", challengeHash))
+      .first();
+  },
+});
+
+export const insertPasskeyCredential = internalMutation({
+  args: {
+    userId: v.string(),
+    credentialId: v.string(),
+    publicKey: v.string(),
+    counter: v.number(),
+    transports: v.optional(v.array(v.string())),
+    deviceType: v.optional(v.string()),
+    backedUp: v.optional(v.boolean()),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("passkeyCredentials", {
+      userId: args.userId as any,
+      credentialId: args.credentialId,
+      publicKey: args.publicKey,
+      counter: args.counter,
+      transports: args.transports,
+      deviceType: args.deviceType,
+      backedUp: args.backedUp,
+      name: args.name,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const updatePasskeyCounter = internalMutation({
+  args: { id: v.string(), counter: v.number(), lastUsedAt: v.number() },
+  handler: async (ctx, { id, counter, lastUsedAt }) => {
+    await ctx.db.patch(id as any, { counter, lastUsedAt });
+  },
+});
+
+export const renamePasskey = internalMutation({
+  args: { id: v.string(), userId: v.string(), name: v.string() },
+  handler: async (ctx, { id, userId, name }) => {
+    const cred = (await ctx.db.get(id as any)) as any;
+    if (!cred || cred.userId !== userId) throw new Error("Passkey not found");
+    await ctx.db.patch(id as any, { name });
+  },
+});
+
+export const deletePasskey = internalMutation({
+  args: { id: v.string(), userId: v.string() },
+  handler: async (ctx, { id, userId }) => {
+    const cred = (await ctx.db.get(id as any)) as any;
+    if (!cred || cred.userId !== userId) throw new Error("Passkey not found");
+    await ctx.db.delete(id as any);
+    return { ok: true };
+  },
+});
+
+export const insertWebauthnChallenge = internalMutation({
+  args: {
+    challengeHash: v.string(),
+    type: v.string(),
+    email: v.optional(v.string()),
+    userId: v.optional(v.string()),
+    expiresInMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("webauthnChallenges", {
+      challengeHash: args.challengeHash,
+      type: args.type,
+      email: args.email,
+      userId: args.userId as any,
+      expiresAt: now + args.expiresInMs,
+      createdAt: now,
+    });
+  },
+});
+
+export const consumeWebauthnChallenge = internalMutation({
+  args: { challengeHash: v.string(), type: v.string() },
+  handler: async (ctx, { challengeHash, type }) => {
+    const challenge = await ctx.db
+      .query("webauthnChallenges")
+      .withIndex("by_challengeHash", (q) => q.eq("challengeHash", challengeHash))
+      .first();
+    if (!challenge || challenge.type !== type) return null;
+    if (challenge.expiresAt < Date.now()) {
+      await ctx.db.delete(challenge._id);
+      return null;
+    }
+    await ctx.db.delete(challenge._id); // single use
+    return challenge;
+  },
+});
+
+export const deleteWebauthnChallengesForUser = internalMutation({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    const challenges = await ctx.db
+      .query("webauthnChallenges")
+      .filter((q) => q.eq(q.field("userId"), userId as any))
+      .collect();
+    for (const c of challenges) await ctx.db.delete(c._id);
+  },
+});
+
+// ======================== MFA REMEMBER DEVICE ========================
+
+export const createMfaRememberToken = internalMutation({
+  args: { email: v.string(), rawToken: v.string(), expiresInMs: v.number() },
+  handler: async (ctx, { email, rawToken, expiresInMs }) => {
+    const now = Date.now();
+    await ctx.db.insert("verificationTokens", {
+      email: normalizeEmail(email),
+      tokenHash: await sha256Hex(rawToken),
+      type: "mfa_remember",
+      expiresAt: now + expiresInMs,
+      createdAt: now,
+    });
+    return { ok: true };
+  },
+});
+
+export const clearMfaRememberTokens = internalMutation({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const normalized = normalizeEmail(email);
+    const tokens = await ctx.db
+      .query("verificationTokens")
+      .withIndex("by_email_type", (q) => q.eq("email", normalized).eq("type", "mfa_remember"))
+      .collect();
+    for (const t of tokens) await ctx.db.delete(t._id);
+    return { ok: true };
+  },
+});
+
+
 // ======================== MUTATIONS ========================
 
 export const validateSession = internalMutation({
@@ -241,18 +405,33 @@ export const beginLogin = internalMutation({
     const normalized = normalizeEmail(email);
 
     const rlEmail = await rateLimitState(ctx, `login:${normalized}`, now, 15 * 60 * 1000, 8);
-    if (!rlEmail.allowed) return { allowed: false, user: null };
+    if (!rlEmail.allowed) return { allowed: false, lockedMinutes: 0, user: null };
 
     const rlIp = await rateLimitState(ctx, `login:ip:${ipAddress ?? "unknown"}`, now, 15 * 60 * 1000, 20);
-    if (!rlIp.allowed) return { allowed: false, user: null };
+    if (!rlIp.allowed) return { allowed: false, lockedMinutes: 0, user: null };
 
     const user = await ctx.db
       .query("users")
       .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
       .first();
-    return { allowed: true, user: user as any };
+
+    // Progressive lockout: after repeated consecutive failures the account
+    // temporarily refuses logins, with the cooldown doubling per extra failure
+    // (capped at 30 minutes). Reset only by a successful login.
+    if (user?.lockedUntil && user.lockedUntil > now) {
+      return { allowed: false, lockedMinutes: Math.ceil((user.lockedUntil - now) / 60_000), user: null };
+    }
+
+    return { allowed: true, lockedMinutes: 0, user: user as any };
   },
 });
+
+/** Lockout policy: threshold and escalating cooldown (ms). */
+export const LOCKOUT_THRESHOLD = 5;
+export function lockoutDurationMs(failedCount: number): number {
+  const over = Math.max(0, failedCount - LOCKOUT_THRESHOLD);
+  return Math.min(2 ** over * 60_000, 30 * 60_000); // 2min, 4min, … cap 30min
+}
 
 export const completeLogin = internalMutation({
   args: {
@@ -290,6 +469,20 @@ export const completeLogin = internalMutation({
         await ctx.db.patch(user._id, {
           lastLoginAt: now,
           loginCount: (user.loginCount ?? 0) + 1,
+          // Successful login clears lockout state.
+          failedLoginCount: 0,
+          lockedUntil: undefined,
+          updatedAt: now,
+        });
+      }
+    } else if (!isSuccess && outcome === "invalid_credentials" && userId) {
+      // Progressive lockout bookkeeping on failed credential checks.
+      const user = (await ctx.db.get(userId as any)) as any;
+      if (user) {
+        const failedLoginCount = (user.failedLoginCount ?? 0) + 1;
+        await ctx.db.patch(user._id, {
+          failedLoginCount,
+          lockedUntil: failedLoginCount >= LOCKOUT_THRESHOLD ? now + lockoutDurationMs(failedLoginCount) : user.lockedUntil,
           updatedAt: now,
         });
       }

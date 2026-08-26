@@ -81,6 +81,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(await res.json(), { status: res.status });
   }
 
+  if (pathname === "/passkeys") {
+    const res = await fetch(`${getIamBase()}/passkeys`, {
+      method: "GET",
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+
   if (pathname === "/google") {
     const redirect = url.searchParams.get("redirect") ?? "/account";
     const res = await fetch(`${getIamBase()}/oauth/google?redirect=${encodeURIComponent(redirect)}`, {
@@ -140,10 +148,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/register") {
     const res = await fetch(`${getIamBase()}/register`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -178,10 +183,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/verify-email") {
     const res = await fetch(`${getIamBase()}/verify-email`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -191,10 +193,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/resend-verification") {
     const res = await fetch(`${getIamBase()}/resend-verification`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -204,10 +203,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/forgot-password") {
     const res = await fetch(`${getIamBase()}/forgot-password`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -217,10 +213,7 @@ export async function POST(req: NextRequest) {
   if (pathname === "/reset-password") {
     const res = await fetch(`${getIamBase()}/reset-password`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie,
-      },
+      headers: forwardedHeaders(req, true),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -256,6 +249,23 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${getIamBase()}/sessions?action=revoke-all`, {
       method: "POST",
       headers: forwardedHeaders(req),
+    });
+    return proxyIamResponse(res);
+  }
+
+  // Passkeys (WebAuthn) — generic same-shape forwarding.
+  const PASSKEY_POST_PATHS = new Set([
+    "/passkeys/register/options",
+    "/passkeys/register/verify",
+    "/passkeys/auth/options",
+    "/passkeys/auth/verify",
+    "/passkeys/delete",
+  ]);
+  if (PASSKEY_POST_PATHS.has(pathname)) {
+    const res = await fetch(`${getIamBase()}${pathname}`, {
+      method: "POST",
+      headers: forwardedHeaders(req, true),
+      body: JSON.stringify(body ?? {}),
     });
     return proxyIamResponse(res);
   }

@@ -35,6 +35,12 @@ import {
   tokenHandler,
   googleOauthStartHandler,
   googleOauthCallbackHandler,
+  passkeyRegisterOptionsHandler,
+  passkeyRegisterVerifyHandler,
+  passkeyAuthOptionsHandler,
+  passkeyAuthVerifyHandler,
+  passkeysListHandler,
+  passkeyDeleteHandler,
 } from "./iam";
 import { generateJwks } from "./lib/tokens";
 
@@ -110,8 +116,8 @@ function withAuditTiming(handler: HttpHandler): HttpHandler {
 
 function withIamOriginProtection(handler: HttpHandler): HttpHandler {
   return async (ctx, req) => {
-    const hasSessionCookie = /(?:^|;\s*)tw_session=/.test(req.headers.get("cookie") ?? "");
-    if (!hasSessionCookie || !["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    const hasSessionCookie = /(?:^|;\s*)(?:__Host-)?tw_session=/.test(req.headers.get("cookie") ?? "");
+    if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
       return handler(ctx, req);
     }
 
@@ -127,7 +133,18 @@ function withIamOriginProtection(handler: HttpHandler): HttpHandler {
       ].filter((value): value is string => Boolean(value)),
     );
 
-    if (!origin || !allowedOrigins.has(origin)) {
+    // Cross-site state changes are always rejected. Requests without an Origin
+    // header (server-to-server) are only allowed when they already carry a
+    // session cookie — public POSTs (login, register, …) must prove a
+    // same-origin browser context.
+    if (!origin) {
+      if (hasSessionCookie) return handler(ctx, req);
+      return new Response(JSON.stringify({ error: "Missing Origin header" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!allowedOrigins.has(origin)) {
       return json({ error: "Invalid request origin." }, 403);
     }
 
@@ -226,13 +243,13 @@ http.route({
 http.route({
   path: "/iam/register",
   method: "POST",
-  handler: httpAction(withAuditTiming(registerHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(registerHandler))),
 });
 
 http.route({
   path: "/iam/login",
   method: "POST",
-  handler: httpAction(withAuditTiming(loginHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(loginHandler))),
 });
 
 http.route({
@@ -250,25 +267,25 @@ http.route({
 http.route({
   path: "/iam/verify-email",
   method: "POST",
-  handler: httpAction(withAuditTiming(verifyEmailHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(verifyEmailHandler))),
 });
 
 http.route({
   path: "/iam/resend-verification",
   method: "POST",
-  handler: httpAction(withAuditTiming(resendVerificationHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(resendVerificationHandler))),
 });
 
 http.route({
   path: "/iam/forgot-password",
   method: "POST",
-  handler: httpAction(withAuditTiming(forgotPasswordHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(forgotPasswordHandler))),
 });
 
 http.route({
   path: "/iam/reset-password",
   method: "POST",
-  handler: httpAction(withAuditTiming(resetPasswordHandler)),
+  handler: httpAction(withAuditTiming(withIamOriginProtection(resetPasswordHandler))),
 });
 
 http.route({
@@ -341,6 +358,44 @@ http.route({
   path: "/iam/oauth/google/callback",
   method: "GET",
   handler: httpAction(withAuditTiming(googleOauthCallbackHandler)),
+});
+
+// --------------------------- Passkeys (WebAuthn) ---------------------------
+
+http.route({
+  path: "/iam/passkeys/register/options",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(passkeyRegisterOptionsHandler))),
+});
+
+http.route({
+  path: "/iam/passkeys/register/verify",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(passkeyRegisterVerifyHandler))),
+});
+
+http.route({
+  path: "/iam/passkeys/auth/options",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(passkeyAuthOptionsHandler))),
+});
+
+http.route({
+  path: "/iam/passkeys/auth/verify",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(passkeyAuthVerifyHandler))),
+});
+
+http.route({
+  path: "/iam/passkeys",
+  method: "GET",
+  handler: httpAction(withAuditTiming(passkeysListHandler)),
+});
+
+http.route({
+  path: "/iam/passkeys/delete",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(passkeyDeleteHandler))),
 });
 
 http.route({
