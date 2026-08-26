@@ -29,6 +29,21 @@ export function clearMfaCookie(): string {
   return `${MFA_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;`;
 }
 
+/**
+ * Legacy (non-prefixed) session cookie. Kept in sync during the `__Host-`
+ * transition so a freshly deployed Convex backend works with frontend
+ * deployments that still read the old cookie name — and vice versa.
+ */
+export const LEGACY_SESSION_COOKIE = "tw_session";
+
+export function legacySessionCookie(value: string, maxAgeSec: number): string {
+  return `${LEGACY_SESSION_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec}`;
+}
+
+export function clearLegacySessionCookie(): string {
+  return `${LEGACY_SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0;`;
+}
+
 export async function sha1Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf))

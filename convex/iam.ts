@@ -16,9 +16,12 @@ import {
   isSuperAdminEmail,
   initialRoleForEmail,
   SESSION_COOKIE,
+  LEGACY_SESSION_COOKIE,
   MFA_COOKIE,
   sessionCookie,
   clearSessionCookie,
+  legacySessionCookie,
+  clearLegacySessionCookie,
   mfaCookie,
   clearMfaCookie,
 } from "./lib/tokens";
@@ -60,7 +63,14 @@ async function isMfaRemembered(ctx: Ctx, rememberToken: string | undefined, norm
   );
 }
 
-const CLEAR_COOKIE = clearSessionCookie();
+const CLEAR_COOKIES = [clearSessionCookie(), clearLegacySessionCookie()];
+
+/** Response that clears both session cookie names. */
+function clearSessionResponse(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const cookie of CLEAR_COOKIES) headers.append("Set-Cookie", cookie);
+  return new Response(response.body, { status: response.status, headers });
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -99,9 +109,21 @@ function getCookie(request: Request, name: string): string | undefined {
   return match ? decodeURIComponent(match[1]) : undefined;
 }
 
+/**
+ * Read the session token from either cookie name. Both are written during
+ * the `__Host-` transition, so either may arrive depending on which frontend
+ * deployment set it.
+ */
+function getSessionCookie(request: Request): string | undefined {
+  return getSessionCookie(request) ?? getCookie(request, LEGACY_SESSION_COOKIE);
+}
+
 function setCookieHeader(response: Response, value: string, maxAgeSec: number): Response {
   const headers = new Headers(response.headers);
   headers.append("Set-Cookie", sessionCookie(value, maxAgeSec));
+  // Keep the legacy cookie in sync during the __Host- transition so frontend
+  // deployments that still read the old name recognize the session too.
+  headers.append("Set-Cookie", legacySessionCookie(value, maxAgeSec));
   return new Response(response.body, {
     status: response.status,
     headers,
@@ -446,7 +468,7 @@ export async function mfaChallengeHandler(ctx: Ctx, request: Request): Promise<R
 
 export async function logoutHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (rawToken) {
     const tokenHash = await sha256Hex(rawToken);
     const session = await ctx.runQuery(internal.iamDb.findSessionByTokenHash, { tokenHash });
@@ -461,10 +483,11 @@ export async function logoutHandler(ctx: Ctx, request: Request): Promise<Respons
       });
     }
   }
-  return new Response(null, {
-    status: 204,
-    headers: { "Set-Cookie": CLEAR_COOKIE },
-  });
+  return clearSessionResponse(
+    new Response(null, {
+      status: 204,
+    })
+  );
 }
 
 // ======================== VERIFY EMAIL ========================
@@ -638,7 +661,7 @@ export async function resetPasswordHandler(ctx: Ctx, request: Request): Promise<
 
 export async function changePasswordHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -704,7 +727,7 @@ export async function changePasswordHandler(ctx: Ctx, request: Request): Promise
 // ======================== SESSIONS ========================
 
 export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -762,7 +785,7 @@ export async function sessionsHandler(ctx: Ctx, request: Request): Promise<Respo
 // ======================== MFA SETUP ========================
 
 export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -776,7 +799,7 @@ export async function mfaSetupHandler(ctx: Ctx, request: Request): Promise<Respo
 }
 
 export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -824,7 +847,7 @@ export async function mfaEnableHandler(ctx: Ctx, request: Request): Promise<Resp
 }
 
 export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -873,7 +896,7 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
 }
 
 export async function mfaRegenerateRecoveryHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const body = await parseJsonBody(request);
@@ -1079,7 +1102,7 @@ export async function googleOauthCallbackHandler(ctx: Ctx, request: Request): Pr
 // ======================== ME / CURRENT USER ========================
 
 export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1093,7 +1116,7 @@ export async function meHandler(ctx: Ctx, request: Request): Promise<Response> {
 // ======================== SECURITY EVENTS ========================
 
 export async function securityEventsHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1111,7 +1134,7 @@ export async function securityEventsHandler(ctx: Ctx, request: Request): Promise
 
 export async function tokenHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1172,7 +1195,7 @@ async function storeWebauthnChallenge(
 
 export async function passkeyRegisterOptionsHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1205,7 +1228,7 @@ export async function passkeyRegisterOptionsHandler(ctx: Ctx, request: Request):
 
 export async function passkeyRegisterVerifyHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1398,7 +1421,7 @@ export async function passkeyAuthVerifyHandler(ctx: Ctx, request: Request): Prom
 }
 
 export async function passkeysListHandler(ctx: Ctx, request: Request): Promise<Response> {
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
@@ -1419,7 +1442,7 @@ export async function passkeysListHandler(ctx: Ctx, request: Request): Promise<R
 
 export async function passkeyDeleteHandler(ctx: Ctx, request: Request): Promise<Response> {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const rawToken = getCookie(request, SESSION_COOKIE);
+  const rawToken = getSessionCookie(request);
   if (!rawToken) return unauthorized();
 
   const session = await ctx.runMutation(internal.iamDb.validateSession, { rawToken });
