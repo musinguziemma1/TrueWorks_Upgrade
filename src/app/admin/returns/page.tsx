@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   CheckCircle2,
@@ -15,6 +16,7 @@ import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -42,6 +44,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
@@ -80,13 +83,27 @@ type ReturnRow = Doc<"returns"> & {
 };
 
 export default function AdminReturnsPage() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "")
+  const search = useDebouncedValue(searchInput, 300)
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all")
   const [selected, setSelected] = useState<ReturnRow | null>(null);
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [decision, setDecision] = useState<"approve" | "reject">("approve");
   const [adminNotes, setAdminNotes] = useState("");
+  const [confirmDecision, setConfirmDecision] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [offset, setOffset] = useState(0);
+
+  // Keep URL in sync so views are shareable + refresh-safe.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    const qs = params.toString();
+    router.replace(qs ? `/admin/returns?${qs}` : "/admin/returns", { scroll: false });
+  }, [search, statusFilter, router]);
 
   const PAGE_SIZE = 20;
 
@@ -115,19 +132,25 @@ export default function AdminReturnsPage() {
   const handleReview = async () => {
     if (!decisionId) return;
     try {
+      setSubmitting(true);
       await review({
         id: decisionId as never,
         decision,
         adminNotes: adminNotes.trim() || undefined,
       });
       toast.success(decision === "approve" ? "Refund approved" : "Refund request rejected");
+      setConfirmDecision(false);
       setDecisionId(null);
       setAdminNotes("");
       setDecision("approve");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update return request");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const decisionTarget = decisionId ? rows.find((r) => r._id === (decisionId as never)) : null;
 
   const handleExportCsv = () => {
     const csv = toCsv(
@@ -194,13 +217,14 @@ export default function AdminReturnsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <Input
                   placeholder="Search by order, email, customer..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setOffset(0); }}
+                  value={searchInput}
+                  onChange={(e) => { setSearchInput(e.target.value); setOffset(0); }}
                   className="pl-9 md:w-72"
+                  aria-label="Search refund requests"
                 />
               </div>
               <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v ?? "all"); setOffset(0); }}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" aria-label="Filter by status">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -297,6 +321,7 @@ export default function AdminReturnsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelected(r)}
+                            aria-label={`View details for ${r.orderNumber}`}
                           >
                             Details
                           </Button>
@@ -312,6 +337,7 @@ export default function AdminReturnsPage() {
                                   setAdminNotes("");
                                 }}
                                 className="text-green-600 hover:text-green-700"
+                                aria-label={`Approve refund for ${r.orderNumber}`}
                               >
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
@@ -324,6 +350,7 @@ export default function AdminReturnsPage() {
                                   setAdminNotes("");
                                 }}
                                 className="text-red-600 hover:text-red-700"
+                                aria-label={`Reject refund for ${r.orderNumber}`}
                               >
                                 <XCircle className="h-4 w-4" />
                               </Button>
@@ -456,8 +483,11 @@ export default function AdminReturnsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Decision Dialog */}
-      <Dialog open={!!decisionId} onOpenChange={() => setDecisionId(null)}>
+      {/* Decision Dialog (collects notes) */}
+      <Dialog
+        open={!!decisionId && !confirmDecision}
+        onOpenChange={(open) => { if (!open) setDecisionId(null) }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -465,15 +495,12 @@ export default function AdminReturnsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {(() => {
-              const row = rows.find((r) => r._id === decisionId as never)
-              return row ? (
-                <p className="text-sm bg-surface border border-border rounded-md px-3 py-2">
-                  <span className="text-muted">Refund amount: </span>
-                  <span className="font-semibold text-foreground">{fmtMoney(refundTotal(row))}</span>
-                </p>
-              ) : null
-            })()}
+            {decisionTarget ? (
+              <p className="text-sm bg-surface border border-border rounded-md px-3 py-2">
+                <span className="text-muted">Refund amount: </span>
+                <span className="font-semibold text-foreground">{fmtMoney(refundTotal(decisionTarget))}</span>
+              </p>
+            ) : null}
             <p className="text-sm text-muted">
               {decision === "approve"
                 ? "Approving will refund the money to the original payment method (where supported), revoke access to the order, and roll back sales and customer stats."
@@ -485,6 +512,7 @@ export default function AdminReturnsPage() {
               onChange={(e) => setAdminNotes(e.target.value)}
               rows={3}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Admin notes"
             />
           </div>
           <DialogFooter>
@@ -493,13 +521,28 @@ export default function AdminReturnsPage() {
             </Button>
             <Button
               variant={decision === "approve" ? "default" : "destructive"}
-              onClick={handleReview}
+              onClick={() => setConfirmDecision(true)}
             >
-              {decision === "approve" ? "Approve & Refund" : "Reject Request"}
+              Continue
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Final confirmation */}
+      <ConfirmDialog
+        open={confirmDecision}
+        onOpenChange={(open) => { if (!open && !submitting) { setConfirmDecision(false); setDecisionId(null) } }}
+        title={decision === "approve" ? "Confirm refund approval" : "Confirm refund rejection"}
+        description={
+          decision === "approve"
+            ? `Refund ${decisionTarget ? fmtMoney(refundTotal(decisionTarget)) : ""} will be issued to the original payment method. This rolls back sales stats and revokes order access.`
+            : "The customer will be notified that their refund was not approved. You can add additional notes on the next screen."
+        }
+        confirmLabel={decision === "approve" ? "Approve & Refund" : "Reject Request"}
+        destructive={decision === "reject"}
+        onConfirm={handleReview}
+      />
     </div>
   );
 }

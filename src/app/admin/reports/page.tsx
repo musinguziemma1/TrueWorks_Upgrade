@@ -250,7 +250,7 @@ export default function ReportsPage() {
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Reports" }]}
         action={
           <Select value={dateRange} onValueChange={(v) => v && setDateRange(v)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px]" aria-label="Date range for reports">
               <Calendar className="h-4 w-4 mr-1" />
               <SelectValue />
             </SelectTrigger>
@@ -302,6 +302,7 @@ export default function ReportsPage() {
                         disabled={rowCount === 0}
                         className="flex-1 gap-2 border-[#0B2545]/30 text-[#0B2545] hover:bg-[#0B2545]/5 disabled:opacity-50 disabled:pointer-events-none"
                         onClick={() => setPreview(report.id)}
+                        aria-label={`Preview ${report.title}`}
                       >
                         <Eye className="h-3.5 w-3.5" /> Preview
                       </Button>
@@ -311,6 +312,7 @@ export default function ReportsPage() {
                         disabled={rowCount === 0}
                         className="flex-1 gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50 disabled:pointer-events-none"
                         onClick={() => exportReport(report.id)}
+                        aria-label={`Download ${report.title} as CSV`}
                       >
                         <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
                       </Button>
@@ -440,7 +442,7 @@ function ReportPreview({ reportId, onClose, sources }: {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-primary">{title} — Preview</h3>
-            <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close report preview"><X className="h-4 w-4" /></Button>
           </div>
           <p className="text-sm text-muted-foreground">No rows to preview in the selected range.</p>
         </CardContent>
@@ -452,8 +454,8 @@ function ReportPreview({ reportId, onClose, sources }: {
     <Card>
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-primary">{title} — Preview (first {previewRows.cells.length})</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+          <h3 className="font-semibold text-primary">{title} &mdash; Preview (first {previewRows.cells.length})</h3>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close report preview"><X className="h-4 w-4" /></Button>
         </div>
         <div className="overflow-x-auto rounded-lg border">
           <Table>

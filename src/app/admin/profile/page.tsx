@@ -103,6 +103,7 @@ export default function AdminProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={user?.name ?? "Your name"}
+                    aria-label="Display name"
                   />
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1">
@@ -134,6 +135,7 @@ export default function AdminProfilePage() {
                       setName(user?.name ?? "");
                       setEditing(true);
                     }}
+                    aria-label="Edit your profile name"
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Profile
@@ -144,6 +146,7 @@ export default function AdminProfilePage() {
                 variant="outline"
                 className="mt-4 w-full"
                 onClick={async () => { await logout(); window.location.href = "/"; }}
+                aria-label="Sign out of admin"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
@@ -232,6 +235,7 @@ export default function AdminProfilePage() {
                 <Button
                   variant="destructive"
                   onClick={async () => { await logout(); window.location.href = "/"; }}
+                  aria-label="Sign out of your account"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
@@ -259,6 +263,7 @@ export default function AdminProfilePage() {
                   <Switch
                     checked={notifications[pref.key]}
                     onCheckedChange={(v) => setNotifications((prev) => ({ ...prev, [pref.key]: v }))}
+                    aria-label={pref.label}
                   />
                 </div>
               ))}

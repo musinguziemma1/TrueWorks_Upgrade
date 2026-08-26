@@ -37,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const ROLE_LABELS: Record<string, string> = {
   superadmin: "Super Admin",
@@ -109,7 +111,8 @@ export default function UsersPage() {
   const revokeInvitation = useMutation(api.invitations.revoke);
   const resendInvitation = useMutation(api.invitations.resend);
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebouncedValue(searchInput, 300);
   const [page, setPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
   // Captured once per mount so invitation expiry checks stay pure during render.
@@ -118,6 +121,7 @@ export default function UsersPage() {
   const [inviteRole, setInviteRole] = useState<"admin" | "editor" | "viewer">("viewer");
   const [deleteTarget, setDeleteTarget] = useState<Id<"users"> | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const perPage = 10;
 
@@ -171,12 +175,15 @@ export default function UsersPage() {
   async function handleDelete() {
     if (!deleteTarget) return;
     try {
+      setDeleting(true);
       await deleteUser({ userId: deleteTarget });
       toast.success("User deleted");
       setDeleteOpen(false);
       setDeleteTarget(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to delete user");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -293,6 +300,7 @@ export default function UsersPage() {
                             size="sm"
                             onClick={() => handleResend(inv._id)}
                             title="Resend invitation"
+                            aria-label={`Resend invitation to ${inv.email}`}
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                           </Button>
@@ -302,6 +310,7 @@ export default function UsersPage() {
                             onClick={() => handleRevoke(inv._id)}
                             title="Revoke invitation"
                             className="text-red-600 hover:text-red-700"
+                            aria-label={`Revoke invitation to ${inv.email}`}
                           >
                             <XCircle className="h-3.5 w-3.5" />
                           </Button>
@@ -321,12 +330,13 @@ export default function UsersPage() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search users by name or email..."
-          value={search}
+          value={searchInput}
           onChange={(e) => {
-            setSearch(e.target.value);
+            setSearchInput(e.target.value);
             setPage(1);
           }}
           className="pl-10"
+          aria-label="Search users"
         />
       </div>
 
@@ -408,7 +418,10 @@ export default function UsersPage() {
                       <TableCell className="text-right">
                         {canManage ? (
                           <DropdownMenu>
-                            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted">
+                            <DropdownMenuTrigger
+                              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                              aria-label={`Actions for ${u.name ?? u.email}`}
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
@@ -485,6 +498,7 @@ export default function UsersPage() {
                             variant="ghost"
                             size="sm"
                             onClick={async () => { await logout(); window.location.href = "/"; }}
+                            aria-label={`Sign out ${u.name ?? u.email}`}
                           >
                             <LogOut className="mr-1 h-3.5 w-3.5" />
                             Sign out
@@ -586,25 +600,15 @@ export default function UsersPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. The user will be permanently removed from the system and lose access immediately.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteOpen(false) }}
+        title="Delete this user?"
+        description="This action cannot be undone. The user will be permanently removed from the system and lose access immediately. Any pending invitations from this user will be revoked."
+        confirmLabel="Delete user"
+        destructive
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

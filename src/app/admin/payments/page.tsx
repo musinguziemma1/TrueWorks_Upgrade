@@ -5,6 +5,7 @@ import { Radio, RefreshCw } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
+import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { usePaymentsState } from "./use-payments-state"
 import { StatCards } from "./_components/stat-cards"
 import { RevenueChart } from "./_components/revenue-chart"
@@ -23,6 +24,7 @@ export default function PaymentsPage() {
 
   const reconcile = useMutation(api.payments.reconcileFromOrders)
   const [syncing, setSyncing] = useState(false)
+  const [confirmOrphanRemoval, setConfirmOrphanRemoval] = useState(false)
   const [removingOrphans, setRemovingOrphans] = useState(false)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [orphaned, setOrphaned] = useState(0)
@@ -45,10 +47,6 @@ export default function PaymentsPage() {
 
   const handleRemoveOrphans = async () => {
     if (orphaned === 0) return
-    const confirmed = window.confirm(
-      `Delete ${orphaned} orphaned payment record${orphaned === 1 ? "" : "s"} with no matching order? This cannot be undone.`
-    )
-    if (!confirmed) return
     setRemovingOrphans(true)
     setSyncMessage(null)
     try {
@@ -59,6 +57,7 @@ export default function PaymentsPage() {
       setSyncMessage("Orphan removal failed")
     } finally {
       setRemovingOrphans(false)
+      setConfirmOrphanRemoval(false)
     }
   }
 
@@ -104,6 +103,7 @@ export default function PaymentsPage() {
               disabled={syncing}
               className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-60"
               title="Rebuild payment records from the orders table"
+              aria-label="Sync payment records with orders"
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync with orders"}
@@ -111,10 +111,11 @@ export default function PaymentsPage() {
             {orphaned > 0 && (
               <button
                 type="button"
-                onClick={handleRemoveOrphans}
+                onClick={() => setConfirmOrphanRemoval(true)}
                 disabled={removingOrphans}
                 className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/20 disabled:opacity-60"
                 title="Delete payment records that have no matching order"
+                aria-label={`Remove ${orphaned} orphaned payment records`}
               >
                 {removingOrphans ? "Removing..." : `Remove ${orphaned} orphaned`}
               </button>
@@ -153,6 +154,16 @@ export default function PaymentsPage() {
       />
 
       <DetailDialog payment={state.detailPayment} onClose={() => state.setDetailPayment(null)} />
+
+      <ConfirmDialog
+        open={confirmOrphanRemoval}
+        onOpenChange={(open) => { if (!open && !removingOrphans) setConfirmOrphanRemoval(false) }}
+        title={`Delete ${orphaned} orphaned payment record${orphaned === 1 ? "" : "s"}?`}
+        description="These payment records have no matching order. Deleting them cannot be undone and may affect financial reconciliation reports."
+        confirmLabel={`Delete ${orphaned} record${orphaned === 1 ? "" : "s"}`}
+        destructive
+        onConfirm={handleRemoveOrphans}
+      />
     </div>
   )
 }

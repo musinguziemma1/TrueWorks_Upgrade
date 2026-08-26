@@ -10,22 +10,24 @@ import {
 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts"
 import dynamic from "next/dynamic"
+import { formatPrice } from "@/lib/utils"
+import { toast } from "sonner"
+import { MetricCard } from "./_components/metric-card"
+import { EventFunnel } from "./_components/event-funnel"
+import { RangePicker, type DateRange } from "./_components/range-picker"
+import { getDateRangeFilter, pctDelta, getPreviousRange } from "./date-range"
 
 const MapChart = dynamic(() => import("@/components/admin/map-chart").then(m => ({ default: m.MapChart })), {
   ssr: false,
   loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
 })
-import { formatPrice } from "@/lib/utils"
-import { toast } from "sonner"
 
 const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
 const chartConfig = {
@@ -36,114 +38,15 @@ const chartConfig = {
   downloads: { label: "Downloads", color: "#34D399" },
 }
 
-function getDateRangeFilter(range: string) {
-  const now = new Date()
-  const today = now.toISOString().slice(0, 10)
-  let startDate = ""
-  let startTimestamp = 0
-
-  switch (range) {
-    case "Today":
-      startDate = today
-      startTimestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-      break
-    case "This Week": {
-      const day = now.getDay()
-      const diff = now.getDate() - day
-      const weekStart = new Date(now.getFullYear(), now.getMonth(), diff)
-      startDate = weekStart.toISOString().slice(0, 10)
-      startTimestamp = weekStart.getTime()
-      break
-    }
-    case "This Month":
-      startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
-      startTimestamp = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-      break
-    case "This Quarter": {
-      const qStart = Math.floor(now.getMonth() / 3) * 3
-      startDate = `${now.getFullYear()}-${String(qStart + 1).padStart(2, "0")}-01`
-      startTimestamp = new Date(now.getFullYear(), qStart, 1).getTime()
-      break
-    }
-    case "This Year":
-      startDate = `${now.getFullYear()}-01-01`
-      startTimestamp = new Date(now.getFullYear(), 0, 1).getTime()
-      break
-    default:
-      startDate = ""
-      startTimestamp = 0
-  }
-
-  return { startDate, endDate: today, startTimestamp, endTimestamp: now.getTime() }
-}
-
-function MetricCard({ icon, label, value, sub, delta, spark }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string; delta?: number; spark?: number[]
-}) {
-  const deltaColor = delta === undefined ? "" : delta >= 0 ? "text-emerald-600" : "text-red-600"
-  const deltaArrow = delta === undefined ? "" : delta >= 0 ? "▲" : "▼"
-  const max = spark && spark.length ? Math.max(...spark, 1) : 0
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
-          {delta !== undefined && (
-            <span className={`text-[11px] font-semibold ${deltaColor}`}>
-              {deltaArrow} {Math.abs(delta).toFixed(1)}%
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-        <p className="text-xl font-bold text-[#0B2545]">{value}</p>
-        {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
-      </CardContent>
-      {spark && spark.length > 1 && (
-        <div className="flex h-8 items-end gap-[2px] px-4 pb-2">
-          {spark.map((v, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-sm bg-[#0B2545]/[0.18]"
-              style={{ height: `${Math.max(8, (v / max) * 100)}%` }}
-              title={String(v)}
-            />
-          ))}
-        </div>
-      )}
-    </Card>
-  )
-}
-
-function pctDelta(current: number, previous: number): number | undefined {
-  if (!previous) return current ? 100 : 0
-  return ((current - previous) / previous) * 100
-}
-
-function getPreviousRange(range: string, current: ReturnType<typeof getDateRangeFilter>) {
-  const now = new Date(current.startTimestamp)
-  const end = new Date(current.endTimestamp)
-  const duration = end.getTime() - now.getTime()
-  const prevEndTs = now.getTime() - 1
-  const prevStartTs = prevEndTs - duration
-  const iso = (ts: number) => {
-    const d = new Date(ts)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-  }
-  if (range === "All Time" || current.startTimestamp === 0) {
-    return { startDate: "", endDate: current.endDate }
-  }
-  return { startDate: iso(prevStartTs), endDate: iso(prevEndTs) }
-}
-
 export default function AnalyticsPage() {
-  const [dateRange, setDateRange] = useState("This Year")
+  const [dateRange, setDateRange] = useState<DateRange>("This Year")
   const [customFrom, setCustomFrom] = useState("")
   const [customTo, setCustomTo] = useState("")
   const [compare, setCompare] = useState(true)
   const analyticsRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
 
-  const rangeLabel = dateRange === "Custom" ? `${customFrom || "…"} → ${customTo || "…"}` : dateRange
+  const rangeLabel = dateRange === "Custom" ? `${customFrom || "..."} -> ${customTo || "..."}` : dateRange
 
   const filter = useMemo(() => {
     if (dateRange === "Custom" && customFrom && customTo) {
@@ -305,7 +208,7 @@ export default function AnalyticsPage() {
 
       const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 })
       const money = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-      const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
+      const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}...` : s)
 
       const ensure = (needed: number) => {
         if (y + needed > maxY) {
@@ -314,7 +217,6 @@ export default function AnalyticsPage() {
         }
       }
 
-      // Title block
       pdf.setFont("helvetica", "bold")
       pdf.setFontSize(18)
       pdf.setTextColor("#0B2545")
@@ -385,7 +287,6 @@ export default function AnalyticsPage() {
         y += 3
       }
 
-      // KPI summary
       section("Key Metrics")
       kvRow("Total Revenue", money(safeSummary.totalRevenue))
       kvRow("Total Orders", fmt(totalOrdersCount))
@@ -397,42 +298,36 @@ export default function AnalyticsPage() {
       kvRow("Revenue / Visitor", revenuePerVisitor)
       y += 2
 
-      // Daily revenue trend
       section("Daily Revenue Trend")
       table(
         ["Date", "Revenue", "Orders", "Downloads", "Visitors", "Page Views"],
         revenueData.map((d) => [d.date, money(d.revenue * 1_000_000), d.orders, d.downloads, d.visitors, d.pageViews])
       )
 
-      // Product performance
       section("Top Products")
       table(
         ["Product", "Sales", "Revenue"],
         productPerformance.map((p) => [clip(p.name, 40), fmt(p.totalSales), money(p.totalRevenue)])
       )
 
-      // Payment methods
       section("Payment Methods")
       table(
         ["Method", "Orders"],
         paymentChartData.map((p) => [p.name, fmt(p.value)])
       )
 
-      // Geographic breakdown
       section("Geographic Sales")
       table(
         ["Country", "Orders", "Revenue"],
         geoChartData.map((g) => [clip(g.country, 30), fmt(g.orders), money(g.revenue)])
       )
 
-      // Conversion funnel
       section("Conversion Funnel")
       table(
         ["Step", "Count"],
-        (funnelData?.funnel ?? []).map((s) => [clip(STEP_LABELS[s.name] ?? s.name.replace(/_/g, " "), 30), fmt(s.count)])
+        (funnelData?.funnel ?? []).map((s) => [s.name.replace(/_/g, " "), fmt(s.count)])
       )
 
-      // LTV segments
       section("Customer Lifetime Value")
       table(
         ["Segment", "Customers"],
@@ -472,38 +367,20 @@ export default function AnalyticsPage() {
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Analytics" }]}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={dateRange} onValueChange={(v) => v && setDateRange(v)}>
-              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["Today", "This Week", "This Month", "This Quarter", "This Year", "All Time", "Custom"].map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {dateRange === "Custom" && (
-              <>
-                <Input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-[150px] h-9"
-                  aria-label="From date"
-                />
-                <span className="text-xs text-muted-foreground">→</span>
-                <Input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-[150px] h-9"
-                  aria-label="To date"
-                />
-              </>
-            )}
+            <RangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              customFrom={customFrom}
+              customTo={customTo}
+              onCustomFromChange={setCustomFrom}
+              onCustomToChange={setCustomTo}
+            />
             <Button
               variant="outline"
               size="sm"
               className={compare ? "border-[#0B2545] text-[#0B2545]" : ""}
               onClick={() => setCompare((c) => !c)}
+              aria-pressed={compare}
             >
               {compare ? <TrendingUp className="h-4 w-4 mr-1" /> : <ArrowUpRight className="h-4 w-4 mr-1" />}
               Compare
@@ -513,6 +390,7 @@ export default function AnalyticsPage() {
               size="sm"
               onClick={handleExportPdf}
               disabled={exporting}
+              aria-label="Export analytics report as PDF"
             >
               {exporting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -648,10 +526,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Conversion Funnel</CardTitle></CardHeader>
             <CardContent>
-              <EventFunnel
-                funnel={funnelData?.funnel ?? []}
-                rates={funnelData?.rates ?? []}
-              />
+              <EventFunnel funnel={funnelData?.funnel ?? []} />
             </CardContent>
           </Card>
         </div>
@@ -734,57 +609,6 @@ export default function AnalyticsPage() {
           </Card>
         </div>
       </div>
-    </div>
-  )
-}
-
-const STEP_LABELS: Record<string, string> = {
-  view_product: "Viewed Product",
-  add_to_cart: "Added to Cart",
-  reach_checkout: "Reached Checkout",
-  payment_start: "Started Payment",
-  purchase: "Purchased",
-}
-
-function EventFunnel({ funnel, rates }: {
-  funnel: { name: string; count: number }[]
-  rates: { from: string; to: string; rate: number }[]
-}) {
-  const max = Math.max(1, ...funnel.map((s) => s.count))
-  if (funnel.every((s) => s.count === 0)) {
-    return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        No funnel events yet. Events are recorded as customers browse, add to cart,
-        and check out.
-      </p>
-    )
-  }
-  return (
-    <div className="space-y-3 pt-2">
-      {funnel.map((step, i) => {
-        const rate = rates[i - 1]
-        return (
-          <div key={step.name}>
-            <div className="flex items-center justify-between text-sm mb-1">
-              <span className="capitalize">{STEP_LABELS[step.name] ?? step.name.replace(/_/g, " ")}</span>
-              <div className="flex items-center gap-2">
-                {rate !== undefined && step.count > 0 && (
-                  <span className="text-[11px] text-muted-foreground">
-                    {i === 0 ? "100%" : `${Math.round(step.count / Math.max(1, funnel[i - 1].count) * 100)}% step`}
-                  </span>
-                )}
-                <span className="font-medium">{step.count.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="h-3.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#0B2545] transition-all"
-                style={{ width: `${(step.count / max) * 100}%` }}
-              />
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }

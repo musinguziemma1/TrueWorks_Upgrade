@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Loader2, Shield, Activity, Users, XCircle, KeyRound, Globe } from "lucide-react";
+import { Loader2, Shield, Activity, Users, XCircle, KeyRound, Globe, Search } from "lucide-react";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { toast } from "sonner";
 
 function fmtDate(ts?: number) {
@@ -78,21 +81,46 @@ export default function AdminAuthPage() {
   const events = useQuery(api.authAdmin.listAllSecurityEvents, { limit: 100 });
   const revokeSession = useMutation(api.authAdmin.revokeAnySession);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"sessions" | "events">("sessions");
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebouncedValue(searchInput, 300);
   // Captured once per mount so expiry checks stay pure during render.
   const [nowTs] = useState(() => Date.now());
 
-  const handleRevoke = async (id: string) => {
-    if (!confirm("Revoke this session? The user will be signed out on that device.")) return;
-    setRevoking(id);
+  const handleRevoke = async () => {
+    if (!confirmRevoke) return;
+    setRevoking(confirmRevoke);
     try {
-      await revokeSession({ sessionId: id as never });
+      await revokeSession({ sessionId: confirmRevoke as never });
       toast.success("Session revoked");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to revoke session");
     } finally {
       setRevoking(null);
+      setConfirmRevoke(null);
     }
   };
+
+  const filteredSessions = sessions?.filter((s) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (s.email?.toLowerCase().includes(q) ?? false) ||
+      (s.name?.toLowerCase().includes(q) ?? false) ||
+      (s.ipAddress?.toLowerCase().includes(q) ?? false)
+    );
+  }) ?? [];
+
+  const filteredEvents = events?.filter((e) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (e.email?.toLowerCase().includes(q) ?? false) ||
+      e.action.toLowerCase().includes(q) ||
+      (e.ipAddress?.toLowerCase().includes(q) ?? false)
+    );
+  }) ?? [];
 
   const loading = stats === undefined || sessions === undefined || events === undefined;
 
@@ -102,6 +130,18 @@ export default function AdminAuthPage() {
         title="Auth & Security"
         description="Monitor sessions and security events across all accounts."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Auth & Security" }]}
+        action={
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={activeTab === "sessions" ? "Search sessions by user or IP..." : "Search events by user or action..."}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9"
+              aria-label={activeTab === "sessions" ? "Search sessions" : "Search events"}
+            />
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -128,7 +168,7 @@ export default function AdminAuthPage() {
           <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
         </div>
       ) : (
-        <Tabs defaultValue="sessions">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "sessions" | "events")}>
           <TabsList>
             <TabsTrigger value="sessions"><KeyRound className="h-4 w-4 mr-1.5" /> Sessions</TabsTrigger>
             <TabsTrigger value="events"><Activity className="h-4 w-4 mr-1.5" /> Security Events</TabsTrigger>
@@ -159,9 +199,9 @@ export default function AdminAuthPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sessions.length === 0 ? (
-                        <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted">No sessions recorded yet.</TableCell></TableRow>
-                      ) : sessions.map((s) => {
+                      {filteredSessions.length === 0 ? (
+                        <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted">{search ? "No sessions match your search." : "No sessions recorded yet."}</TableCell></TableRow>
+                      ) : filteredSessions.map((s) => {
                         const device = parseDevice(s.userAgent);
                         const expired = !s.revoked && s.absoluteExpiresAt < nowTs;
                         return (
@@ -173,7 +213,7 @@ export default function AdminAuthPage() {
                             <TableCell className="text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-3.5 w-3.5" />
-                                {device.device} · {device.browser} · {device.os}
+                                {device.device} &middot; {device.browser} &middot; {device.os}
                               </div>
                             </TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground">{s.ipAddress ?? "—"}</TableCell>
@@ -190,7 +230,8 @@ export default function AdminAuthPage() {
                                   size="sm"
                                   className="text-red-600 hover:text-red-700"
                                   disabled={revoking === s._id}
-                                  onClick={() => handleRevoke(s._id)}
+                                  onClick={() => setConfirmRevoke(s._id)}
+                                  aria-label={`Revoke session for ${s.email ?? s.name ?? s._id}`}
                                 >
                                   {revoking === s._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
                                   Revoke
@@ -229,9 +270,9 @@ export default function AdminAuthPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {events.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted">No security events yet.</TableCell></TableRow>
-                      ) : events.map((e) => (
+                      {filteredEvents.length === 0 ? (
+                        <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted">{search ? "No events match your search." : "No security events yet."}</TableCell></TableRow>
+                      ) : filteredEvents.map((e) => (
                         <TableRow key={e._id}>
                           <TableCell>
                             <p className="text-sm font-medium">{e.email ?? "—"}</p>
@@ -254,6 +295,16 @@ export default function AdminAuthPage() {
           </TabsContent>
         </Tabs>
       )}
+
+      <ConfirmDialog
+        open={confirmRevoke !== null}
+        onOpenChange={(open) => { if (!open && revoking === null) setConfirmRevoke(null) }}
+        title="Revoke this session?"
+        description="The user will be signed out on that device immediately. They will need to sign in again to continue. Pending work on that device may be lost."
+        confirmLabel="Revoke session"
+        destructive
+        onConfirm={handleRevoke}
+      />
     </div>
   );
 }
