@@ -31,9 +31,20 @@ export function PasskeysCard() {
     setLoading(false);
   }, []);
 
+  // Initial load. setState runs in the promise callback (after the fetch
+  // resolves), never synchronously during the effect body.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+    listPasskeys().then((keys) => {
+      if (!cancelled) {
+        setPasskeys(keys);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleRegister = async () => {
     setRegistering(true);

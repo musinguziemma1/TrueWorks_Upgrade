@@ -115,7 +115,7 @@ function getCookie(request: Request, name: string): string | undefined {
  * deployment set it.
  */
 function getSessionCookie(request: Request): string | undefined {
-  return getSessionCookie(request) ?? getCookie(request, LEGACY_SESSION_COOKIE);
+  return getCookie(request, SESSION_COOKIE) ?? getCookie(request, LEGACY_SESSION_COOKIE);
 }
 
 function setCookieHeader(response: Response, value: string, maxAgeSec: number): Response {
