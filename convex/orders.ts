@@ -162,6 +162,8 @@ const orderCreateArgs = {
   downloadLinks: v.array(v.object({
     productId: v.id("products"),
     downloadCount: v.number(),
+    expiresAt: v.optional(v.number()),
+    url: v.optional(v.string()),
   })),
   couponCode: v.optional(v.string()),
   ipAddress: v.optional(v.string()),
@@ -192,7 +194,7 @@ async function insertOrder(ctx: MutationCtx, args: {
   paymentMethod: string;
   paymentStatus: "pending" | "completed" | "failed" | "refunded";
   orderStatus: "pending" | "processing" | "completed" | "cancelled";
-  downloadLinks: { productId: Id<"products">; downloadCount: number }[];
+  downloadLinks: { productId: Id<"products">; downloadCount: number; expiresAt?: number; url?: string }[];
   couponCode?: string;
   ipAddress?: string;
   userAgent?: string;

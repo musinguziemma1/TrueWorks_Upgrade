@@ -226,13 +226,17 @@ export default defineSchema({
       country: v.optional(v.string()),
       postalCode: v.optional(v.string()),
     })),
-    // Download grants for this order. Signed file URLs are NEVER persisted —
-    // they are generated on demand by the secure downloads flow
-    // (convex/downloads.ts -> ctx.storage.getUrl), because stored URLs expire
-    // and leak long-lived access in the database.
+    // Download grants for this order. Signed file URLs are NEVER persisted by
+    // the current flow — they are generated on demand by the secure downloads
+    // flow (convex/downloads.ts -> ctx.storage.getUrl), because stored URLs
+    // expire and leak long-lived access in the database.
+    // `url` / `expiresAt` are optional legacy fields kept only so older
+    // documents still validate against this schema.
     downloadLinks: v.array(v.object({
       productId: v.id("products"),
       downloadCount: v.number(),
+      expiresAt: v.optional(v.number()),
+      url: v.optional(v.string()),
     })),
     notes: v.optional(v.string()),
     createdAt: v.number(),
