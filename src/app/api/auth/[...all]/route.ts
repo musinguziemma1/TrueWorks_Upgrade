@@ -45,6 +45,17 @@ function forwardSetCookies(target: NextResponse, res: Response): void {
   }
 }
 
+/** Parse an upstream response body defensively — never throw on empty/invalid JSON. */
+async function safeUpstreamJson(res: Response): Promise<unknown> {
+  const text = await res.text();
+  if (!text) return { error: `Empty authentication response (${res.status})` };
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: `Authentication request failed (${res.status})` };
+  }
+}
+
 async function proxyIamResponse(res: Response): Promise<NextResponse> {
   if (res.status === 204) {
     const response = new NextResponse(null, { status: 204 });
@@ -73,7 +84,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: { cookie: req.headers.get("cookie") ?? "" },
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return NextResponse.json(await safeUpstreamJson(res), { status: res.status });
   }
 
   if (pathname === "/security-events") {
@@ -81,7 +92,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: { cookie: req.headers.get("cookie") ?? "" },
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return NextResponse.json(await safeUpstreamJson(res), { status: res.status });
   }
 
   if (pathname === "/token") {
@@ -97,7 +108,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: { cookie: req.headers.get("cookie") ?? "" },
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return NextResponse.json(await safeUpstreamJson(res), { status: res.status });
   }
 
   if (pathname === "/passkeys") {
@@ -105,7 +116,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: { cookie: req.headers.get("cookie") ?? "" },
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return NextResponse.json(await safeUpstreamJson(res), { status: res.status });
   }
 
   if (pathname === "/google") {
