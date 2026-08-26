@@ -36,7 +36,7 @@ const faqCategories = [
     name: "Delivery & Downloads",
     items: [
       { q: "How do I access my template after purchase?", a: "Immediately after payment, you will be redirected to a download page. A download link is also emailed to you." },
-      { q: "I did not receive my download email. What should I do?", a: "Check your spam folder. If you still cannot find it, contact us at hello@trueworksgroup.com and we will resend the link." },
+      { q: "I did not receive my download email. What should I do?", a: "Check your spam folder. If you still cannot find it, contact us at info@trueworksgroup.com and we will resend the link." },
       { q: "Can I download my purchases again?", a: "Yes, download links remain active for 7 days after purchase. Log into your account to access past purchases." },
       { q: "Are the templates compatible with Google Sheets?", a: "Most of our templates work with Google Sheets. Check the compatibility section on each product page for details." },
     ],
@@ -65,7 +65,7 @@ const faqCategories = [
     name: "Account & Support",
     items: [
       { q: "Do I need an account to purchase?", a: "You can purchase as a guest. Creating an account lets you access your purchase history and download links anytime." },
-      { q: "How do I contact support?", a: "Email us at hello@trueworksgroup.com, send a message on WhatsApp at +256 700 123 456, or use the Contact form on our website." },
+      { q: "How do I contact support?", a: "Email us at info@trueworksgroup.com, send a message on WhatsApp at +256 773 728 944, or use the Contact form on our website." },
       { q: "What are your support hours?", a: "We respond within 24 hours during business days. Our standard hours are Monday to Friday, 8:00 to 17:00 EAT." },
     ],
   },
@@ -211,14 +211,14 @@ export default function FaqContent() {
                   <p className="mt-2 text-xs text-muted">We are here to help.</p>
                   <div className="mt-4 space-y-2.5">
                     <a
-                      href="mailto:hello@trueworksgroup.com"
+                      href="mailto:info@trueworksgroup.com"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"
                     >
                       <Mail className="h-3.5 w-3.5 shrink-0 text-accent-dark" />
-                      hello@trueworksgroup.com
+                      info@trueworksgroup.com
                     </a>
                     <a
-                      href="https://wa.me/256700123456"
+                      href="https://wa.me/256773728944"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"

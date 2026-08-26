@@ -2,6 +2,7 @@ import { internalAction, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { brandLogo, brandContactLine } from "./emailBranding";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
@@ -117,13 +118,13 @@ function baseTemplate(content: string): string {
 <body>
   <div class="container">
     <div class="header">
-      <h1>TrueWorks</h1>
+      ${brandLogo("dark", 200)}
     </div>
     <div class="content">
       ${content}
     </div>
     <div class="footer">
-      <p>TrueWorks Limited | Kampala, Uganda</p>
+      ${brandContactLine("#0b2545")}
       <p>© ${new Date().getFullYear()} TrueWorks. All rights reserved.</p>
     </div>
   </div>
@@ -153,7 +154,7 @@ export const sendOrderConfirmation = async (ctx: ActionCtx, request: Request): P
     </div>
     <p>Your download links will be available in your account once payment is confirmed.</p>
     <a href="${SITE_URL}/account/orders" class="button">View Your Orders</a>
-    <p>If you have any questions, reply to this email or contact us at hello@trueworksgroup.com</p>
+    <p>If you have any questions, reply to this email or contact us at info@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -194,7 +195,7 @@ export const sendDownloadReady = async (ctx: ActionCtx, request: Request): Promi
     <a href="${SITE_URL}/account/downloads" class="button">View All Downloads</a>
 
     <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
-      Please keep this email for your records. If you have any questions about your order, reply to this email or contact us at <a href="mailto:hello@trueworksgroup.com">hello@trueworksgroup.com</a>.
+      Please keep this email for your records. If you have any questions about your order, reply to this email or contact us at <a href="mailto:info@trueworksgroup.com">info@trueworksgroup.com</a>.
     </p>
   `);
 
@@ -226,7 +227,7 @@ export const sendPaymentFailed = async (ctx: ActionCtx, request: Request): Promi
     </ul>
     <p>No worries — you can try again:</p>
     <a href="${SITE_URL}/store" class="button">Try Again</a>
-    <p>If you continue to experience issues, please contact us at hello@trueworksgroup.com</p>
+    <p>If you continue to experience issues, please contact us at info@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -251,7 +252,7 @@ export const sendRefundConfirmation = async (ctx: ActionCtx, request: Request): 
     <p>Your refund of <strong>$${Number(amount).toFixed(2)}</strong> for order <strong>${escapeHtml(orderNumber)}</strong> has been processed.</p>
     ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}
     <p>The refund will appear on your statement within 5-10 business days.</p>
-    <p>If you have any questions, please contact us at hello@trueworksgroup.com</p>
+    <p>If you have any questions, please contact us at info@trueworksgroup.com</p>
   `);
 
   const sent = await sendEmail({
@@ -358,7 +359,7 @@ export const handleSecurityNotificationHttp = async (ctx: ActionCtx, request: Re
     <h2>${escapeHtml(event)}</h2>
     <p>Hi ${escapeHtml(name ?? "")},</p>
     <p>${escapeHtml(detail ?? "A security event occurred on your account.")}</p>
-    <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at hello@trueworksgroup.com.</p>
+    <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at info@trueworksgroup.com.</p>
   `);
 
   const sent = await sendEmail({
@@ -417,6 +418,7 @@ export const sendSubscriberWelcome = internalAction({
 <body>
   <div class="container">
     <div class="banner">
+      <div style="margin-bottom: 16px;">${brandLogo("dark", 220)}</div>
       <h1>Welcome to <span class="accent">TrueWorks</span></h1>
       <p>You're now part of our newsletter community</p>
     </div>
@@ -455,11 +457,11 @@ export const sendSubscriberWelcome = internalAction({
       <div class="divider"></div>
 
       <p style="font-size: 13px; color: #64748b; margin: 0;">
-        We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:hello@trueworksgroup.com" style="color: #c9a227;">hello@trueworksgroup.com</a>.
+        We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.
       </p>
     </div>
     <div class="footer">
-      <p class="brand">TrueWorks</p>
+      ${brandContactLine()}
       <p>Premium Business Operating Systems</p>
       <p>Kampala, Uganda · <a href="${SITE_URL}">trueworksgroup.com</a></p>
       <p>© ${new Date().getFullYear()} TrueWorks Limited. All rights reserved.</p>
@@ -494,7 +496,7 @@ export const sendRefundEmail = internalAction({
         <p>Hi ${escapeHtml(args.customerName)},</p>
         <p>We're sorry, but your refund request for order <strong>${escapeHtml(args.orderNumber)}</strong> was not approved.</p>
         ${args.reason ? `<p><strong>Reason provided:</strong> ${escapeHtml(args.reason)}</p>` : ""}
-        <p>If you have any questions about this decision, please contact us at hello@trueworksgroup.com and we'd be happy to help.</p>
+        <p>If you have any questions about this decision, please contact us at info@trueworksgroup.com and we'd be happy to help.</p>
       `);
       const sent = await sendEmail({
         to: args.to,
@@ -510,7 +512,7 @@ export const sendRefundEmail = internalAction({
       <p>Your refund of <strong>$${Number(args.amount).toFixed(2)}</strong> for order <strong>${escapeHtml(args.orderNumber)}</strong> has been processed.</p>
       ${args.reason ? `<p><strong>Reason:</strong> ${escapeHtml(args.reason)}</p>` : ""}
       <p>The refund will appear on your statement within 5-10 business days.</p>
-      <p>If you have any questions, please contact us at hello@trueworksgroup.com</p>
+      <p>If you have any questions, please contact us at info@trueworksgroup.com</p>
     `);
 
     const sent = await sendEmail({
@@ -756,7 +758,7 @@ export const sendTeamInvitation = internalAction({
         This invitation expires on <strong>${expiryDate}</strong>. If you did not expect this invitation, you can safely ignore this email.
       </p>
 
-      <p>If you have any questions, reply to this email or contact us at <a href="mailto:hello@trueworksgroup.com">hello@trueworksgroup.com</a>.</p>
+      <p>If you have any questions, reply to this email or contact us at <a href="mailto:info@trueworksgroup.com">info@trueworksgroup.com</a>.</p>
     `);
 
     const sent = await sendEmail({
@@ -817,7 +819,7 @@ export const sendSecurityNotification = internalAction({
       <h2>${escapeHtml(args.event)}</h2>
       <p>Hi ${escapeHtml(args.name ?? "")},</p>
       <p>${escapeHtml(args.detail ?? "A security event occurred on your account.")}</p>
-      <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at hello@trueworksgroup.com.</p>
+      <p>If this was you, no further action is needed. If you did not perform this action, please reset your password immediately and contact support at info@trueworksgroup.com.</p>
     `);
     const sent = await sendEmail({ to: args.to, subject: `${args.event} — TrueWorks`, html });
     return { sent };

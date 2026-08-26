@@ -174,7 +174,7 @@ export default function RefundPolicyContent() {
               </span>
               <h3 className="mt-4 font-heading text-lg font-semibold text-primary">Ready to request a refund?</h3>
               <p className="mt-2 text-sm text-muted">
-                Email <a href="mailto:hello@trueworksgroup.com" className="font-semibold text-primary underline">hello@trueworksgroup.com</a> with your order number.
+                Email <a href="mailto:info@trueworksgroup.com" className="font-semibold text-primary underline">info@trueworksgroup.com</a> with your order number.
               </p>
               <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link

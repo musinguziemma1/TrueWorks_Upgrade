@@ -132,18 +132,18 @@ export default function Header() {
           <p className="tracking-wide">{settings.siteTagline}</p>
           <div className="flex items-center gap-6">
             <a
-              href="mailto:hello@trueworksgroup.com"
+              href="mailto:info@trueworksgroup.com"
               className="flex items-center gap-1.5 transition-colors hover:text-accent-light"
             >
               <Mail className="h-3.5 w-3.5 text-accent" />
-              hello@trueworksgroup.com
+              info@trueworksgroup.com
             </a>
             <a
-              href="tel:+256700123456"
+              href="tel:+256773728944"
               className="flex items-center gap-1.5 transition-colors hover:text-accent-light"
             >
               <Phone className="h-3.5 w-3.5 text-accent" />
-              +256 700 123 456
+              +256 773 728 944
             </a>
           </div>
         </div>

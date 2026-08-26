@@ -1,5 +1,6 @@
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { brandLogo, brandContactLine } from "./emailBranding";
 
 type AbandonedCart = {
   recovered?: boolean;
@@ -63,7 +64,10 @@ export const sendRecoveryEmails = internalAction({
 </head>
 <body>
   <div class="container">
-    <div class="banner"><h1>You left something in your <span class="accent">cart</span></h1></div>
+    <div class="banner">
+      <div style="margin-bottom: 16px;">${brandLogo("dark", 220)}</div>
+      <h1>You left something in your <span class="accent">cart</span></h1>
+    </div>
     <div class="gold-bar"></div>
     <div class="content">
       <h2>Still interested?</h2>
@@ -74,9 +78,9 @@ export const sendRecoveryEmails = internalAction({
       </table>
       <div class="total-box"><div>Cart Total</div><div class="amount">$${cart.totalValue.toFixed(2)}</div></div>
       <div style="text-align: center; margin: 28px 0;"><a href="${SITE_URL}/cart" class="button">Complete Your Purchase →</a></div>
-      <p style="font-size: 13px; color: #64748b;">Need help? Reply to this email or contact us at <a href="mailto:hello@trueworksgroup.com" style="color: #c9a227;">hello@trueworksgroup.com</a>.</p>
+      <p style="font-size: 13px; color: #64748b;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.</p>
     </div>
-    <div class="footer"><p class="brand">TrueWorks</p><p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Limited.</p></div>
+    <div class="footer">${brandContactLine()}<p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Limited.</p></div>
   </div>
 </body></html>`;
 

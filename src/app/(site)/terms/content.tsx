@@ -28,7 +28,7 @@ const sections = [
   { id: "accounts", title: "8. User Accounts", content: "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Notify us immediately of any unauthorized use." },
   { id: "liability", title: "9. Limitation of Liability", content: "TrueWorks Limited shall not be liable for any indirect, incidental, or consequential damages arising from the use or inability to use our products. Our total liability shall not exceed the amount paid for the product in question." },
   { id: "changes", title: "10. Changes to Terms", content: "We reserve the right to update these terms at any time. Changes will be posted on this page with an updated effective date. Continued use of our services after changes constitutes acceptance of the new terms." },
-  { id: "contact", title: "11. Contact", content: "For questions about these terms, contact us at hello@trueworksgroup.com, via WhatsApp at +256 700 123 456, or visit our Contact page." },
+  { id: "contact", title: "11. Contact", content: "For questions about these terms, contact us at info@trueworksgroup.com, via WhatsApp at +256 773 728 944, or visit our Contact page." },
 ];
 
 export default function TermsContent() {
@@ -95,14 +95,14 @@ export default function TermsContent() {
                   <p className="mt-2 text-xs text-muted">Our team is ready to assist.</p>
                   <div className="mt-4 space-y-2.5">
                     <a
-                      href="mailto:hello@trueworksgroup.com"
+                      href="mailto:info@trueworksgroup.com"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"
                     >
                       <Mail className="h-3.5 w-3.5 shrink-0 text-accent-dark" />
-                      hello@trueworksgroup.com
+                      info@trueworksgroup.com
                     </a>
                     <a
-                      href="https://wa.me/256700123456"
+                      href="https://wa.me/256773728944"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"

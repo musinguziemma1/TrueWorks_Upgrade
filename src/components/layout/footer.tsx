@@ -31,8 +31,8 @@ const companyLinks = [
 ];
 
 const contactRows = [
-  { icon: Mail, text: "hello@trueworksgroup.com", href: "mailto:hello@trueworksgroup.com" },
-  { icon: Phone, text: "+256 700 123 456", href: "tel:+256700123456" },
+  { icon: Mail, text: "info@trueworksgroup.com", href: "mailto:info@trueworksgroup.com" },
+  { icon: Phone, text: "+256 773 728 944", href: "tel:+256773728944" },
   { icon: MapPin, text: "Plot 42, Acacia Avenue, Kampala, Uganda" },
   { icon: Clock, text: "Mon – Fri: 8:00 – 17:00 EAT" },
 ];

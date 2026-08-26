@@ -47,10 +47,10 @@ Note the `.convex.site` domain — HTTP routes are served there, not on
 1. Go to https://console.cloud.google.com/apis/credentials
 2. Create/select a project and configure the **OAuth consent screen** (External):
    - App name: `TrueWorks`
-   - Support email: `hello@trueworksgroup.com`
+   - Support email: `info@trueworksgroup.com`
    - Authorized domains: `trueworksgroup.com`
    - Scopes: `openid email profile`
-   - Add `hello@trueworksgroup.com` as a test user while in "Testing" mode
+   - Add `info@trueworksgroup.com` as a test user while in "Testing" mode
 3. **Create OAuth Client ID → Web application**:
    - Authorized JavaScript origins: `https://trueworksgroup.com`
    - Authorized redirect URI: `https://trueworksgroup.com/api/auth/google/callback`

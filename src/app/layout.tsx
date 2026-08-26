@@ -90,7 +90,7 @@ const organizationJsonLd = {
   },
   contactPoint: {
     "@type": "ContactPoint",
-    email: "hello@trueworksgroup.com",
+    email: "info@trueworksgroup.com",
     contactType: "customer service",
   },
 };

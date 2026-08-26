@@ -26,9 +26,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 
 const contactInfo = [
-  { icon: Mail, title: "Email Us", detail: "hello@trueworksgroup.com", sub: "We respond within 24 hours", href: "mailto:hello@trueworksgroup.com" },
-  { icon: Phone, title: "Call Us", detail: "+256 700 123 456", sub: "Available during business hours", href: "tel:+256700123456" },
-  { icon: MessageCircle, title: "WhatsApp", detail: "+256 700 123 456", sub: "Chat with us on WhatsApp", href: "https://wa.me/256700123456" },
+  { icon: Mail, title: "Email Us", detail: "info@trueworksgroup.com", sub: "We respond within 24 hours", href: "mailto:info@trueworksgroup.com" },
+  { icon: Phone, title: "Call Us", detail: "+256 773 728 944", sub: "Available during business hours", href: "tel:+256773728944" },
+  { icon: MessageCircle, title: "WhatsApp", detail: "+256 773 728 944", sub: "Chat with us on WhatsApp", href: "https://wa.me/256773728944" },
   { icon: Clock, title: "Business Hours", detail: "Mon – Fri: 8:00 – 17:00", sub: "Saturday: 9:00 – 13:00 EAT", href: undefined },
   { icon: MapPin, title: "Location", detail: "Kampala, Uganda", sub: "Plot 42, Acacia Avenue", href: undefined },
 ];
@@ -67,7 +67,7 @@ export default function ContactContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!convexClient) {
-      setError("Service unavailable. Please email us directly at hello@trueworksgroup.com");
+      setError("Service unavailable. Please email us directly at info@trueworksgroup.com");
       return;
     }
     setSending(true);

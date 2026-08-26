@@ -23,12 +23,12 @@ const sections = [
   { id: "payment", title: "3. Payment Processing", content: "Payment transactions are processed by third-party payment processors. We do not store your full payment card details on our servers. Payment data is encrypted and handled in accordance with PCI-DSS standards." },
   { id: "sharing", title: "4. Data Sharing", content: "We do not sell your personal information. We may share your data with trusted third-party service providers who assist us in operating our website and processing transactions, subject to confidentiality agreements." },
   { id: "retention", title: "5. Data Retention", content: "We retain your personal data for as long as necessary to fulfill the purposes described in this policy, or as required by law. When no longer needed, your data will be securely deleted or anonymized." },
-  { id: "rights", title: "6. Your Rights", content: "You have the right to access, correct, or delete your personal data. You may also object to or restrict certain processing activities. To exercise these rights, contact us at hello@trueworksgroup.com." },
+  { id: "rights", title: "6. Your Rights", content: "You have the right to access, correct, or delete your personal data. You may also object to or restrict certain processing activities. To exercise these rights, contact us at info@trueworksgroup.com." },
   { id: "cookies", title: "7. Cookies", content: "Our website uses cookies to improve your browsing experience, analyze site traffic, and support our marketing efforts. You can control cookie preferences through your browser settings." },
   { id: "security", title: "8. Data Security", content: "We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, loss, or destruction. However, no method of electronic storage or transmission is 100% secure." },
   { id: "third-party", title: "9. Third-Party Links", content: "Our website may contain links to third-party sites. We are not responsible for the privacy practices of those sites. We encourage you to review their privacy policies before providing personal data." },
   { id: "changes", title: "10. Changes to This Policy", content: "We may update this privacy policy from time to time. Changes will be posted on this page with an updated effective date. We encourage you to review this policy periodically." },
-  { id: "contact", title: "11. Contact Us", content: "For privacy-related inquiries, contact us at hello@trueworksgroup.com, via WhatsApp at +256 700 123 456, or through our Contact page." },
+  { id: "contact", title: "11. Contact Us", content: "For privacy-related inquiries, contact us at info@trueworksgroup.com, via WhatsApp at +256 773 728 944, or through our Contact page." },
 ];
 
 export default function PrivacyContent() {
@@ -95,14 +95,14 @@ export default function PrivacyContent() {
                   <p className="mt-2 text-xs text-muted">Our team is ready to assist.</p>
                   <div className="mt-4 space-y-2.5">
                     <a
-                      href="mailto:hello@trueworksgroup.com"
+                      href="mailto:info@trueworksgroup.com"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"
                     >
                       <Mail className="h-3.5 w-3.5 shrink-0 text-accent-dark" />
-                      hello@trueworksgroup.com
+                      info@trueworksgroup.com
                     </a>
                     <a
-                      href="https://wa.me/256700123456"
+                      href="https://wa.me/256773728944"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs text-muted transition-colors hover:text-primary"
