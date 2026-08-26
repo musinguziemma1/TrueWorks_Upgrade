@@ -28,6 +28,7 @@ import type * as customers from "../customers.js";
 import type * as dashboard from "../dashboard.js";
 import type * as downloads from "../downloads.js";
 import type * as email from "../email.js";
+import type * as emailBranding from "../emailBranding.js";
 import type * as emailTemplates from "../emailTemplates.js";
 import type * as fulfillment from "../fulfillment.js";
 import type * as gdpr from "../gdpr.js";
@@ -96,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   downloads: typeof downloads;
   email: typeof email;
+  emailBranding: typeof emailBranding;
   emailTemplates: typeof emailTemplates;
   fulfillment: typeof fulfillment;
   gdpr: typeof gdpr;
