@@ -25,11 +25,30 @@ function forwardedHeaders(req: NextRequest, includeJson = false): Record<string,
   return headers;
 }
 
+/**
+ * Forward every Set-Cookie header from the IAM response individually.
+ *
+ * `headers.get("set-cookie")` joins multiple cookies into ONE comma-separated
+ * value, which browsers fail to parse (the comma lands inside a Max-Age
+ * attribute and invalidates the whole cookie). getSetCookie() returns them
+ * as a proper array; each is appended separately below.
+ */
+function forwardSetCookies(target: NextResponse, res: Response): void {
+  const cookies: string[] =
+    typeof res.headers.getSetCookie === "function"
+      ? res.headers.getSetCookie()
+      : res.headers.get("set-cookie")
+        ? [res.headers.get("set-cookie")!]
+        : [];
+  for (const cookie of cookies) {
+    target.headers.append("set-cookie", cookie);
+  }
+}
+
 async function proxyIamResponse(res: Response): Promise<NextResponse> {
-  const setCookie = res.headers.get("set-cookie");
   if (res.status === 204) {
     const response = new NextResponse(null, { status: 204 });
-    if (setCookie) response.headers.set("set-cookie", setCookie);
+    forwardSetCookies(response, res);
     return response;
   }
 
@@ -41,7 +60,7 @@ async function proxyIamResponse(res: Response): Promise<NextResponse> {
     data = { error: rawBody || `Authentication request failed (${res.status})` };
   }
   const response = NextResponse.json(data, { status: res.status });
-  if (setCookie) response.headers.set("set-cookie", setCookie);
+  forwardSetCookies(response, res);
   return response;
 }
 
@@ -110,8 +129,7 @@ export async function GET(req: NextRequest) {
     const location = res.headers.get("location");
     if (location) {
       const response = NextResponse.redirect(location, { status: 302 });
-      const setCookie = res.headers.get("set-cookie");
-      if (setCookie) response.headers.set("set-cookie", setCookie);
+      forwardSetCookies(response, res);
       return response;
     }
     return proxyIamResponse(res);
