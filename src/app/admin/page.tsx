@@ -135,6 +135,7 @@ export default function AdminDashboard() {
           <Link
             href="/admin/analytics"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            aria-label="View analytics page"
           >
             <TrendingUp className="h-4 w-4" /> View analytics
           </Link>
@@ -202,6 +203,8 @@ export default function AdminDashboard() {
                     key={opt.days}
                     type="button"
                     onClick={() => setRange(opt.days)}
+                    aria-pressed={range === opt.days}
+                    aria-label={`${opt.label} range`}
                     className={cn(
                       "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                       range === opt.days
@@ -355,16 +358,17 @@ export default function AdminDashboard() {
         <CardContent>
           <div className="flex flex-wrap items-center gap-3">
             {[
-              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-primary" },
-              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary" },
-              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent" },
-              { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600" },
-              { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600" },
-              { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600" },
+              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-primary", aria: "Add a new product" },
+              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary", aria: "View all orders" },
+              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent", aria: "Manage products" },
+              { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600", aria: "View customers" },
+              { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600", aria: "Open settings" },
+              { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600", aria: "Manage authentication" },
             ].map((action) => (
               <Link
                 key={action.label}
                 href={action.href}
+                aria-label={action.aria}
                 className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:-translate-y-0.5 hover:bg-muted hover:border-secondary/30 hover:shadow-card"
               >
                 <span className={`rounded-lg p-2 text-white ${action.color}`}>

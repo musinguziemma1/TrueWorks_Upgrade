@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Edit3, Trash2, Search, Ticket, Loader2, FileSpreadsheet } from "lucide-react"
 import type { Doc } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
@@ -30,7 +31,10 @@ import {
 type CouponDoc = Doc<"coupons">
 
 export default function CouponsPage() {
-  const [searchInput, setSearchInput] = useState("")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialSearch = searchParams.get("q") ?? ""
+  const [searchInput, setSearchInput] = useState(initialSearch)
   const search = useDebouncedValue(searchInput, 300)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editCoupon, setEditCoupon] = useState<CouponDoc | null>(null)
@@ -52,6 +56,13 @@ export default function CouponsPage() {
   const create = createCoupon.useMutation()
   const update = updateCoupon.useMutation()
   const remove = deleteCoupon.useMutation()
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (search) params.set("q", search)
+    const qs = params.toString()
+    router.replace(qs ? `/admin/coupons?${qs}` : "/admin/coupons", { scroll: false })
+  }, [search, router])
 
   const isLoading = data === undefined
 
@@ -174,7 +185,7 @@ export default function CouponsPage() {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by coupon code..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setPage(1) }} className="pl-10" />
+        <Input placeholder="Search by coupon code..." value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setPage(1) }} className="pl-10" aria-label="Search coupons by code" />
       </div>
 
       {isLoading ? (
@@ -252,7 +263,7 @@ export default function CouponsPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Coupon Code *</Label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SAVE20" className="font-mono uppercase" />
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SAVE20" className="font-mono uppercase" aria-label="Coupon code" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -268,26 +279,26 @@ export default function CouponsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Value *</Label>
-                <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === "percentage" ? "20" : "10000"} />
+                <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === "percentage" ? "20" : "10000"} aria-label="Coupon value" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Min Purchase</Label>
-                <Input type="number" value={minPurchase} onChange={(e) => setMinPurchase(e.target.value)} placeholder="0" />
+                <Input type="number" value={minPurchase} onChange={(e) => setMinPurchase(e.target.value)} placeholder="0" aria-label="Minimum purchase amount" />
               </div>
               <div className="space-y-2">
                 <Label>Usage Limit</Label>
-                <Input type="number" value={usageLimit} onChange={(e) => setUsageLimit(e.target.value)} placeholder="Unlimited" />
+                <Input type="number" value={usageLimit} onChange={(e) => setUsageLimit(e.target.value)} placeholder="Unlimited" aria-label="Usage limit" />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Expiry Date</Label>
-              <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+                <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} aria-label="Expiry date" />
             </div>
             <div className="flex items-center justify-between">
               <Label>Active</Label>
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
+              <Switch checked={isActive} onCheckedChange={setIsActive} aria-label="Coupon active status" />
             </div>
           </div>
           <DialogFooter showCloseButton>

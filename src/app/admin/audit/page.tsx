@@ -1,12 +1,14 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Activity, AlertCircle, Radio, Zap } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useAuditState } from "./use-audit-state"
+import type { AuditTab } from "./use-audit-state"
 import { StatCards } from "./_components/stat-cards"
 import { TrendChart } from "./_components/trend-chart"
 import { Breakdowns } from "./_components/breakdowns"
@@ -20,8 +22,22 @@ import { RetentionCard } from "./_components/retention-card"
 import type { AuditLog } from "./types"
 
 export default function AuditLogPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const state = useAuditState()
   const { setTotal } = state
+
+  const initialTab = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState<AuditTab>(
+    initialTab === "errors" || initialTab === "performance" ? initialTab : "all"
+  )
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (activeTab !== "all") params.set("tab", activeTab)
+    const qs = params.toString()
+    router.replace(qs ? `/admin/audit?${qs}` : "/admin/audit", { scroll: false })
+  }, [activeTab, router])
 
   const stats = useQuery(api.auditLogs.stats, { days: state.days })
 
@@ -29,7 +45,7 @@ export default function AuditLogPage() {
     entityType: state.entity !== "all" ? state.entity : undefined,
     action: state.action !== "all" ? state.action : undefined,
     level: state.level !== "all" ? state.level : undefined,
-    levels: state.tab === "errors" ? ["error", "critical"] : undefined,
+    levels: activeTab === "errors" ? ["error", "critical"] : undefined,
     source: state.source !== "all" ? state.source : undefined,
     actorEmail: state.actor !== "all" ? state.actor : undefined,
     search: state.debouncedSearch || undefined,
@@ -87,13 +103,13 @@ export default function AuditLogPage() {
 
       <FilterBar state={state} entities={entities} actions={actions} actors={actors} />
 
-      <Tabs value={state.tab} onValueChange={(v) => state.setTab(v as typeof state.tab)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AuditTab)}>
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="all">
+          <TabsTrigger value="all" aria-label="All events">
             <Activity className="h-4 w-4" />
             All Events
           </TabsTrigger>
-          <TabsTrigger value="errors">
+          <TabsTrigger value="errors" aria-label="Errors and critical events">
             <AlertCircle className="h-4 w-4" />
             Errors
             {(stats?.errorCount ?? 0) > 0 && (
@@ -102,7 +118,7 @@ export default function AuditLogPage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="performance">
+          <TabsTrigger value="performance" aria-label="Performance metrics">
             <Zap className="h-4 w-4" />
             Performance
           </TabsTrigger>

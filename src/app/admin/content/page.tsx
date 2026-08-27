@@ -236,12 +236,12 @@ export default function ContentPage() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search content..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pl-10" />
+          <Input placeholder="Search content..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pl-10" aria-label="Search content by title" />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => openCreateDialog("page")}><Plus className="h-4 w-4 mr-1" /> Page</Button>
-          <Button variant="outline" size="sm" onClick={() => openCreateDialog("post")}><Plus className="h-4 w-4 mr-1" /> Post</Button>
-          <Button size="sm" onClick={() => openCreateDialog("resource")}><Plus className="h-4 w-4 mr-1" /> Resource</Button>
+          <Button variant="outline" size="sm" onClick={() => openCreateDialog("page")} aria-label="Create new page"><Plus className="h-4 w-4 mr-1" /> Page</Button>
+          <Button variant="outline" size="sm" onClick={() => openCreateDialog("post")} aria-label="Create new post"><Plus className="h-4 w-4 mr-1" /> Post</Button>
+          <Button size="sm" onClick={() => openCreateDialog("resource")} aria-label="Create new resource"><Plus className="h-4 w-4 mr-1" /> Resource</Button>
         </div>
       </div>
 
@@ -252,9 +252,9 @@ export default function ContentPage() {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="pages">Pages ({pages.length})</TabsTrigger>
-            <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
-            <TabsTrigger value="resources">Resources ({resources.length})</TabsTrigger>
+          <TabsTrigger value="pages" aria-label={`Pages tab, ${pages.length} items`}>Pages ({pages.length})</TabsTrigger>
+          <TabsTrigger value="posts" aria-label={`Posts tab, ${posts.length} items`}>Posts ({posts.length})</TabsTrigger>
+          <TabsTrigger value="resources" aria-label={`Resources tab, ${resources.length} items`}>Resources ({resources.length})</TabsTrigger>
           </TabsList>
           <div className="mt-6">
             <TabsContent value="pages"><ContentTable items={pages} label="Pages" onEdit={openEditDialog} onRequestDelete={setDeleteId} /></TabsContent>
@@ -272,11 +272,11 @@ export default function ContentPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input placeholder="Content title" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} />
+              <Input placeholder="Content title" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} aria-label="Content title" />
             </div>
             <div className="space-y-2">
               <Label>Slug</Label>
-              <Input placeholder="auto-generated from title" value={formData.slug} onChange={(e) => setFormData((p) => ({ ...p, slug: e.target.value }))} />
+              <Input placeholder="auto-generated from title" value={formData.slug} onChange={(e) => setFormData((p) => ({ ...p, slug: e.target.value }))} aria-label="Content slug" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -303,11 +303,11 @@ export default function ContentPage() {
             </div>
             <div className="space-y-2">
               <Label>Excerpt</Label>
-              <Input placeholder="Short description (optional)" value={formData.excerpt} onChange={(e) => setFormData((p) => ({ ...p, excerpt: e.target.value }))} />
+              <Input placeholder="Short description (optional)" value={formData.excerpt} onChange={(e) => setFormData((p) => ({ ...p, excerpt: e.target.value }))} aria-label="Content excerpt" />
             </div>
             <div className="space-y-2">
               <Label>Content</Label>
-              <Textarea placeholder="Write your content here..." className="min-h-[200px]" value={formData.content} onChange={(e) => setFormData((p) => ({ ...p, content: e.target.value }))} />
+              <Textarea placeholder="Write your content here..." className="min-h-[200px]" value={formData.content} onChange={(e) => setFormData((p) => ({ ...p, content: e.target.value }))} aria-label="Content body" />
             </div>
           </div>
           <DialogFooter>
