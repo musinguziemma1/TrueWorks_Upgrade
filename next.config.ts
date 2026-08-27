@@ -17,6 +17,7 @@ const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
   { protocol: "https", hostname: "images.unsplash.com" },
   { protocol: "https", hostname: "*.convex.cloud" },
   { protocol: "https", hostname: "*.convex.site" },
+  { protocol: "https", hostname: "*.googleusercontent.com" },
 ];
 
 const cloudHost = convexHostname(convexCloudUrl);
@@ -36,7 +37,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://challenges.cloudflare.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' https://images.unsplash.com https://lh3.googleusercontent.com data: blob:",
+      "img-src 'self' https://images.unsplash.com https://lh3.googleusercontent.com https://*.convex.cloud https://*.convex.site data: blob:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://api.stripe.com https://va.vercel-scripts.com https://*.vercel-scripts.com",
       "frame-src https://js.stripe.com https://www.youtube.com https://player.vimeo.com https://www.google.com https://pay.pesapal.com https://*.pesapal.com",

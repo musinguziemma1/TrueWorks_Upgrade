@@ -262,7 +262,6 @@ export default function MediaPage() {
                 alt={previewName}
                 width={900}
                 height={540}
-                unoptimized
                 className="max-h-[60vh] w-auto object-contain rounded-lg"
               />
             )}
