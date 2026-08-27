@@ -246,6 +246,7 @@ function StoreContentInner() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3"
+                style={{ minHeight: "600px" }}
               >
                 {products.map((product, i) => (
                   <motion.div

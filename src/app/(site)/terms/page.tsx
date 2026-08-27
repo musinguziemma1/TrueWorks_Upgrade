@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import TermsContent from "./content";
 
+// Static page - cache for 1 hour
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Terms of Service - TrueWorks Limited",
   description:

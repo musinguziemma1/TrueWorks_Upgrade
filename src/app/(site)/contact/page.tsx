@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   },
 };
 
+// Static page - cache for 1 hour
+export const revalidate = 3600;
+
 export default function ContactPage() {
   return <ContactContent />;
 }

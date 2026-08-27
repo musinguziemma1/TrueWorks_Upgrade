@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import PrivacyContent from "./content";
 
+// Static page - cache for 1 hour
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Privacy Policy - TrueWorks Limited",
   description:

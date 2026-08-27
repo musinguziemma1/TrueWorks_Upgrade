@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://trueworksgroup.com/refund-policy" },
 };
 
+// Static page - cache for 1 hour
+export const revalidate = 3600;
+
 export default function RefundPolicyPage() {
   return <RefundPolicyContent />;
 }

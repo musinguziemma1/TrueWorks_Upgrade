@@ -4,6 +4,9 @@ import Hero from "@/components/home/hero";
 import TrustedBy from "@/components/home/trusted-by";
 import StatsBand from "@/components/home/stats-band";
 
+// Revalidate the homepage every 5 minutes to improve TTFB
+export const revalidate = 300;
+
 const FeaturedProducts = dynamic(() => import("@/components/home/featured-products"));
 const ShopByIndustry = dynamic(() => import("@/components/home/shop-by-industry"));
 const WhyTrueWorks = dynamic(() => import("@/components/home/why-trueworks"));
