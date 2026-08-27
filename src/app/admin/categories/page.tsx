@@ -67,7 +67,8 @@ export default function CategoriesPage() {
 
   const perPage = 8
   const totalPages = Math.ceil(filtered.length / perPage)
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+  const safePage = Math.min(Math.max(1, page), Math.max(1, totalPages))
+  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage)
 
   const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
 
@@ -186,10 +187,10 @@ export default function CategoriesPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
+          <p className="text-sm text-muted-foreground">Page {safePage} of {totalPages}</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+            <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+            <Button variant="outline" size="sm" disabled={safePage === totalPages || totalPages === 0} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
           </div>
         </div>
       )}

@@ -200,10 +200,12 @@ export async function recordSecurityEvent(
     result: args.result,
     ipAddress: args.ipAddress,
     userAgent: args.userAgent,
-    city: parsed.device,
-    region: undefined,
-    country: undefined,
-    metadata: args.metadata,
+    metadata: {
+      ...(args.metadata ?? {}),
+      device: parsed.device,
+      browser: parsed.browser,
+      os: parsed.os,
+    },
     createdAt: Date.now(),
   });
 }

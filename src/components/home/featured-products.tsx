@@ -24,7 +24,7 @@ export default function FeaturedProducts() {
 
 function FeaturedProductsInner() {
   const products = useQuery(api.products.list, { status: "published", featured: true });
-  const featured = (products ?? []).slice(0, 6) as StoreProduct[];
+  const featured = (products?.items ?? []).slice(0, 6) as StoreProduct[];
 
   if (products === undefined) {
     return (

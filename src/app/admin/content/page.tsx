@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { FileText, Search, Plus, Trash2, Eye, Loader2, X } from "lucide-react"
-import type { Id } from "@convex/_generated/dataModel"
+import type { Doc, Id } from "@convex/_generated/dataModel"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -23,16 +23,7 @@ import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
 
-interface ContentItem {
-  _id: Id<"pages">
-  title: string
-  type: string
-  status: string
-  slug: string
-  content?: string
-  excerpt?: string
-  createdAt: number
-}
+type ContentItem = Doc<"pages">
 
 interface FormData {
   title: string

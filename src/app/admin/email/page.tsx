@@ -33,21 +33,23 @@ export default function EmailPage() {
 
   const stats = useQuery(api.campaigns.stats)
 
-  const campaignsData =
+  const campaignsResult =
     useQuery(api.campaigns.list, {
       search: state.debouncedSearch || undefined,
       status: state.campaignStatus !== "all" ? (state.campaignStatus as Campaign["status"]) : undefined,
       limit: state.campaignPageSize,
       offset: (state.campaignPage - 1) * state.campaignPageSize,
-    }) ?? { campaigns: [], total: 0 }
+    })
+  const campaignsData = campaignsResult ?? { campaigns: [], total: 0 }
 
-  const subscribersData =
+  const subscribersResult =
     useQuery(api.subscribers.listPage, {
       search: state.debouncedSearch || undefined,
       activeOnly: state.subscriberActive === "active" ? true : undefined,
       limit: state.subscriberPageSize,
       offset: (state.subscriberPage - 1) * state.subscriberPageSize,
-    }) ?? { subscribers: [], total: 0 }
+    })
+  const subscribersData = subscribersResult ?? { subscribers: [], total: 0 }
 
   useEffect(() => {
     setCampaignTotal(campaignsData.total)
@@ -76,8 +78,8 @@ export default function EmailPage() {
   const [busy, setBusy] = useState(false)
 
   const loadingStats = stats === undefined
-  const loadingCampaigns = campaignsData.campaigns.length === 0 && campaignsData.total === 0
-  const loadingSubscribers = subscribersData.subscribers.length === 0 && subscribersData.total === 0
+  const loadingCampaigns = campaignsResult === undefined
+  const loadingSubscribers = subscribersResult === undefined
 
   const openNew = () => {
     setEditorCampaign(null)

@@ -220,6 +220,7 @@ export default defineSchema({
     .index("by_name", ["name"])
     .index("by_rating", ["rating"])
     .index("by_total_sales", ["totalSales"])
+    .index("by_salePrice", ["salePrice"])
     .searchIndex("search_products", {
       searchField: "name",
       filterFields: ["status", "category", "industry", "fileType", "featured"],
@@ -276,8 +277,11 @@ export default defineSchema({
     .index("by_orderNumber", ["orderNumber"])
     .index("by_customerId", ["customerId"])
     .index("by_customerEmail", ["customerEmail"])
+    .index("by_customerEmail_createdAt", ["customerEmail", "createdAt"])
     .index("by_paymentStatus", ["paymentStatus"])
     .index("by_orderStatus", ["orderStatus"])
+    .index("by_status_createdAt", ["orderStatus", "createdAt"])
+    .index("by_paymentStatus_createdAt", ["paymentStatus", "createdAt"])
     .index("by_paymentId", ["paymentId"])
     .index("by_createdAt", ["createdAt"]),
 
@@ -299,7 +303,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_email", ["email"])
-    .index("by_clerkId", ["clerkId"]),
+    .index("by_clerkId", ["clerkId"])
+    .index("by_newsletterSubscribed", ["newsletterSubscribed"]),
 
   downloads: defineTable({
     productId: v.id("products"),
@@ -369,7 +374,8 @@ export default defineSchema({
     productCount: v.number(),
     createdAt: v.number(),
   })
-    .index("by_slug", ["slug"]),
+    .index("by_slug", ["slug"])
+    .index("by_industry", ["industry"]),
 
   coupons: defineTable({
     code: v.string(),
@@ -382,7 +388,9 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.number(),
   })
-    .index("by_code", ["code"]),
+    .index("by_code", ["code"])
+    .index("by_isActive", ["isActive"])
+    .index("by_expiresAt", ["expiresAt"]),
 
   pages: defineTable({
     title: v.string(),
@@ -469,7 +477,11 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_category", ["category"])
     .index("by_status", ["status"])
-    .index("by_featured", ["featured"]),
+    .index("by_featured", ["featured"])
+    .searchIndex("search_resources", {
+      searchField: "title",
+      filterFields: ["status", "category", "type", "featured"],
+    }),
 
   notifications: defineTable({
     type: v.string(),
@@ -532,9 +544,13 @@ export default defineSchema({
   })
     .index("by_actorId", ["actorId"])
     .index("by_entityType", ["entityType"])
+    .index("by_entityType_createdAt", ["entityType", "createdAt"])
     .index("by_createdAt", ["createdAt"])
     .index("by_level", ["level"])
-    .index("by_action_level", ["action", "level"]),
+    .index("by_level_createdAt", ["level", "createdAt"])
+    .index("by_action_level", ["action", "level"])
+    .index("by_action_createdAt", ["action", "createdAt"])
+    .index("by_actorEmail_createdAt", ["actorEmail", "createdAt"]),
 
   rateLimits: defineTable({
     key: v.string(), // `${action}:${identifier}`
@@ -563,6 +579,7 @@ export default defineSchema({
       quantity: v.number(),
       image: v.string(),
       slug: v.string(),
+      tier: v.optional(v.string()),
     })),
     wishlist: v.array(v.object({
       id: v.string(),

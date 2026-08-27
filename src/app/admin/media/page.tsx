@@ -60,7 +60,7 @@ export default function MediaPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedFolder, setSelectedFolder] = useState("General")
+  const [selectedFolder, setSelectedFolder] = useState("All Media")
 
   const files = useMediaFiles(activeFolder === "All Media" ? undefined : activeFolder)
   const upload = uploadFile.useAction()

@@ -4,14 +4,15 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 const statusColorMap: Record<string, string> = {
-  // Green
-  active: "bg-green-50 text-green-700 border-green-200",
-  completed: "bg-green-50 text-green-700 border-green-200",
-  paid: "bg-green-50 text-green-700 border-green-200",
-  success: "bg-green-50 text-green-700 border-green-200",
-  approved: "bg-green-50 text-green-700 border-green-200",
-  low: "bg-green-50 text-green-700 border-green-200",
-  resolved: "bg-green-50 text-green-700 border-green-200",
+   // Green
+   active: "bg-green-50 text-green-700 border-green-200",
+   completed: "bg-green-50 text-green-700 border-green-200",
+   paid: "bg-green-50 text-green-700 border-green-200",
+   success: "bg-green-50 text-green-700 border-green-200",
+   approved: "bg-green-50 text-green-700 border-green-200",
+   subscribed: "bg-green-50 text-green-700 border-green-200",
+   low: "bg-green-50 text-green-700 border-green-200",
+   resolved: "bg-green-50 text-green-700 border-green-200",
   // Amber / Yellow
   pending: "bg-amber-50 text-amber-700 border-amber-200",
   processing: "bg-amber-50 text-amber-700 border-amber-200",

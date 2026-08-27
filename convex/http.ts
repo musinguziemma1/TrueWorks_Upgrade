@@ -458,7 +458,7 @@ const publicCatalogQuery = async (ctx: ActionCtx, req: Request): Promise<Respons
     const products = await ctx.runQuery(api.products.list, {
       category: category === "all" ? undefined : category,
     });
-    const rows = (products ?? []).slice(0, limit).map((p) => ({
+    const rows = (products?.items ?? []).slice(0, limit).map((p) => ({
       id: p._id,
       name: p.name,
       slug: p.slug,

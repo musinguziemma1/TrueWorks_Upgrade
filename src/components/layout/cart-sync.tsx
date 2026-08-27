@@ -58,7 +58,7 @@ export function CartSync() {
   useEffect(() => {
     if (loading || isAuthenticated || cart.items.length === 0) return;
 
-    const fingerprint = cart.items.map((i) => `${i.id}:${i.quantity}`).join("|");
+    const fingerprint = cart.items.map((i) => `${i.id}:${i.tier ?? ""}:${i.quantity}`).join("|");
     if (fingerprint === lastTrackedRef.current) return;
 
     const t = setTimeout(() => {

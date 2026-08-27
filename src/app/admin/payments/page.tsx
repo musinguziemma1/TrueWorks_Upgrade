@@ -61,8 +61,7 @@ export default function PaymentsPage() {
     }
   }
 
-  const data =
-    useQuery(api.payments.list, {
+  const paymentsResult = useQuery(api.payments.list, {
       status: state.status !== "all" ? state.status : undefined,
       provider: state.provider !== "all" ? state.provider : undefined,
       method: state.method !== "all" ? state.method : undefined,
@@ -70,14 +69,15 @@ export default function PaymentsPage() {
       days: state.days,
       limit: state.pageSize,
       offset: (state.page - 1) * state.pageSize,
-    }) ?? { payments: [], total: 0 }
+    })
+  const data = paymentsResult ?? { payments: [], total: 0 }
 
   useEffect(() => {
     setTotal(data.total)
   }, [data.total, setTotal])
 
   const loadingStats = stats === undefined
-  const loadingData = data.payments.length === 0 && data.total === 0
+  const loadingData = paymentsResult === undefined
 
   // Dropdown options derived from the window stats so they're complete.
   const providers = Object.keys(stats?.byProvider ?? {}).sort()

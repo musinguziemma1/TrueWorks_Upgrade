@@ -48,6 +48,7 @@ export default function EditProductPage() {
   const upload = uploadFile.useAction()
   const dbCategories = useCategories()
   const allProducts = useProducts({ status: "published" })
+  const allProductItems = allProducts?.items ?? []
   const categories = (dbCategories ?? []).map((c) => c.name)
   const industries = ["Business", "Technology", "E-commerce", "Design", "Marketing", "Analytics", "SaaS", "Finance", "Creative", "CRM", "Social Media", "HR", "Education"]
 
@@ -131,7 +132,7 @@ export default function EditProductPage() {
       setThumbnail(product.thumbnail)
       setGalleryImages(product.galleryImages)
       setDownloadableFileUrl(product.downloadableFile ?? "")
-      setDownloadableFileStorageId((product as { downloadableFileStorageId?: string }).downloadableFileStorageId ?? undefined)
+      setDownloadableFileStorageId(product.downloadableFileStorageId ?? undefined)
       setFileSize(product.fileSize ?? "")
       setFaqs(product.faqs.length > 0 ? product.faqs : [{ question: "", answer: "" }])
       setBundleProductIds(product.bundleProductIds ? [...product.bundleProductIds] : [])
@@ -503,13 +504,13 @@ export default function EditProductPage() {
                     Turn this product into a multi-item bundle. When purchased, the selected
                     templates are all delivered. Leave empty for a standalone product.
                   </p>
-                  {(allProducts ?? []).filter((pl) => pl._id !== product._id).length === 0 ? (
+                  {allProductItems.filter((pl) => pl._id !== product._id).length === 0 ? (
                     <p className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
                       No other published products are available to add.
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto border border-border rounded-lg p-2">
-                      {(allProducts ?? [])
+                      {allProductItems
                         .filter((pl) => pl._id !== product._id)
                         .map((pl) => {
                           const checked = bundleProductIds.includes(pl._id as never);

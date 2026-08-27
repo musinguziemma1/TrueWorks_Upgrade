@@ -14,7 +14,7 @@ export default function ProductShowcase() {
 
 function ProductShowcaseInner() {
   const products = useQuery(api.products.list, { featured: true });
-  const items = products?.filter((p) => p.status === "published") ?? [];
+  const items = (products?.items ?? []).filter((p) => p.status === "published");
   const doubled = [...items, ...items];
 
   if (products === undefined) {

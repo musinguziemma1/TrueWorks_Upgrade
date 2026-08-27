@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { useDebouncedValue } from "@/lib/use-debounced-value"
 import {
   useProducts,
   deleteProduct,
@@ -43,11 +44,17 @@ const fmtPrice = (n: number) =>
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("All")
-  const [industry, setIndustry] = useState("All")
-  const [status, setStatus] = useState("All")
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [category, setCategoryState] = useState("All")
+  const [industry, setIndustryState] = useState("All")
+  const [status, setStatusState] = useState("All")
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [page, setPage] = useState(1)
+
+  // Reset to first page whenever a filter changes.
+  const setCategory = (v: string) => { setCategoryState(v); setPage(1) }
+  const setIndustry = (v: string) => { setIndustryState(v); setPage(1) }
+  const setStatus = (v: string) => { setStatusState(v); setPage(1) }
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -57,7 +64,16 @@ export default function ProductsPage() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const products = useProducts()
+  const perPage = 8
+
+  const products = useProducts({
+    category: category !== "All" ? category : undefined,
+    industry: industry !== "All" ? industry : undefined,
+    status: status !== "All" ? STATUS_MAP[status] : undefined,
+    search: debouncedSearch || undefined,
+    limit: perPage,
+    offset: (page - 1) * perPage,
+  })
   const productStats = useProductStats()
   const removeProduct = deleteProduct.useMutation()
   const importProducts = bulkImportProducts.useMutation()
@@ -65,21 +81,14 @@ export default function ProductsPage() {
   const bulkRemove = useMutation(api.products.bulkRemove)
 
   const isLoading = products === undefined
+  const items = products?.items ?? []
+  const total = products?.total ?? 0
 
-  const filtered = (products ?? []).filter((p) => {
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.sku.toLowerCase().includes(search.toLowerCase())) return false
-    if (category !== "All" && p.category !== category) return false
-    if (industry !== "All" && p.industry !== industry) return false
-    if (status !== "All" && p.status !== STATUS_MAP[status]) return false
-    return true
-  })
+  const totalPages = Math.ceil(total / perPage)
+  const paginated = items
 
-  const perPage = 8
-  const totalPages = Math.ceil(filtered.length / perPage)
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
-
-  const categories = ["All", ...new Set((products ?? []).map((p) => p.category))]
-  const industries = ["All", ...new Set((products ?? []).map((p) => p.industry))]
+  const categories = ["All", ...new Set(items.map((p) => p.category))]
+  const industries = ["All", ...new Set(items.map((p) => p.industry))]
   const statuses = ["All", "Active", "Draft", "Archived"]
 
   const toggleSelect = (id: string) => {
@@ -132,7 +141,7 @@ export default function ProductsPage() {
 
   const handleExportCsv = () => {
     const csv = toCsv(
-      filtered.map((p) => ({
+      items.map((p) => ({
         name: p.name,
         sku: p.sku,
         category: p.category,
@@ -208,7 +217,7 @@ export default function ProductsPage() {
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Products" }]}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportCsv} disabled={filtered.length === 0}>
+            <Button variant="outline" onClick={handleExportCsv} disabled={total === 0}>
               <FileSpreadsheet className="h-4 w-4" /> Export
             </Button>
             <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
@@ -250,15 +259,15 @@ export default function ProductsPage() {
             className="pl-10"
           />
         </div>
-        <Select value={category} onValueChange={(v) => { if (v) { setCategory(v); setPage(1) } }}>
+        <Select value={category} onValueChange={(v) => { if (v) setCategory(v) }}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={industry} onValueChange={(v) => { if (v) { setIndustry(v); setPage(1) } }}>
+        <Select value={industry} onValueChange={(v) => { if (v) setIndustry(v) }}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>{industries.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={status} onValueChange={(v) => { if (v) { setStatus(v); setPage(1) } }}>
+        <Select value={status} onValueChange={(v) => { if (v) setStatus(v) }}>
           <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
         </Select>
@@ -299,7 +308,7 @@ export default function ProductsPage() {
           <CardHeader>
             <CardTitle>Products</CardTitle>
             <CardAction>
-              <span className="text-sm text-muted-foreground hidden sm:inline-block">{filtered.length} products found</span>
+              <span className="text-sm text-muted-foreground hidden sm:inline-block">{total} products found</span>
             </CardAction>
           </CardHeader>
           <CardContent className="p-0">
@@ -373,7 +382,7 @@ export default function ProductsPage() {
                 ))}
               </TableBody>
             </Table>
-            {filtered.length === 0 && (
+            {total === 0 && (
               <EmptyState
                 icon={<Package className="h-12 w-12" />}
                 title="No products found"
@@ -408,7 +417,7 @@ export default function ProductsPage() {
               </div>
             </Card>
           ))}
-          {filtered.length === 0 && (
+          {total === 0 && (
             <div className="col-span-full">
               <EmptyState
                 icon={<Package className="h-12 w-12" />}

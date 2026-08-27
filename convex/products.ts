@@ -62,6 +62,8 @@ export const list = query({
     status: v.optional(v.string()),
     search: v.optional(v.string()),
     featured: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const isAdmin = await requireAdminSilent(ctx);
@@ -92,11 +94,18 @@ export const list = query({
         p.sku.toLowerCase().includes(lower) ||
         p.shortDescription.toLowerCase().includes(lower)
       );
-      return isAdmin ? filtered : filtered.map((p) => publicProduct(p));
+      const total = filtered.length;
+      const start = args.offset ?? 0;
+      const end = args.limit ? start + args.limit : undefined;
+      const page = filtered.slice(start, end);
+      return { items: isAdmin ? page : page.map((p) => publicProduct(p)), total };
     }
 
-    const rows = await q.order("desc").take(100);
-    return isAdmin ? rows : rows.map((p) => publicProduct(p));
+    const total = (await q.collect()).length;
+    const start = args.offset ?? 0;
+    const end = args.limit ? start + args.limit : undefined;
+    const page = (await q.order("desc").collect()).slice(start, end);
+    return { items: isAdmin ? page : page.map((p) => publicProduct(p)), total };
   },
 });
 
@@ -105,12 +114,9 @@ export const getById = query({
   handler: async (ctx, args) => {
     const product = await ctx.db.get(args.id);
     if (!product) return null;
-    // SECURITY: Non-admins can only see published products
-    if (product.status !== "published") {
-      const isAdmin = await requireAdminSilent(ctx);
-      if (!isAdmin) return null;
-    }
     const isAdmin = await requireAdminSilent(ctx);
+    // SECURITY: Non-admins can only see published products
+    if (product.status !== "published" && !isAdmin) return null;
     return isAdmin ? product : publicProduct(product);
   },
 });
@@ -148,13 +154,10 @@ export const getBySlug = query({
     }
     if (!product) return null;
     const found = product;
-    // SECURITY: Non-admins can only see published products
-    if (found.status !== "published") {
-      const isAdmin = await requireAdminSilent(ctx);
-      if (!isAdmin) return null;
-    }
     const isAdmin = await requireAdminSilent(ctx);
-    return isAdmin ? found : publicProduct(found);
+    // SECURITY: Non-admins can only see published products
+    if (found.status !== "published" && !isAdmin) return null;
+    return isAdmin ? found : publicProduct(found );
   },
 });
 

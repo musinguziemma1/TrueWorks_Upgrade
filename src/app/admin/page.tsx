@@ -79,8 +79,10 @@ export default function AdminDashboard() {
     [dash]
   );
   const revenueRecent7 = revenueSeries.slice(-7).reduce((s, d) => s + d.revenue, 0);
-  const revenuePrev7 = revenueSeries.slice(-14, -7).reduce((s, d) => s + d.revenue, 0);
-  const revenueDelta = pctChange(revenueRecent7, revenuePrev7);
+  const prevSlice = revenueSeries.slice(-14, -7);
+  const revenuePrev7 = prevSlice.reduce((s, d) => s + d.revenue, 0);
+  // Only compute delta when there's a full previous period to compare against.
+  const revenueDelta = prevSlice.length > 0 ? pctChange(revenueRecent7, revenuePrev7) : 0;
 
   const isLoading = dash === undefined;
 

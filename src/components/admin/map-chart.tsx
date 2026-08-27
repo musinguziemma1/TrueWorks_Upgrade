@@ -74,8 +74,21 @@ function MapChartInner({ data }: MapChartProps) {
       .catch((e) => setError(String(e)))
   }, [])
 
-  const dataMap = new Map(data.map((d) => [normalizeCountryName(d.country), d]))
-  const maxOrders = Math.max(...data.map((d) => d.orders), 1)
+  // Aggregate data by normalized country name so duplicate countries sum
+  // their orders and revenue instead of silently overwriting.
+  const aggregated = new Map<string, { country: string; orders: number; revenue: number }>()
+  for (const d of data) {
+    const key = normalizeCountryName(d.country)
+    const existing = aggregated.get(key)
+    if (existing) {
+      existing.orders += d.orders
+      existing.revenue += d.revenue
+    } else {
+      aggregated.set(key, { country: d.country, orders: d.orders, revenue: d.revenue })
+    }
+  }
+  const dataMap = aggregated
+  const maxOrders = Math.max(...Array.from(aggregated.values()).map((d) => d.orders), 1)
 
   const formatRevenue = (v: number) => {
     if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`

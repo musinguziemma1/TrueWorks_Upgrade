@@ -22,7 +22,8 @@ const tabs = [
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const convexSiteUrl = getConvexSiteUrl();
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("tw_session")?.value;
+  // Check both cookie names: __Host-tw_session (secure, modern) and tw_session (legacy).
+  const sessionCookie = cookieStore.get("__Host-tw_session")?.value ?? cookieStore.get("tw_session")?.value;
 
   if (!convexSiteUrl || !sessionCookie) redirect("/sign-in");
 
@@ -30,7 +31,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   try {
     const res = await fetch(`${convexSiteUrl}/iam/me`, {
       method: "GET",
-      headers: { cookie: `tw_session=${sessionCookie}` },
+      headers: { cookie: `__Host-tw_session=${sessionCookie}; tw_session=${sessionCookie}` },
       cache: "no-store",
     });
     ok = res.ok;

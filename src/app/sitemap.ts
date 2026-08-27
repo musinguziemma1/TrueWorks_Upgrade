@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       convexServer.query(api.resources.listPublished, {}),
     ]);
 
-    const productRoutes: MetadataRoute.Sitemap = (products ?? []).map((p) => ({
+    const productRoutes: MetadataRoute.Sitemap = (products?.items ?? []).map((p) => ({
       url: `${SITE_URL}/store/${p.slug}`,
       lastModified: new Date(p.updatedAt),
       changeFrequency: "weekly",

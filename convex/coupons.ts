@@ -110,3 +110,46 @@ export const validate = query({
   },
 });
 
+export const incrementUsage = mutation({
+  args: { code: v.string() },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query("coupons")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .collect();
+    const coupon = results[0];
+    if (!coupon) return;
+    await ctx.db.patch(coupon._id, {
+      usageCount: coupon.usageCount + 1,
+    });
+  },
+});
+
+/**
+ * Atomically validate a coupon and increment its usage in a single mutation.
+ * This eliminates the check-then-act race where concurrent checkouts could
+ * both pass validation before either increments the count.
+ */
+export const validateAndIncrement = mutation({
+  args: { code: v.string(), minPurchase: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query("coupons")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .collect();
+    const coupon = results[0];
+    if (!coupon) return { valid: false, error: "Coupon not found" };
+    if (!coupon.isActive) return { valid: false, error: "Coupon is inactive" };
+    if (coupon.expiresAt && coupon.expiresAt < Date.now()) {
+      return { valid: false, error: "Coupon has expired" };
+    }
+    if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
+      return { valid: false, error: "Coupon usage limit reached" };
+    }
+    await ctx.db.patch(coupon._id, {
+      usageCount: coupon.usageCount + 1,
+    });
+    return { valid: true, coupon };
+  },
+});
+

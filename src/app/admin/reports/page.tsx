@@ -106,6 +106,7 @@ export default function ReportsPage() {
   // client-side `since` filter below remains as a safety net.
   const since = rangeStart(dateRange);
   const products = useQuery(api.products.list, { status: "published" });
+  const productItems = products?.items ?? []
   const orders = useQuery(api.orders.list, { startDate: since });
   const customers = useQuery(api.customers.list, {});
   const downloads = useQuery(api.downloads.listAll, {});
@@ -169,7 +170,7 @@ export default function ReportsPage() {
         break;
       case "products":
         csv = toCsv(
-          (products ?? []).map((p) => ({
+          productItems.map((p) => ({
             name: p.name,
             sku: p.sku,
             category: p.category,
@@ -280,7 +281,7 @@ export default function ReportsPage() {
             {REPORTS.map((report) => {
               const rowCount = rowCountFor(report.id, {
                 orders: filteredOrders,
-                products,
+                products: productItems,
                 customers,
                 downloads,
                 coupons,
@@ -334,7 +335,7 @@ export default function ReportsPage() {
               onClose={() => setPreview(null)}
               sources={{
                 orders: filteredOrders,
-                products,
+                products: productItems,
                 customers,
                 downloads,
                 coupons,

@@ -874,8 +874,6 @@ export async function mfaDisableHandler(ctx: Ctx, request: Request): Promise<Res
   await ctx.runMutation(internal.iamDb.deleteRecoveryCodesForUser, { userId: session.user._id });
   // Revoke every "remember this device" token and its cookie.
   await ctx.runMutation(internal.iamDb.clearMfaRememberTokens, { email: session.user.email });
-  // Revoke every "remember this device" token and its cookie.
-  await ctx.runMutation(internal.iamDb.clearMfaRememberTokens, { email: session.user.email });
 
   await ctx.runMutation(internal.iamDb.patchDoc, { id: session.user._id, fields: { mfaEnabled: false, updatedAt: Date.now() } });
 

@@ -107,9 +107,10 @@ export default function AnalyticsPage() {
     eventOverview === undefined
 
   const productPerformance = useMemo(() => {
-    if (!products || !orders) return [] as { name: string; totalSales: number; totalRevenue: number }[]
+    const productList = products?.items ?? []
+    if (!productList.length || !orders) return [] as { name: string; totalSales: number; totalRevenue: number }[]
     const productMap: Record<string, { name: string; totalSales: number; totalRevenue: number }> = {}
-    for (const product of products as { _id: string; name: string }[]) {
+    for (const product of productList as { _id: string; name: string }[]) {
       productMap[product._id] = { name: product.name, totalSales: 0, totalRevenue: 0 }
     }
     for (const order of orders as { paymentStatus: string; items: { productId: string; quantity: number; price: number }[] }[]) {
@@ -417,7 +418,7 @@ export default function AnalyticsPage() {
           <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Avg Order Value" value={formatPrice(avgOrderValue)} />
           <MetricCard icon={<ArrowUpRight className="h-5 w-5" />} label="Revenue / Visitor" value={revenuePerVisitor} />
           <MetricCard icon={<Package className="h-5 w-5" />} label="Products Sold" value={productPerformance.reduce((s, p) => s + p.totalSales, 0).toLocaleString()} />
-          <MetricCard icon={<Users className="h-5 w-5" />} label="Refunds" value={(orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded").length.toLocaleString() ?? "0"} />
+          <MetricCard icon={<Users className="h-5 w-5" />} label="Refunds" value={((orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded") ?? []).length.toLocaleString()} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

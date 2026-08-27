@@ -150,7 +150,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
 
     let discountAmount = 0;
     if (couponCode) {
-      const couponResult = await ctx.runQuery(api.coupons.validate, { code: couponCode });
+      const couponResult = await ctx.runMutation(api.coupons.validateAndIncrement, { code: couponCode });
       if (couponResult.valid && couponResult.coupon) {
         const coupon = couponResult.coupon;
         if (coupon.minPurchase && subtotal < coupon.minPurchase) {

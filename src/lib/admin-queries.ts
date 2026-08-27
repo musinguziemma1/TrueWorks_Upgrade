@@ -21,7 +21,7 @@ export interface ProductInput {
   galleryImages: string[];
   thumbnail: string;
   downloadableFile?: string;
-  downloadableFileStorageId?: unknown;
+  downloadableFileStorageId?: Id<"_storage">;
   fileSize?: string;
   version?: string;
   changelog?: string;
@@ -62,8 +62,10 @@ export function useProducts(args?: {
   status?: string;
   search?: string;
   featured?: boolean;
+  limit?: number;
+  offset?: number;
 }) {
-  return useQuery(api.products.list, args ?? {});
+  return useQuery(api.products.list, args ?? {}) ?? { items: [], total: 0 };
 }
 
 export function useProduct(id: Id<"products">) {

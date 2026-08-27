@@ -331,7 +331,7 @@ export default function ReviewsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={page === totalPages}
+                      disabled={page === totalPages || totalPages === 0}
                       onClick={() => setPage(page + 1)}
                     >
                       Next

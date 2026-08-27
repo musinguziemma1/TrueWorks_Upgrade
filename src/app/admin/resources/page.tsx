@@ -119,7 +119,8 @@ export default function ResourcesPage() {
 
   const perPage = 10
   const totalPages = Math.ceil(filtered.length / perPage)
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+  const safePage = Math.min(Math.max(1, page), Math.max(1, totalPages))
+  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage)
 
   const resetForm = () => {
     setTitle("")
@@ -515,13 +516,13 @@ export default function ResourcesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
+            Page {safePage} of {totalPages}
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              disabled={page === 1}
+              disabled={safePage === 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               Previous
@@ -529,7 +530,7 @@ export default function ResourcesPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled={page === totalPages}
+              disabled={safePage === totalPages || totalPages === 0}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
               Next
