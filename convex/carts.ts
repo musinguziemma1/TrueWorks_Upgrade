@@ -9,6 +9,7 @@ const cartItem = v.object({
   quantity: v.number(),
   image: v.string(),
   slug: v.string(),
+  tier: v.optional(v.string()),
 });
 
 const wishlistItem = v.object({
