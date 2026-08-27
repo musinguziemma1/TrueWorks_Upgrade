@@ -101,10 +101,11 @@ export const list = query({
       return { items: isAdmin ? page : page.map((p) => publicProduct(p)), total };
     }
 
-    const total = (await q.collect()).length;
+    const all = await q.order("desc").collect();
+    const total = all.length;
     const start = args.offset ?? 0;
     const end = args.limit ? start + args.limit : undefined;
-    const page = (await q.order("desc").collect()).slice(start, end);
+    const page = all.slice(start, end);
     return { items: isAdmin ? page : page.map((p) => publicProduct(p)), total };
   },
 });
