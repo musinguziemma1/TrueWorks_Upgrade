@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Settings, Palette, Mail, CreditCard, Download, Shield, Loader2, CheckCircle2, RotateCcw } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Button } from "@/components/ui/button"
@@ -29,10 +30,27 @@ const tabs: { id: TabId; label: string; icon: typeof Settings }[] = [
 ]
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("tab")
+  const isValidTab = (v: string | null): v is TabId =>
+    v === "general" || v === "branding" || v === "email" || v === "payment" || v === "downloads" || v === "security"
   const form = useSettingsForm()
   const uploadFile = useAction(api.storage.uploadFile)
-  const [activeTab, setActiveTab] = useState<TabId>("general")
+  const [activeTab, setActiveTab] = useState<TabId>(() => (isValidTab(initialTab) ? initialTab : "general"))
   const [uploading, setUploading] = useState<string | null>(null)
+
+  // Keep the URL in sync with the active tab so views are shareable and refresh-safe.
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (activeTab === "general") {
+      params.delete("tab")
+    } else {
+      params.set("tab", activeTab)
+    }
+    const qs = params.toString()
+    router.replace(qs ? `/admin/settings?${qs}` : "/admin/settings", { scroll: false })
+  }, [activeTab, router, searchParams])
 
   // Warn before leaving with unsaved changes.
   useEffect(() => {
@@ -131,7 +149,7 @@ export default function SettingsPage() {
                 <Icon className="h-4 w-4" />
                 {t.label}
                 {dirty && (
-                  <span className="ml-1 size-1.5 rounded-full bg-amber-500" aria-label="unsaved changes" />
+                  <span className="ml-1 size-1.5 rounded-full bg-amber-500" aria-label={`Unsaved changes in ${t.label}`} />
                 )}
               </TabsTrigger>
             )
@@ -175,14 +193,14 @@ export default function SettingsPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleRestoreTab}>
+              <Button variant="outline" size="sm" onClick={handleRestoreTab} aria-label={`Revert changes in the ${activeTab} tab`}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Revert Tab
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDiscard}>
+              <Button variant="outline" size="sm" onClick={handleDiscard} aria-label="Discard all unsaved changes">
                 Discard
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={form.saving}>
+              <Button size="sm" onClick={handleSave} disabled={form.saving} aria-label="Save all changes">
                 {form.saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Save Changes
               </Button>
