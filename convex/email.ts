@@ -559,14 +559,14 @@ function buildCampaignHtml(
   if (trackingBase) {
     const c = encodeURIComponent(campaign._id as unknown as string);
     const s = encodeURIComponent(subscriber._id as unknown as string);
-    // Redirect links through the click tracker (double-quoted hrefs).
+    // Redirect links through the click tracker (double or single-quoted hrefs).
     content = content.replace(
-      /<a([^>]*?)\s+href="(https?:\/\/[^"]+)"/gi,
-      (_match, attrs: string, href: string) =>
-        `<a${attrs} href="${trackingBase}/track-click?c=${c}&s=${s}&u=${encodeURIComponent(href)}"`
+      /<a([^>]*?)\s+href=(["'])(https?:\/\/[^"']+)\2/gi,
+      (_match: string, attrs: string, _q: string, href: string) =>
+        `<a${attrs} href="${trackingBase}/email/track-click?c=${c}&s=${s}&u=${encodeURIComponent(href)}"`
     );
     // Invisible tracking pixel for open rate.
-    content += `<img src="${trackingBase}/track-open?c=${c}&s=${s}" alt="" width="1" height="1" style="display:none" />`;
+    content += `<img src="${trackingBase}/email/track-open?c=${c}&s=${s}" alt="" width="1" height="1" style="display:none" />`;
   }
 
   return baseTemplate(content);
