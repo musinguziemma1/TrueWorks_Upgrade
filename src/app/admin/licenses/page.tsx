@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Activity,
   Loader2,
+  Plus,
 } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
@@ -20,8 +21,10 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { StatCard } from "@/components/admin/stat-card"
 import { downloadCsv, toCsv } from "@/lib/csv"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
@@ -49,10 +52,13 @@ export default function LicensesPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<Id<"licenses"> | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false)
 
   const licenses = useQuery(api.licenses.listAll, { search: search || undefined })
   const licenseStats = useQuery(api.licenses.stats)
+  const products = useQuery(api.products.list, { limit: 100 })
   const revokeMutation = useMutation(api.licenses.revoke)
+  const issueManual = useMutation(api.licenses.issueManual)
 
   const copyKey = (key: string) => {
     navigator.clipboard.writeText(key).then(() => {
@@ -108,9 +114,14 @@ export default function LicensesPage() {
         description="Manage issued license keys across your digital products"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Licenses" }]}
         action={
-          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={licenses?.length === 0}>
-            <FileSpreadsheet className="h-4 w-4" /> Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={licenses?.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setIssueDialogOpen(true)}>
+              <Plus className="h-4 w-4" /> Issue License
+            </Button>
+          </div>
         }
       />
 
@@ -244,6 +255,153 @@ export default function LicensesPage() {
         destructive={target?.status !== "revoked"}
         onConfirm={handleRevokeToggle}
       />
+
+      <IssueLicenseDialog
+        open={issueDialogOpen}
+        onOpenChange={setIssueDialogOpen}
+        products={products?.items ?? []}
+        issueManual={issueManual}
+        onIssued={(key) => {
+          setIssueDialogOpen(false)
+          setCopiedKey(key)
+          setTimeout(() => setCopiedKey(null), 3000)
+        }}
+      />
     </div>
+  )
+}
+
+function IssueLicenseDialog({
+  open,
+  onOpenChange,
+  products,
+  issueManual,
+  onIssued,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  products: Array<{ _id: Id<"products">; name: string; activationLimit?: number }>
+  issueManual: (args: { productId: Id<"products">; email: string; maxActivations?: number }) => Promise<{ key: string; id: Id<"licenses"> }>
+  onIssued: (key: string) => void
+}) {
+  const [productId, setProductId] = useState<Id<"products"> | "">("")
+  const [email, setEmail] = useState("")
+  const [maxActivations, setMaxActivations] = useState("")
+  const [issuing, setIssuing] = useState(false)
+  const [issuedKey, setIssuedKey] = useState<string | null>(null)
+
+  const selectedProduct = products.find((p) => p._id === productId)
+
+  const handleIssue = async () => {
+    if (!productId || !email) {
+      toast.error("Product and email are required")
+      return
+    }
+    setIssuing(true)
+    try {
+      const result = await issueManual({
+        productId: productId as Id<"products">,
+        email,
+        maxActivations: maxActivations ? Number(maxActivations) : undefined,
+      })
+      setIssuedKey(result.key)
+      onIssued(result.key)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to issue license")
+    } finally {
+      setIssuing(false)
+    }
+  }
+
+  const handleClose = () => {
+    onOpenChange(false)
+    setProductId("")
+    setEmail("")
+    setMaxActivations("")
+    setIssuedKey(null)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Issue License Key</DialogTitle>
+        </DialogHeader>
+        {issuedKey ? (
+          <div className="space-y-4 py-4">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+              <KeyRound className="mx-auto h-8 w-8 text-emerald-600 mb-2" />
+              <p className="text-sm font-medium text-emerald-800">License key generated</p>
+              <p className="mt-2 font-mono text-lg font-bold text-emerald-900">{issuedKey}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  navigator.clipboard.writeText(issuedKey)
+                  toast.success("Copied to clipboard")
+                }}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Key
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={handleClose}>
+                Done
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Product *</Label>
+              <select
+                value={productId}
+                onChange={(e) => setProductId(e.target.value as Id<"products">)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Select a product...</option>
+                {products.map((p) => (
+                  <option key={p._id} value={p._id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Customer Email *</Label>
+              <Input
+                type="email"
+                placeholder="customer@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Max Activations</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder={selectedProduct?.activationLimit?.toString() ?? "1"}
+                value={maxActivations}
+                onChange={(e) => setMaxActivations(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to use product default ({selectedProduct?.activationLimit ?? 1})
+              </p>
+            </div>
+          </div>
+        )}
+        {!issuedKey && (
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose} disabled={issuing}>
+              Cancel
+            </Button>
+            <Button onClick={handleIssue} disabled={issuing || !productId || !email}>
+              {issuing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Issue Key
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }

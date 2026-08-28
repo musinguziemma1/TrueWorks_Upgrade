@@ -64,6 +64,48 @@ export const issue = internalMutation({
   },
 });
 
+/** Admin: manually issue a license key on-demand. */
+export const issueManual = mutation({
+  args: {
+    productId: v.id("products"),
+    email: v.string(),
+    maxActivations: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const product = await ctx.db.get(args.productId);
+    if (!product) throw new Error("Product not found");
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const key = generateLicenseKey();
+      const existing = await ctx.db
+        .query("licenses")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .first();
+      if (!existing) {
+        const id = await ctx.db.insert("licenses", {
+          key,
+          productId: args.productId,
+          productName: product.name,
+          email: args.email.toLowerCase(),
+          orderId: undefined,
+          status: "active",
+          maxActivations: args.maxActivations ?? product.activationLimit ?? 1,
+          activations: 0,
+          createdAt: Date.now(),
+        });
+        await auditLog(ctx, {
+          action: "license.issue_manual",
+          entityType: "license",
+          entityId: id,
+          summary: `Manually issued license ${key} for ${args.email} (${product.name})`,
+        });
+        return { key, id };
+      }
+    }
+    throw new Error("Could not allocate a unique license key");
+  },
+});
+
 /** List the current user's licenses. */
 export const listMine = query({
   args: {},
