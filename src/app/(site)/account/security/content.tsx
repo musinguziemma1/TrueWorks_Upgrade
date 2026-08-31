@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  KeyRound,
   Shield,
+  ShieldCheck,
+  ShieldAlert,
   Smartphone,
   Globe,
   RefreshCw,
@@ -13,6 +14,13 @@ import {
   Loader2,
   AlertTriangle,
   Monitor,
+  Smartphone as SmartphoneIcon,
+  Tablet,
+  KeyRound,
+  Clock,
+  MapPin,
+  CircleCheck,
+  CircleX,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/provider";
 import { PasskeysCard } from "@/components/auth/passkeys-card";
@@ -21,7 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 function fmtDate(ts?: number) {
@@ -64,6 +73,14 @@ function parseDevice(ua?: string) {
   else if (/mac os/i.test(ua)) os = "macOS";
   else if (/linux/i.test(ua)) os = "Linux";
   return { device, browser, os };
+}
+
+function DeviceIcon({ device }: { device: string }) {
+  switch (device) {
+    case "Mobile": return <SmartphoneIcon className="h-5 w-5" />;
+    case "Tablet": return <Tablet className="h-5 w-5" />;
+    default: return <Monitor className="h-5 w-5" />;
+  }
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -115,10 +132,7 @@ export default function SecurityContent() {
   const [busy, setBusy] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
-  // MFA state
-  const [mfaStep, setMfaStep] = useState<"idle" | "setup" | "enter" | "codes">(
-    mfaEnabled ? "idle" : "idle"
-  );
+  const [mfaStep, setMfaStep] = useState<"idle" | "setup" | "enter" | "codes">("idle");
   const [mfaSecret, setMfaSecret] = useState("");
   const [_otpauth, setOtpauth] = useState("");
   const [mfaCode, setMfaCode] = useState("");
@@ -127,7 +141,6 @@ export default function SecurityContent() {
   const [mfaBusy, setMfaBusy] = useState(false);
   const [disablePassword, setDisablePassword] = useState("");
   const [disableCode, setDisableCode] = useState("");
-  // Captured once per mount so expiry checks stay pure during render.
   const [nowTs] = useState(() => Date.now());
 
   const loadSecurity = useCallback(async () => {
@@ -142,8 +155,6 @@ export default function SecurityContent() {
       const sessionsList: SessionRow[] = sdata?.sessions ?? [];
       setSessions(sessionsList);
       setEvents(edata?.events ?? []);
-
-      // Identify the current session: the most recent active one.
       const active = sessionsList
         .filter((s) => !s.revoked && s.absoluteExpiresAt > Date.now())
         .sort((a, b) => b.lastActiveAt - a.lastActiveAt);
@@ -154,10 +165,7 @@ export default function SecurityContent() {
   }, []);
 
   useEffect(() => {
-    // Defer to a macrotask so state updates happen outside the effect body.
-    const t = window.setTimeout(() => {
-      void loadSecurity();
-    }, 0);
+    const t = window.setTimeout(() => { void loadSecurity(); }, 0);
     return () => window.clearTimeout(t);
   }, [loadSecurity]);
 
@@ -318,71 +326,129 @@ export default function SecurityContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  const activeSessions = sessions.filter(
-    (s) => !s.revoked && s.absoluteExpiresAt > nowTs
-  );
+  const activeSessions = sessions.filter((s) => !s.revoked && s.absoluteExpiresAt > nowTs);
 
   return (
-    <div className="space-y-8">
-      {/* MFA */}
+    <div className="space-y-6">
+      {/* Security Overview */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-emerald-100 p-2">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-900">MFA Status</p>
+                <p className="text-xs text-emerald-700">{mfaEnabled ? "Enabled" : "Disabled"}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-blue-100 p-2">
+                <Globe className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-blue-900">Active Sessions</p>
+                <p className="text-xs text-blue-700">{activeSessions.length} device{activeSessions.length !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-amber-100 p-2">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-amber-900">Last Activity</p>
+                <p className="text-xs text-amber-700">{events.length > 0 ? timeAgo(events[0]?.createdAt) : "No activity"}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* MFA Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5 text-[#3E6990]" />
-            Two-Factor Authentication
-          </CardTitle>
-          <CardDescription>
-            Add an extra layer of security with an authenticator app.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Two-Factor Authentication</CardTitle>
+                <CardDescription>Add an extra layer of security with an authenticator app.</CardDescription>
+              </div>
+            </div>
+            {mfaEnabled && (
+              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 gap-1">
+                <CircleCheck className="h-3 w-3" />
+                Active
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {mfaStep === "idle" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={mfaEnabled ? "active" : "pending"} />
-                  <span className="text-sm text-muted-foreground">
-                    {mfaEnabled ? "Enabled on this account" : "Not enabled"}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  {!mfaEnabled ? (
-                    <Button onClick={startMfaSetup} disabled={mfaBusy}>
-                      {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Smartphone className="h-4 w-4 mr-1" />}
-                      Set up
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-              {mfaEnabled && (
-                <div className="rounded-lg border border-border bg-surface p-4">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    To disable MFA, confirm your password and enter a current code from your authenticator app.
-                  </p>
-                  <div className="grid max-w-md gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>Password</Label>
-                      <Input type="password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} placeholder="••••••••" />
+              {!mfaEnabled ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border bg-muted/30 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Auth code</Label>
-                      <Input value={disableCode} onChange={(e) => setDisableCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" />
+                    <div>
+                      <p className="text-sm font-medium">Protect your account</p>
+                      <p className="text-xs text-muted-foreground">MFA adds a second verification step at sign-in.</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="mt-3" onClick={regenerateCodes} disabled={mfaBusy || !disablePassword.trim() || !disableCode.trim()}>
-                      {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                      Regenerate codes
-                    </Button>
-                    <Button variant="destructive" size="sm" className="mt-3" onClick={disableMfa} disabled={mfaBusy || !disablePassword.trim() || !disableCode.trim()}>
-                      {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <LogOut className="h-4 w-4 mr-1" />}
-                      Disable MFA
-                    </Button>
+                  <Button onClick={startMfaSetup} disabled={mfaBusy}>
+                    {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Smartphone className="h-4 w-4 mr-2" />}
+                    Set up MFA
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                    <ShieldCheck className="h-8 w-8 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-medium text-emerald-900">MFA is enabled</p>
+                      <p className="text-xs text-emerald-700">Your account requires a code from your authenticator app to sign in.</p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+                    <p className="text-sm font-medium">Manage MFA</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label>Password</Label>
+                        <Input type="password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} placeholder="Enter password" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Auth code</Label>
+                        <Input value={disableCode} onChange={(e) => setDisableCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={regenerateCodes} disabled={mfaBusy || !disablePassword.trim() || !disableCode.trim()}>
+                        {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        Regenerate codes
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={disableMfa} disabled={mfaBusy || !disablePassword.trim() || !disableCode.trim()}>
+                        {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogOut className="h-4 w-4 mr-2" />}
+                        Disable MFA
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -390,33 +456,27 @@ export default function SecurityContent() {
           )}
 
           {mfaStep === "setup" && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Open your authenticator app (Google Authenticator, Authy, 1Password…) and scan the
-                code, or enter the secret manually, then enter the 6-digit code below.
-              </p>
-              <div className="rounded-lg border bg-surface p-4">
-                <p className="text-xs text-muted-foreground mb-1">Manual setup secret</p>
-                <div className="flex items-center justify-between">
+            <div className="space-y-5">
+              <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <Smartphone className="h-5 w-5 text-blue-600 mt-0.5" />
+                <p className="text-sm text-blue-800">Open your authenticator app and enter the setup secret, then verify with the 6-digit code.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Manual setup secret</Label>
+                <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
                   <code className="font-mono text-sm break-all">{mfaSecret}</code>
                   <Button variant="ghost" size="icon-sm" onClick={() => copyCode(mfaSecret)}>
-                    {copied === mfaSecret ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    {copied === mfaSecret ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
-              <div className="max-w-xs space-y-2">
+              <div className="space-y-2">
                 <Label>Verification code</Label>
-                <Input
-                  value={mfaCode}
-                  onChange={(e) => setMfaCode(e.target.value)}
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="123456"
-                />
+                <Input value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" className="max-w-xs" />
               </div>
               <div className="flex gap-2">
                 <Button onClick={verifyMfa} disabled={mfaBusy || !mfaCode.trim()}>
-                  {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <KeyRound className="h-4 w-4 mr-1" />}
+                  {mfaBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
                   Verify & Enable
                 </Button>
                 <Button variant="outline" onClick={() => setMfaStep("idle")}>Cancel</Button>
@@ -425,23 +485,15 @@ export default function SecurityContent() {
           )}
 
           {mfaStep === "codes" && (
-            <div className="space-y-4">
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <p>
-                  Save these recovery codes somewhere safe. Each can be used once to sign in if you
-                  lose your authenticator.
-                </p>
+            <div className="space-y-5">
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">Save these recovery codes somewhere safe. Each can be used once if you lose your authenticator.</p>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {recoveryCodes.map((code) => (
-                  <button
-                    key={code}
-                    onClick={() => copyCode(code)}
-                    title="Copy code"
-                    className="rounded-lg border bg-surface px-3 py-2 font-mono text-xs hover:bg-muted transition-colors"
-                  >
-                    {copied === code ? <Check className="h-3 w-3 inline text-green-600 mr-1" /> : <Copy className="h-3 w-3 inline mr-1" />}
+                  <button key={code} onClick={() => copyCode(code)} title="Copy code" className="rounded-lg border bg-muted/50 px-3 py-2.5 font-mono text-xs hover:bg-muted transition-colors text-center">
+                    {copied === code ? <Check className="h-3 w-3 inline text-emerald-600 mr-1" /> : <Copy className="h-3 w-3 inline mr-1" />}
                     {code}
                   </button>
                 ))}
@@ -455,99 +507,124 @@ export default function SecurityContent() {
       {/* Passkeys */}
       <PasskeysCard />
 
-      {/* Sessions */}
+      {/* Active Sessions */}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Globe className="h-5 w-5 text-[#3E6990]" />
-                Active Sessions
-              </CardTitle>
-              <CardDescription>Devices currently signed in to your account.</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Active Sessions</CardTitle>
+                <CardDescription>Devices currently signed in to your account.</CardDescription>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={revokeOthers} disabled={busy || activeSessions.length <= 1}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Sign out other devices
+                <RefreshCw className="h-4 w-4 mr-1.5" /> Sign out others
               </Button>
-              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={revokeAll} disabled={busy}>
-                <LogOut className="h-4 w-4 mr-1" /> Sign out everywhere
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={revokeAll} disabled={busy}>
+                <LogOut className="h-4 w-4 mr-1.5" /> Sign out all
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent>
           {activeSessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No active sessions.</p>
-          ) : activeSessions.map((s) => {
-            const device = parseDevice(s.userAgent);
-            const isCurrent = s._id === currentSessionId;
-            return (
-              <div key={s._id} className="flex items-center justify-between rounded-lg border bg-surface p-4">
-                <div className="flex items-center gap-3">
-                  <span className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">
-                    <Monitor className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {device.device} · {device.browser} · {device.os}
-                      {isCurrent && (
-                        <Badge variant="outline" className="ml-2 border-emerald-200 bg-emerald-50 text-emerald-700">
-                          This device
-                        </Badge>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.ipAddress ?? "IP hidden"} · Last active {timeAgo(s.lastActiveAt)} · Signed in {timeAgo(s.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                {!isCurrent && (
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => revokeSession(s._id)} disabled={busy}>
-                    Revoke
-                  </Button>
-                )}
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="rounded-full bg-muted p-3 mb-3">
+                <Globe className="h-6 w-6 text-muted-foreground" />
               </div>
-            );
-          })}
+              <p className="text-sm font-medium">No active sessions</p>
+              <p className="text-xs text-muted-foreground">Your account has no other active sessions.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activeSessions.map((s) => {
+                const device = parseDevice(s.userAgent);
+                const isCurrent = s._id === currentSessionId;
+                return (
+                  <div key={s._id} className={cn("flex items-center justify-between rounded-xl border p-4 transition-colors", isCurrent ? "border-emerald-200 bg-emerald-50/50" : "bg-muted/20 hover:bg-muted/30")}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn("rounded-lg p-2", isCurrent ? "bg-emerald-100 text-emerald-600" : "bg-muted text-muted-foreground")}>
+                        <DeviceIcon device={device.device} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{device.device} &middot; {device.browser}</p>
+                          {isCurrent && (
+                            <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0">
+                              This device
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.ipAddress ?? "IP hidden"}</span>
+                          <span>&middot;</span>
+                          <span>Last active {timeAgo(s.lastActiveAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {!isCurrent && (
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => revokeSession(s._id)} disabled={busy}>
+                        Revoke
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Login history */}
+      {/* Login Activity */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5 text-[#3E6990]" />
-            Login Activity
-          </CardTitle>
-          <CardDescription>Recent security events on your account.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-0">
-          {events.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No recent activity.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {events.slice(0, 20).map((e) => (
-                <div key={e._id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-medium">{EVENT_LABELS[e.action] ?? e.action}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {fmtDate(e.createdAt)} · {e.ipAddress ?? "IP hidden"}
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={
-                      e.result === "success"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-red-200 bg-red-50 text-red-700"
-                    }
-                  >
-                    {e.result}
-                  </Badge>
-                </div>
-              ))}
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Clock className="h-5 w-5 text-primary" />
             </div>
+            <div>
+              <CardTitle>Login Activity</CardTitle>
+              <CardDescription>Recent security events on your account.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="rounded-full bg-muted p-3 mb-3">
+                <Clock className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium">No recent activity</p>
+              <p className="text-xs text-muted-foreground">Your account security events will appear here.</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[300px]">
+              <div className="divide-y">
+                {events.slice(0, 20).map((e) => (
+                  <div key={e._id} className="flex items-center justify-between py-3 pr-2">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("rounded-full p-1.5", e.result === "success" ? "bg-emerald-100" : "bg-red-100")}>
+                        {e.result === "success" ? <CircleCheck className="h-4 w-4 text-emerald-600" /> : <CircleX className="h-4 w-4 text-red-600" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{EVENT_LABELS[e.action] ?? e.action}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{fmtDate(e.createdAt)}</span>
+                          {e.ipAddress && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{e.ipAddress}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn("text-[10px]", e.result === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700")}>
+                      {e.result}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
