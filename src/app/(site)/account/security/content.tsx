@@ -534,7 +534,7 @@ export default function SecurityContent() {
           {activeSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <div className="rounded-full bg-muted p-3 mb-3">
-                <Globe className="h-6 w-6 text-muted-foreground" />
+                <Globe className="h-6 w-6" style={{ color: "#C9A227" }} />
               </div>
               <p className="text-sm font-medium">No active sessions</p>
               <p className="text-xs text-muted-foreground">Your account has no other active sessions.</p>
@@ -547,7 +547,7 @@ export default function SecurityContent() {
                 return (
                   <div key={s._id} className={cn("flex items-center justify-between rounded-xl border p-4 transition-colors", isCurrent ? "border-emerald-200 bg-emerald-50/50" : "bg-muted/20 hover:bg-muted/30")}>
                     <div className="flex items-center gap-3">
-                      <div className={cn("rounded-lg p-2", isCurrent ? "bg-emerald-100 text-emerald-600" : "bg-muted text-muted-foreground")}>
+                      <div className={cn("rounded-lg p-2", isCurrent ? "bg-emerald-100 text-emerald-600" : "bg-muted")} style={!isCurrent ? { color: "#C9A227" } : undefined}>
                         <DeviceIcon device={device.device} />
                       </div>
                       <div>
@@ -596,7 +596,7 @@ export default function SecurityContent() {
           {events.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <div className="rounded-full bg-muted p-3 mb-3">
-                <Clock className="h-6 w-6 text-muted-foreground" />
+                <Clock className="h-6 w-6" style={{ color: "#C9A227" }} />
               </div>
               <p className="text-sm font-medium">No recent activity</p>
               <p className="text-xs text-muted-foreground">Your account security events will appear here.</p>
