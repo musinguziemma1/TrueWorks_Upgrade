@@ -1,3 +1,6 @@
+"use client";
+
+import { useSettings } from "@/lib/settings-context";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -20,14 +23,18 @@ export function Logo({
   width,
   height,
 }: LogoProps) {
+  const { siteLogo } = useSettings();
   const config = logoConfig[variant];
   const w = width ?? config.defaultWidth;
   const h = height ?? config.defaultHeight;
 
+  const hasUploadedLogo = siteLogo && siteLogo.trim().length > 0;
+  const src = hasUploadedLogo ? siteLogo : config.src;
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- SVG logos are served as static assets
+    // eslint-disable-next-line @next/next/no-img-element -- SVG logos are served as static assets or storage URLs
     <img
-      src={config.src}
+      src={src}
       alt={config.alt}
       width={w}
       height={h}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useCart, cartItemKey } from "@/components/layout/cart-context";
 import { useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
+import { useSettings } from "@/lib/settings-context";
 import { COUNTRIES } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,16 +59,6 @@ const steps = [
   { label: "Cart", href: "/cart", done: true },
   { label: "Checkout", href: "/checkout", done: false },
   { label: "Confirmation", href: "/order-confirmation", done: false },
-];
-
-const paymentProviders: {
-  value: PaymentProvider;
-  label: string;
-  note: string;
-  icon: typeof Smartphone;
-}[] = [
-  { value: "pesapal", label: "Pesapal", note: "Mobile Money & Card", icon: Smartphone },
-  { value: "stripe", label: "Stripe", note: "International Cards", icon: CreditCard },
 ];
 
 const pesapalMethods: {
@@ -147,6 +138,7 @@ export default function CheckoutContent() {
   const { track } = useAnalytics();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const { loading: authLoaded, isAuthenticated: isSignedIn, getToken, user } = useAuth();
+  const { currency, pesapalEnabled, stripeEnabled } = useSettings();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -211,6 +203,13 @@ export default function CheckoutContent() {
   const discountAmount = appliedCoupon?.discount ?? 0;
   const displayTotal = Math.max(0, totalPrice - discountAmount);
 
+  const paymentProviders = useMemo(() => {
+    return [
+      ...(pesapalEnabled ? [{ value: "pesapal" as const, label: "Pesapal", note: "Mobile Money & Card", icon: Smartphone as typeof Smartphone }] : []),
+      ...(stripeEnabled ? [{ value: "stripe" as const, label: "Stripe", note: "International Cards", icon: CreditCard as typeof CreditCard }] : []),
+    ];
+  }, [pesapalEnabled, stripeEnabled]);
+
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     if (!convexClient) {
@@ -265,7 +264,7 @@ export default function CheckoutContent() {
         headers: await authHeaders(),
         body: JSON.stringify({
           orderId: convexOrderId,
-          currency: "usd",
+          currency: currency.toLowerCase(),
         }),
       });
       const data = await response.json();
@@ -279,7 +278,7 @@ export default function CheckoutContent() {
         description: err instanceof Error ? err.message : "Please try again",
       });
     }
-  }, [authHeaders, convexOrderId]);
+  }, [authHeaders, convexOrderId, currency]);
 
   useEffect(() => {
     if (paymentProvider !== "stripe" || !convexOrderId || stripeClientSecret) return;

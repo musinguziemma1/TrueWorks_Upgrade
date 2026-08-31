@@ -146,9 +146,10 @@ export const SETTING_DEFAULTS: Record<string, string | number | boolean> = Objec
 /** Keys published to the public storefront via settings.getPublic. */
 export const PUBLIC_SETTING_KEYS = [
   "siteName", "siteTagline", "siteDescription", "siteUrl",
+  "siteLogo", "siteFavicon",
   "primaryColor", "secondaryColor", "accentColor", "backgroundColor",
   "surfaceColor", "foregroundColor", "headingFont", "bodyFont", "customCss",
-  "currency", "taxRate", "pesapalEnabled",
+  "currency", "taxRate", "pesapalEnabled", "stripeEnabled",
 ] as const;
 
 /** Sentinel used in getAll for secret values — never leaks the real secret. */

@@ -167,6 +167,14 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     const total = Math.max(0, subtotal - discountAmount);
+
+    const taxRateSetting = await ctx.runQuery(internal.settings.getInternal, { key: "taxRate" });
+    const taxAutoCalculateSetting = await ctx.runQuery(internal.settings.getInternal, { key: "taxAutoCalculate" });
+    const taxRate = typeof taxRateSetting === "number" ? taxRateSetting : 18;
+    const taxAutoCalculate = typeof taxAutoCalculateSetting === "boolean" ? taxAutoCalculateSetting : true;
+    const tax = taxAutoCalculate ? Math.round(total * (taxRate / 100) * 100) / 100 : 0;
+    const totalWithTax = Math.round((total + tax) * 100) / 100;
+
     const orderNumber = `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const billing =
@@ -180,9 +188,9 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       customerName: verifiedName,
       items: orderItems,
       subtotal,
-      tax: 0,
+      tax,
       discountAmount: discountAmount > 0 ? discountAmount : undefined,
-      total,
+      total: totalWithTax,
       paymentMethod: paymentMethod || "card",
       paymentStatus: "pending",
       orderStatus: "pending",
@@ -203,7 +211,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     await ctx.runMutation(internal.notifications.createPublic, {
       type: "order",
       title: "New Order Received",
-      message: `Order ${orderNumber} from ${verifiedName} for ${total.toLocaleString()}`,
+      message: `Order ${orderNumber} from ${verifiedName} for ${totalWithTax.toLocaleString()}`,
       link: `/admin/orders`,
     });
 
@@ -219,17 +227,19 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
             "Content-Type": "application/json",
             "x-email-secret": emailSecret,
           },
-          body: JSON.stringify({
-            orderNumber,
-            customerEmail: verifiedEmail,
-            customerName: verifiedName,
-            items: orderItems.map((item) => ({
-              name: item.productName,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-            total,
-          }),
+            body: JSON.stringify({
+              orderNumber,
+              customerEmail: verifiedEmail,
+              customerName: verifiedName,
+              items: orderItems.map((item) => ({
+                name: item.productName,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+              subtotal,
+              tax,
+              total: totalWithTax,
+            }),
         });
       }
     } catch {
@@ -240,7 +250,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       success: true,
       orderId,
       orderNumber,
-      total,
+      total: totalWithTax,
+      tax,
       discountAmount,
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch {

@@ -6,6 +6,7 @@ import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SkipNav } from "@/components/layout/skip-nav";
+import { DynamicFavicon } from "@/components/dynamic-favicon";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-body min-h-full flex flex-col antialiased">
         <SkipNav />
+        <DynamicFavicon />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}

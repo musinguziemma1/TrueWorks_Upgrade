@@ -10,6 +10,8 @@ interface Settings {
   siteTagline: string
   siteDescription: string
   siteUrl: string
+  siteLogo: string
+  siteFavicon: string
 
   // Branding
   primaryColor: string
@@ -32,6 +34,10 @@ interface Settings {
   currency: string
   taxRate: number
   pesapalEnabled: boolean
+  stripeEnabled: boolean
+  taxAutoCalculate: boolean
+  currencyAutoConvert: boolean
+  conversionRate: number
 
   // Downloads
   maxDownloadsPerPurchase: number
@@ -45,6 +51,9 @@ interface Settings {
   passwordExpiryDays: number
   sessionTimeoutMinutes: number
   maxLoginAttempts: number
+  requireVerificationCode: boolean
+  verificationCodeExpiry: number
+  signOutVerification: boolean
   apiRateLimiting: boolean
   ipWhitelist: boolean
 
@@ -59,6 +68,8 @@ const defaultSettings: Settings = {
   siteTagline: "Digital Products Marketplace",
   siteDescription: "Your premier destination for high-quality digital products, templates, and tools.",
   siteUrl: "",
+  siteLogo: "",
+  siteFavicon: "",
   primaryColor: "#0B2545",
   secondaryColor: "#3E6990",
   accentColor: "#C9A227",
@@ -75,6 +86,10 @@ const defaultSettings: Settings = {
   currency: "USD",
   taxRate: 18,
   pesapalEnabled: true,
+  stripeEnabled: true,
+  taxAutoCalculate: true,
+  currencyAutoConvert: true,
+  conversionRate: 0,
   maxDownloadsPerPurchase: 5,
   downloadLinkExpiryDays: 30,
   downloadMethod: "direct",
@@ -84,6 +99,9 @@ const defaultSettings: Settings = {
   passwordExpiryDays: 90,
   sessionTimeoutMinutes: 60,
   maxLoginAttempts: 5,
+  requireVerificationCode: true,
+  verificationCodeExpiry: 10,
+  signOutVerification: false,
   apiRateLimiting: true,
   ipWhitelist: false,
   storageProvider: "local",
