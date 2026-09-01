@@ -101,6 +101,33 @@ export const getFileUrl = action({
   },
 });
 
+export const resolveFileUrl = query({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    const file = await ctx.db
+      .query("mediaFiles")
+      .filter((q) => q.eq(q.field("storageId"), args.storageId))
+      .first();
+    if (!file) return null;
+    if (file.url) return file.url;
+    const url = await ctx.storage.getUrl(args.storageId as Id<"_storage">);
+    return url ?? null;
+  },
+});
+
+export const backfillFileUrl = mutation({
+  args: { storageId: v.string(), url: v.string() },
+  handler: async (ctx, args) => {
+    const file = await ctx.db
+      .query("mediaFiles")
+      .filter((q) => q.eq(q.field("storageId"), args.storageId))
+      .first();
+    if (file && !file.url) {
+      await ctx.db.patch(file._id, { url: args.url });
+    }
+  },
+});
+
 export const listFiles = query({
   args: { folder: v.optional(v.string()) },
   handler: async (ctx, args) => {

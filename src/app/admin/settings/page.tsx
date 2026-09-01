@@ -79,10 +79,17 @@ export default function SettingsPage() {
       })
       if (result?.url) {
         form.setValue(settingKey, result.url)
+      } else if (result?.storageId) {
+        const fallbackUrl = `/api/storage/${result.storageId}`
+        form.setValue(settingKey, fallbackUrl)
+      } else {
+        throw new Error("No storage ID returned")
       }
-      toast.success(`${folder} uploaded successfully`)
-    } catch {
-      toast.error("Upload failed")
+      toast.success(`${folder} uploaded — saving…`)
+      await form.save()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed"
+      toast.error("Upload failed", { description: msg })
     } finally {
       setUploading(null)
     }

@@ -1,6 +1,9 @@
 "use client";
 
+import { useQuery, useMutation } from "convex/react";
 import { useSettings } from "@/lib/settings-context";
+import { api } from "@convex/_generated/api";
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -29,7 +32,27 @@ export function Logo({
   const h = height ?? config.defaultHeight;
 
   const hasUploadedLogo = siteLogo && siteLogo.trim().length > 0;
-  const src = hasUploadedLogo ? siteLogo : config.src;
+  const isStorageId = hasUploadedLogo && siteLogo.startsWith("kg") && !siteLogo.startsWith("http");
+  const resolvedUrl = useQuery(
+    api.storage.resolveFileUrl,
+    isStorageId ? { storageId: siteLogo } : "skip"
+  );
+  const backfill = useMutation(api.storage.backfillFileUrl);
+
+  useEffect(() => {
+    if (isStorageId && resolvedUrl) {
+      backfill({ storageId: siteLogo, url: resolvedUrl }).catch(() => {});
+    }
+  }, [isStorageId, resolvedUrl, siteLogo, backfill]);
+
+  let src = config.src;
+  if (hasUploadedLogo) {
+    if (isStorageId && resolvedUrl) {
+      src = resolvedUrl;
+    } else if (!isStorageId) {
+      src = siteLogo;
+    }
+  }
 
   return (
     // eslint-disable-next-line @next/next/no-img-element -- SVG logos are served as static assets or storage URLs
@@ -42,3 +65,4 @@ export function Logo({
     />
   );
 }
+
