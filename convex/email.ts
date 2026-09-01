@@ -839,3 +839,20 @@ export const sendIamWelcomeEmail = internalAction({
     return { sent };
   },
 });
+
+export const sendLoginCodeEmail = internalAction({
+  args: { to: v.string(), name: v.optional(v.string()), code: v.string() },
+  handler: async (_ctx, args) => {
+    const html = baseTemplate(`
+      <h2>Your Sign-In Verification Code</h2>
+      <p>Hi ${escapeHtml(args.name ?? "")},</p>
+      <p>Enter the following 6-digit code to complete your sign-in to TrueWorks:</p>
+      <div style="text-align: center; margin: 28px 0;">
+        <div style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0B2545; background: #FAFBFC; padding: 16px 32px; border-radius: 8px; border: 2px solid #C9A227;">${escapeHtml(args.code)}</div>
+      </div>
+      <p style="font-size: 13px; color: #64748b;">This code expires in 10 minutes. If you did not request this code, please secure your account immediately.</p>
+    `);
+    const sent = await sendEmail({ to: args.to, subject: "Your TrueWorks sign-in code", html });
+    return { sent };
+  },
+});

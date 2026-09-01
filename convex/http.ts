@@ -19,6 +19,7 @@ import {
   registerHandler,
   loginHandler,
   logoutHandler,
+  verifyLoginCodeHandler,
   mfaChallengeHandler,
   verifyEmailHandler,
   resendVerificationHandler,
@@ -256,6 +257,12 @@ http.route({
   path: "/iam/logout",
   method: "POST",
   handler: httpAction(withAuditTiming(withIamOriginProtection(logoutHandler))),
+});
+
+http.route({
+  path: "/iam/login/verify-code",
+  method: "POST",
+  handler: httpAction(withAuditTiming(withIamOriginProtection(verifyLoginCodeHandler))),
 });
 
 http.route({

@@ -10,6 +10,7 @@
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { normalizeEmail, sha256Hex, randomToken } from "./lib/tokens";
+import { internal } from "./_generated/api";
 import {
   SESSION_IDLE_MS,
   SESSION_ABSOLUTE_MS,
@@ -404,10 +405,14 @@ export const beginLogin = internalMutation({
     const now = Date.now();
     const normalized = normalizeEmail(email);
 
-    const rlEmail = await rateLimitState(ctx, `login:${normalized}`, now, 15 * 60 * 1000, 8);
+    const maxAttemptsSetting = await ctx.runQuery(internal.settings.getInternal, { key: "maxLoginAttempts" });
+    const maxAttempts = typeof maxAttemptsSetting === "number" ? maxAttemptsSetting : 5;
+    const ipLimit = Math.max(maxAttempts * 4, 20);
+
+    const rlEmail = await rateLimitState(ctx, `login:${normalized}`, now, 15 * 60 * 1000, maxAttempts);
     if (!rlEmail.allowed) return { allowed: false, lockedMinutes: 0, user: null };
 
-    const rlIp = await rateLimitState(ctx, `login:ip:${ipAddress ?? "unknown"}`, now, 15 * 60 * 1000, 20);
+    const rlIp = await rateLimitState(ctx, `login:ip:${ipAddress ?? "unknown"}`, now, 15 * 60 * 1000, ipLimit);
     if (!rlIp.allowed) return { allowed: false, lockedMinutes: 0, user: null };
 
     const user = await ctx.db
@@ -427,9 +432,13 @@ export const beginLogin = internalMutation({
 });
 
 /** Lockout policy: threshold and escalating cooldown (ms). */
-export const LOCKOUT_THRESHOLD = 5;
-export function lockoutDurationMs(failedCount: number): number {
-  const over = Math.max(0, failedCount - LOCKOUT_THRESHOLD);
+export async function getLockoutThreshold(ctx: any): Promise<number> {
+  const setting = await ctx.runQuery(internal.settings.getInternal, { key: "maxLoginAttempts" });
+  return typeof setting === "number" ? setting : 5;
+}
+
+export function lockoutDurationMs(failedCount: number, threshold: number = 5): number {
+  const over = Math.max(0, failedCount - threshold);
   return Math.min(2 ** over * 60_000, 30 * 60_000); // 2min, 4min, … cap 30min
 }
 
@@ -453,12 +462,15 @@ export const completeLogin = internalMutation({
     if (isSuccess && userId && args.rawToken) {
       const tokenHash = await sha256Hex(args.rawToken);
       const absoluteMs = args.rememberMe ? SESSION_ABSOLUTE_REMEMBER_MS : SESSION_ABSOLUTE_MS;
+      const sessionTimeoutSetting = await ctx.runQuery(internal.settings.getInternal, { key: "sessionTimeoutMinutes" });
+      const sessionTimeoutMin = typeof sessionTimeoutSetting === "number" ? sessionTimeoutSetting : 60;
+      const idleMs = sessionTimeoutMin * 60 * 1000;
       await ctx.db.insert("sessions", {
         tokenHash,
         userId: userId as any,
         createdAt: now,
         lastActiveAt: now,
-        idleExpiresAt: now + SESSION_IDLE_MS,
+        idleExpiresAt: now + idleMs,
         absoluteExpiresAt: now + absoluteMs,
         ipAddress: args.ipAddress,
         userAgent: args.userAgent,
@@ -480,9 +492,10 @@ export const completeLogin = internalMutation({
       const user = (await ctx.db.get(userId as any)) as any;
       if (user) {
         const failedLoginCount = (user.failedLoginCount ?? 0) + 1;
+        const threshold = await getLockoutThreshold(ctx);
         await ctx.db.patch(user._id, {
           failedLoginCount,
-          lockedUntil: failedLoginCount >= LOCKOUT_THRESHOLD ? now + lockoutDurationMs(failedLoginCount) : user.lockedUntil,
+          lockedUntil: failedLoginCount >= threshold ? now + lockoutDurationMs(failedLoginCount, threshold) : user.lockedUntil,
           updatedAt: now,
         });
       }
@@ -672,6 +685,96 @@ export const consumeVerificationToken = internalMutation({
 
     await ctx.db.patch(found._id, { usedAt: Date.now() });
     return { email: found.email };
+  },
+});
+
+export const createLoginVerification = internalMutation({
+  args: {
+    email: v.string(),
+    userId: v.string(),
+    code: v.string(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, { email, userId, code, ipAddress, userAgent }) => {
+    const expirySetting = await ctx.runQuery(internal.settings.getInternal, { key: "verificationCodeExpiry" });
+    const expiryMin = typeof expirySetting === "number" ? expirySetting : 10;
+    const codeHash = await sha256Hex(code);
+    const now = Date.now();
+    await ctx.db.insert("verificationTokens", {
+      email,
+      tokenHash: codeHash,
+      type: "login_verification",
+      expiresAt: now + expiryMin * 60 * 1000,
+      createdAt: now,
+    });
+    await ctx.db.patch(userId as any, {
+      lastLoginAt: now,
+      updatedAt: now,
+    });
+    return { ok: true, ipAddress, userAgent };
+  },
+});
+
+export const verifyLoginCode = internalMutation({
+  args: {
+    email: v.string(),
+    code: v.string(),
+    rememberMe: v.boolean(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, { email, code, rememberMe, ipAddress, userAgent }) => {
+    const normalized = normalizeEmail(email);
+    const codeHash = await sha256Hex(code);
+    const all = await ctx.db
+      .query("verificationTokens")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", codeHash))
+      .collect();
+    const token = all.find((t: any) => t.type === "login_verification" && !t.usedAt && t.expiresAt > Date.now() && normalizeEmail(t.email) === normalized);
+    if (!token) return { ok: false as const, error: "Invalid or expired verification code." };
+
+    await ctx.db.patch(token._id, { usedAt: Date.now() });
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normalized))
+      .first();
+    if (!user) return { ok: false as const, error: "User not found." };
+
+    const rawToken = randomToken(32);
+    const now = Date.now();
+    const timeoutSetting = await ctx.runQuery(internal.settings.getInternal, { key: "sessionTimeoutMinutes" });
+    const sessionTimeoutMin = typeof timeoutSetting === "number" ? timeoutSetting : 60;
+    const idleMs = sessionTimeoutMin * 60 * 1000;
+    const absoluteMs = rememberMe ? SESSION_ABSOLUTE_REMEMBER_MS : SESSION_ABSOLUTE_MS;
+    const tokenHash = await sha256Hex(rawToken);
+    await ctx.db.insert("sessions", {
+      tokenHash,
+      userId: user._id,
+      createdAt: now,
+      lastActiveAt: now,
+      idleExpiresAt: now + idleMs,
+      absoluteExpiresAt: now + absoluteMs,
+      ipAddress,
+      userAgent,
+      revoked: false,
+    });
+    await ctx.db.patch(user._id, {
+      lastLoginAt: now,
+      loginCount: (user.loginCount ?? 0) + 1,
+      failedLoginCount: 0,
+      lockedUntil: undefined,
+      updatedAt: now,
+    });
+    return {
+      ok: true as const,
+      sessionToken: rawToken,
+      userId: user._id,
+      role: user.role,
+      email: user.email,
+      name: user.name,
+    };
   },
 });
 

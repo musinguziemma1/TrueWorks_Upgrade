@@ -310,6 +310,26 @@ export async function loginHandler(ctx: Ctx, request: Request): Promise<Response
     }
   }
 
+  // Verification code step: if enabled in settings, require a code sent to
+  // the user's email before completing sign-in.
+  const requireVerification = await ctx.runQuery(internal.settings.getInternal, { key: "requireVerificationCode" });
+  if (requireVerification === true) {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await ctx.runMutation(internal.iamDb.createLoginVerification, {
+      email: normalized,
+      userId: user._id,
+      code,
+      ipAddress: ipAnon,
+      userAgent: ua,
+    });
+    await ctx.scheduler.runAfter(0, internal.email.sendLoginCodeEmail, {
+      to: user.email,
+      name: user.name ?? "User",
+      code,
+    });
+    return json({ verificationRequired: true, email: user.email });
+  }
+
   // complete login
   const rawToken = randomToken(32);
   await ctx.runMutation(internal.iamDb.completeLogin, {
@@ -473,6 +493,22 @@ export async function logoutHandler(ctx: Ctx, request: Request): Promise<Respons
     const tokenHash = await sha256Hex(rawToken);
     const session = await ctx.runQuery(internal.iamDb.findSessionByTokenHash, { tokenHash });
     if (session) {
+      // Optional sign-out verification: require a code sent to the user's
+      // email before revoking the session. The client must call
+      // /iam/logout/request-code first, then /iam/logout with the code.
+      const requireCode = await ctx.runQuery(internal.settings.getInternal, { key: "signOutVerification" });
+      if (requireCode === true) {
+        const body = await parseJsonBody(request);
+        const code = typeof body?.code === "string" ? body.code.trim() : "";
+        if (!code) {
+          return json({ verificationRequired: true }, 401);
+        }
+        const codeHash = await sha256Hex(code);
+        const tokens = await ctx.runQuery(internal.iamDb.findVerificationTokensByHash, { tokenHash: codeHash });
+        const valid = tokens.find((t: any) => t.type === "logout_verification" && !t.usedAt && t.expiresAt > Date.now());
+        if (!valid) return json({ error: "Invalid or expired verification code." }, 401);
+        await ctx.runMutation(internal.iamDb.consumeVerificationToken, { token: code, type: "logout_verification" });
+      }
       await ctx.runMutation(internal.iamDb.revokeSession, { id: session._id });
       await ctx.runMutation(internal.iamDb.recordSecurityEvent, {
         userId: session.userId,
@@ -487,6 +523,50 @@ export async function logoutHandler(ctx: Ctx, request: Request): Promise<Respons
     new Response(null, {
       status: 204,
     })
+  );
+}
+
+export async function verifyLoginCodeHandler(ctx: Ctx, request: Request): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const body = await parseJsonBody(request);
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const code = typeof body?.code === "string" ? body.code.trim() : "";
+  const rememberMe = !!body?.rememberMe;
+  if (!email || !code) return json({ error: "Email and code are required." }, 400);
+
+  const ip = anonymizeIp(getClientIp(request));
+  const ua = request.headers.get("user-agent") ?? "";
+
+  const result = await ctx.runMutation(internal.iamDb.verifyLoginCode, {
+    email,
+    code,
+    rememberMe,
+    ipAddress: ip,
+    userAgent: ua,
+  });
+
+  if (!result.ok) {
+    return json({ error: result.error }, 401);
+  }
+
+  await ctx.scheduler.runAfter(0, internal.email.sendSecurityNotification, {
+    to: result.email,
+    name: result.name ?? "User",
+    event: "New login",
+    detail: "Completed with verification code",
+  });
+
+  return setCookieHeader(
+    json({
+      ok: true,
+      sessionToken: result.sessionToken,
+      userId: result.userId,
+      role: result.role,
+      email: result.email,
+      name: result.name,
+    }),
+    result.sessionToken,
+    rememberMe ? SESSION_ABSOLUTE_REMEMBER_MS / 1000 : SESSION_ABSOLUTE_MS / 1000
   );
 }
 

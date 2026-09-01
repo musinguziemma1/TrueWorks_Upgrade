@@ -35,10 +35,21 @@ export async function touchSession(
   sessionId: string
 ): Promise<void> {
   const now = Date.now();
+  const session = await ctx.db.get(sessionId as SessionId);
+  const timeoutSetting = await ctx.db
+    .query("settings")
+    .withIndex("by_key", (q) => q.eq("key", "sessionTimeoutMinutes"))
+    .first();
+  const sessionTimeoutMin = typeof timeoutSetting?.value === "number" ? timeoutSetting.value : 60;
+  const idleMs = sessionTimeoutMin * 60 * 1000;
   await ctx.db.patch(sessionId as SessionId, {
     lastActiveAt: now,
-    idleExpiresAt: now + SESSION_IDLE_MS,
+    idleExpiresAt: now + idleMs,
   });
+  if (session) {
+    // keep unused-var lint quiet while preserving future use
+    void session;
+  }
 }
 
 export async function createSession(
@@ -122,7 +133,7 @@ export async function listSessions(
 export async function validateSession(
   ctx: MutationCtx,
   rawToken: string
-): Promise<{ valid: boolean; session?: SessionDoc; user?: UserDoc }> {
+): Promise<{ valid: boolean; session?: SessionDoc; user?: UserDoc; passwordExpired?: boolean }> {
   const tokenHash = await sha256Hex(rawToken);
   const session = await getSessionByTokenHash(ctx, tokenHash);
   if (!session) return { valid: false };
@@ -135,6 +146,22 @@ export async function validateSession(
 
   const user = await ctx.db.get(session.userId);
   if (!user) return { valid: false };
+
+  // Check password expiry if the setting is enabled
+  if (user.lastPasswordChangeAt) {
+    const expirySetting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "passwordExpiryDays"))
+      .first();
+    const expiryDays = typeof expirySetting?.value === "number" ? expirySetting.value : 90;
+    if (expiryDays > 0) {
+      const ageMs = Date.now() - user.lastPasswordChangeAt;
+      const maxAgeMs = expiryDays * 24 * 60 * 60 * 1000;
+      if (ageMs > maxAgeMs) {
+        return { valid: false, passwordExpired: true };
+      }
+    }
+  }
 
   return { valid: true, session, user };
 }
