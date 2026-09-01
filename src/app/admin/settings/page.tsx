@@ -73,7 +73,7 @@ export default function SettingsPage() {
       const buffer = await file.arrayBuffer()
       const result = await uploadFile({
         name: file.name,
-        content: new Uint8Array(buffer) as never,
+        content: buffer,
         contentType: file.type,
         folder,
       })
