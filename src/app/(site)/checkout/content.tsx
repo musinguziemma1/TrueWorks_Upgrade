@@ -139,7 +139,7 @@ export default function CheckoutContent() {
   const { track } = useAnalytics();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const { loading: authLoaded, isAuthenticated: isSignedIn, getToken, user } = useAuth();
-  const { currency, pesapalEnabled, stripeEnabled } = useSettings();
+  const { currency, pesapalEnabled, stripeEnabled, taxRate, taxAutoCalculate } = useSettings();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -211,15 +211,11 @@ export default function CheckoutContent() {
     ];
   }, [pesapalEnabled, stripeEnabled]);
 
-  // Keep paymentProvider in sync with available providers
-  useEffect(() => {
-    if (paymentProviders.length === 0) return;
-    const available = paymentProviders.some((p) => p.value === paymentProvider);
-    if (!available && paymentProviders[0]) {
-      setPaymentProvider(paymentProviders[0].value);
-      setStripeClientSecret(null);
-    }
-  }, [paymentProviders, paymentProvider]);
+  // Ensure paymentProvider is always a valid available provider
+  const safePaymentProvider: PaymentProvider =
+    paymentProviders.find((p) => p.value === paymentProvider)?.value ??
+    paymentProviders[0]?.value ??
+    "pesapal";
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -292,13 +288,13 @@ export default function CheckoutContent() {
   }, [authHeaders, convexOrderId, currency]);
 
   useEffect(() => {
-    if (paymentProvider !== "stripe" || !convexOrderId || stripeClientSecret) return;
+    if (safePaymentProvider !== "stripe" || !convexOrderId || stripeClientSecret) return;
     // Defer to a macrotask so state updates happen outside the effect body.
     const t = window.setTimeout(() => {
       void createStripePaymentIntent();
     }, 0);
     return () => window.clearTimeout(t);
-  }, [paymentProvider, convexOrderId, stripeClientSecret, createStripePaymentIntent]);
+  }, [safePaymentProvider, convexOrderId, stripeClientSecret, createStripePaymentIntent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,7 +308,7 @@ export default function CheckoutContent() {
       return;
     }
 
-    if (paymentProvider === "stripe" && orderId) {
+    if (safePaymentProvider === "stripe" && orderId) {
       return;
     }
 
@@ -334,7 +330,7 @@ export default function CheckoutContent() {
           customerEmail: email,
           customerName: `${firstName} ${lastName}`.trim(),
           paymentMethod:
-            paymentProvider === "pesapal"
+            safePaymentProvider === "pesapal"
               ? pesapalMethod === "mtn"
                 ? "MTN MoMo"
                 : pesapalMethod === "airtel"
@@ -358,7 +354,7 @@ export default function CheckoutContent() {
         setOrderId(result.orderNumber);
         setConvexOrderId(result.orderId);
 
-        if (paymentProvider === "pesapal") {
+        if (safePaymentProvider === "pesapal") {
           const initiateResponse = await fetch("/api/pesapal/initiate", {
             method: "POST",
             headers: await authHeaders(),
@@ -788,7 +784,7 @@ export default function CheckoutContent() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <RadioGroup
-                    value={paymentProvider}
+                    value={safePaymentProvider}
                     onValueChange={(v) => {
                       if (v) {
                         setPaymentProvider(v as PaymentProvider);
@@ -799,7 +795,7 @@ export default function CheckoutContent() {
                     className="grid grid-cols-1 gap-3 sm:grid-cols-2"
                   >
                     {paymentProviders.map((provider) => {
-                      const selected = paymentProvider === provider.value;
+                      const selected = safePaymentProvider === provider.value;
                       return (
                         <Label
                           key={provider.value}
@@ -840,7 +836,7 @@ export default function CheckoutContent() {
                     })}
                   </RadioGroup>
 
-                  {paymentProvider === "pesapal" && (
+                  {safePaymentProvider === "pesapal" && (
                     <div className="space-y-3">
                       <p className="text-xs font-medium text-muted-foreground">
                         Select mobile money provider:
@@ -890,7 +886,7 @@ export default function CheckoutContent() {
                     </div>
                   )}
 
-                  {paymentProvider === "stripe" && (
+                  {safePaymentProvider === "stripe" && (
                     <div className="space-y-3">
                       <p className="flex items-center gap-2 text-xs text-muted">
                         <ShieldCheck className="h-4 w-4 text-success" />
@@ -902,7 +898,7 @@ export default function CheckoutContent() {
               </Card>
               )}
 
-              {paymentProvider === "stripe" && stripeClientSecret && (
+              {safePaymentProvider === "stripe" && stripeClientSecret && (
                 <Card className="border-border/70 shadow-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2.5 text-lg">
@@ -988,15 +984,23 @@ export default function CheckoutContent() {
                       <dd className="font-medium">-{formatPrice(discountAmount)}</dd>
                     </div>
                   )}
+                  {taxAutoCalculate && taxRate > 0 && (
+                    <div className="flex justify-between text-muted">
+                      <dt>Tax ({taxRate}%)</dt>
+                      <dd className="font-medium">{formatPrice(Math.round(displayTotal * (taxRate / 100) * 100) / 100)}</dd>
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-between pt-1">
                     <dt className="font-heading text-base font-semibold text-primary">Total</dt>
                     <dd className="font-heading text-xl font-bold text-primary">
-                      {formatPrice(displayTotal)}
+                      {formatPrice(taxAutoCalculate && taxRate > 0
+                        ? Math.round((displayTotal + displayTotal * (taxRate / 100)) * 100) / 100
+                        : displayTotal)}
                     </dd>
                   </div>
                 </dl>
 
-                {paymentProvider === "pesapal" && (
+                {safePaymentProvider === "pesapal" && (
                   <Button
                     type="submit"
                     size="lg"
@@ -1014,7 +1018,7 @@ export default function CheckoutContent() {
                   </Button>
                 )}
 
-                {paymentProvider === "stripe" && !stripeClientSecret && (
+                {safePaymentProvider === "stripe" && !stripeClientSecret && (
                   <Button
                     type="submit"
                     size="lg"
