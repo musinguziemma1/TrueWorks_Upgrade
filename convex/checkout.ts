@@ -166,14 +166,12 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       }
     }
 
-    const total = Math.max(0, subtotal - discountAmount);
-
     const taxRateSetting = await ctx.runQuery(internal.settings.getInternal, { key: "taxRate" });
     const taxAutoCalculateSetting = await ctx.runQuery(internal.settings.getInternal, { key: "taxAutoCalculate" });
     const taxRate = typeof taxRateSetting === "number" ? taxRateSetting : 18;
     const taxAutoCalculate = typeof taxAutoCalculateSetting === "boolean" ? taxAutoCalculateSetting : true;
-    const tax = taxAutoCalculate ? Math.round(total * (taxRate / 100) * 100) / 100 : 0;
-    const totalWithTax = Math.round((total + tax) * 100) / 100;
+    const tax = taxAutoCalculate ? Math.round(subtotal * (taxRate / 100) * 100) / 100 : 0;
+    const totalWithTax = Math.round((subtotal - discountAmount + tax) * 100) / 100;
 
     const orderNumber = `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 

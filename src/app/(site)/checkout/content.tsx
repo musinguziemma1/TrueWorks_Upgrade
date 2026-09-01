@@ -202,11 +202,11 @@ export default function CheckoutContent() {
   }, [getConvexToken]);
 
   const discountAmount = appliedCoupon?.discount ?? 0;
-  const displayTotal = Math.max(0, totalPrice - discountAmount);
+  const subtotal = totalPrice;
   const taxAmount = taxAutoCalculate && taxRate > 0
-    ? Math.round(displayTotal * (taxRate / 100) * 100) / 100
+    ? Math.round(subtotal * (taxRate / 100) * 100) / 100
     : 0;
-  const finalTotal = Math.round((displayTotal + taxAmount) * 100) / 100;
+  const finalTotal = Math.round((subtotal - discountAmount + taxAmount) * 100) / 100;
 
   const paymentProviders = useMemo(() => {
     return [
@@ -377,7 +377,7 @@ export default function CheckoutContent() {
           if (pesapalResult.success && pesapalResult.redirectUrl) {
             clearCart();
             track("purchase", {
-              value: displayTotal,
+              value: finalTotal,
               email: email.trim() || undefined,
             });
             // Mark abandoned cart as recovered
@@ -406,14 +406,14 @@ export default function CheckoutContent() {
   const handleStripeSuccess = () => {
     clearCart();
     track("purchase", {
-      value: displayTotal,
+      value: finalTotal,
       email: email.trim() || undefined,
     });
     // Mark abandoned cart as recovered
     if (convexClient) {
       convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
     }
-    router.push(`/order-confirmation?order=${orderId}&total=${displayTotal}`);
+    router.push(`/order-confirmation?order=${orderId}&total=${finalTotal}`);
   };
 
   const handleStripeError = (msg: string) => {
