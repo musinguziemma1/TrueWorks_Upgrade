@@ -17,9 +17,11 @@ export const summary = query({
         orderStats: { total: 0, totalRevenue: 0, pending: 0, completed: 0, refunded: 0 },
         productStats: { total: 0, published: 0, draft: 0, archived: 0 },
         subscriberCount: 0,
+        customerCount: 0,
         recentOrders: [],
         dailyRevenue: [],
         totalDownloads: 0,
+        activeLicenses: 0,
       };
     }
 
@@ -34,6 +36,7 @@ export const summary = query({
 
     const products = await ctx.db.query("products").collect();
     const subscribers = await ctx.db.query("subscribers").collect();
+    const customers = await ctx.db.query("customers").collect();
     const downloads = await ctx.db.query("downloads").collect();
 
     // All-time order stats. Recent-window orders are used for the revenue trend
@@ -70,15 +73,21 @@ export const summary = query({
       else if (p.status === "archived") archived++;
     }
 
+    // Count active licenses
+    const allLicenses = await ctx.db.query("licenses").collect();
+    const activeLicenses = allLicenses.filter((l) => l.status === "active").length;
+
     return {
       orderStats: { total, totalRevenue, pending, completed, refunded },
       productStats: { total: products.length, published, draft, archived },
       subscriberCount: subscribers.length,
+      customerCount: customers.length,
       recentOrders: orders.slice(0, 5),
       dailyRevenue: Array.from(revenueByDay.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, revenue]) => ({ date, revenue })),
       totalDownloads: downloads.length,
+      activeLicenses,
     };
   },
 });

@@ -60,8 +60,9 @@ export default function AdminDashboard() {
   const orderStats = dash?.orderStats;
   const productStats = dash?.productStats;
   const recentOrders = dash?.recentOrders ?? [];
-  const totalSubscribers = dash?.subscriberCount ?? 0;
+  const totalCustomers = dash?.customerCount ?? 0;
   const totalDownloads = dash?.totalDownloads ?? 0;
+  const activeLicenses = dash?.activeLicenses ?? 0;
 
   const today = useMemo(
     () =>
@@ -166,11 +167,11 @@ export default function AdminDashboard() {
         />
         <StatCard
           label="Customers"
-          value={totalSubscribers}
+          value={totalCustomers}
           icon={Users}
           tint="text-secondary bg-secondary/10"
           href="/admin/customers"
-          footnote="Newsletter sign-ups"
+          footnote="People who purchased"
           loading={isLoading}
         />
         <StatCard
@@ -187,6 +188,15 @@ export default function AdminDashboard() {
           tint="text-emerald-700 bg-emerald-50"
           href="/admin/products"
           footnote={`${publishedProducts} live · ${draftProducts} draft`}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Active Licenses"
+          value={activeLicenses}
+          icon={Shield}
+          tint="text-emerald-700 bg-emerald-50"
+          href="/admin/licenses"
+          footnote="Currently valid"
           loading={isLoading}
         />
       </div>
