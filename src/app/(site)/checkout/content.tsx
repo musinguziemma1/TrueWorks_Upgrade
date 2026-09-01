@@ -203,6 +203,10 @@ export default function CheckoutContent() {
 
   const discountAmount = appliedCoupon?.discount ?? 0;
   const displayTotal = Math.max(0, totalPrice - discountAmount);
+  const taxAmount = taxAutoCalculate && taxRate > 0
+    ? Math.round(displayTotal * (taxRate / 100) * 100) / 100
+    : 0;
+  const finalTotal = Math.round((displayTotal + taxAmount) * 100) / 100;
 
   const paymentProviders = useMemo(() => {
     return [
@@ -987,15 +991,13 @@ export default function CheckoutContent() {
                   {taxAutoCalculate && taxRate > 0 && (
                     <div className="flex justify-between text-muted">
                       <dt>Tax ({taxRate}%)</dt>
-                      <dd className="font-medium">{formatPrice(Math.round(displayTotal * (taxRate / 100) * 100) / 100)}</dd>
+                      <dd className="font-medium">{formatPrice(taxAmount)}</dd>
                     </div>
                   )}
                   <div className="flex items-baseline justify-between pt-1">
                     <dt className="font-heading text-base font-semibold text-primary">Total</dt>
                     <dd className="font-heading text-xl font-bold text-primary">
-                      {formatPrice(taxAutoCalculate && taxRate > 0
-                        ? Math.round((displayTotal + displayTotal * (taxRate / 100)) * 100) / 100
-                        : displayTotal)}
+                      {formatPrice(finalTotal)}
                     </dd>
                   </div>
                 </dl>
@@ -1013,7 +1015,7 @@ export default function CheckoutContent() {
                         Processing...
                       </>
                     ) : (
-                      `Pay ${formatPrice(displayTotal)}`
+                      `Pay ${formatPrice(finalTotal)}`
                     )}
                   </Button>
                 )}
