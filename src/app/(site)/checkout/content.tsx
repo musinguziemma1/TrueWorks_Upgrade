@@ -16,6 +16,7 @@ import {
   MapPin,
   Loader2,
   Tag,
+  AlertCircle,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/lib/auth/provider";
@@ -209,6 +210,16 @@ export default function CheckoutContent() {
       ...(stripeEnabled ? [{ value: "stripe" as const, label: "Stripe", note: "International Cards", icon: CreditCard as typeof CreditCard }] : []),
     ];
   }, [pesapalEnabled, stripeEnabled]);
+
+  // Keep paymentProvider in sync with available providers
+  useEffect(() => {
+    if (paymentProviders.length === 0) return;
+    const available = paymentProviders.some((p) => p.value === paymentProvider);
+    if (!available && paymentProviders[0]) {
+      setPaymentProvider(paymentProviders[0].value);
+      setStripeClientSecret(null);
+    }
+  }, [paymentProviders, paymentProvider]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -752,6 +763,20 @@ export default function CheckoutContent() {
                 </CardContent>
               </Card>
 
+              {paymentProviders.length === 0 ? (
+                <Card className="border-red-200 bg-red-50/30">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-900">No payment methods available</p>
+                        <p className="text-xs text-red-700 mt-1">All payment gateways are currently disabled. Please contact support or try again later.</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+
               <Card className="border-border/70 shadow-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2.5 text-lg">
@@ -875,6 +900,7 @@ export default function CheckoutContent() {
                   )}
                 </CardContent>
               </Card>
+              )}
 
               {paymentProvider === "stripe" && stripeClientSecret && (
                 <Card className="border-border/70 shadow-card">
