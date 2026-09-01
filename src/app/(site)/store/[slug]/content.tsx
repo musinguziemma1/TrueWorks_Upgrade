@@ -328,7 +328,7 @@ export default function ProductDetail() {
                       {formatPrice(p.price)}
                     </span>
                     <Badge className="gradient-gold border-0 text-primary-dark">
-                      -{Math.round(((p.price - p.salePrice) / p.price) * 100)}%
+                      -{p.price > 0 ? Math.round(((p.price - p.salePrice) / p.price) * 100) : 0}%
                     </Badge>
                   </>
                 )}

@@ -341,6 +341,7 @@ export default function CheckoutContent() {
                 ? "Airtel Money"
                 : "Card"
               : "Stripe Card",
+          currency: currency,
           couponCode: appliedCoupon?.code || undefined,
           billingAddress: {
             street: address.street.trim() || undefined,

@@ -232,7 +232,7 @@ export const reconcileFromOrders = mutation({
           provider: inferProvider({ paymentId, paymentMethod: o.paymentMethod }),
           method: o.paymentMethod || "card",
           amount: o.total,
-          currency: "USD",
+          currency: o.currency || "USD",
           status: o.paymentStatus,
           customerEmail: o.customerEmail,
           customerName: o.customerName,
@@ -349,8 +349,9 @@ export const stats = query({
 
     const settled = completed + failed;
     const successRate = settled > 0 ? Math.round((completed / settled) * 1000) / 10 : 0;
-    const refundRate = completed + refunded > 0
-      ? Math.round((refunded / (completed + refunded)) * 1000) / 10
+    // Standard definition: refund rate = refunds / completed sales.
+    const refundRate = completed > 0
+      ? Math.round((refunded / completed) * 1000) / 10
       : 0;
 
     const completedInPrimary = all.filter(

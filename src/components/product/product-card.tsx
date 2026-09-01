@@ -183,7 +183,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   const href = `/store/${product.slug}`;
   const price = product.salePrice ?? product.price;
-  const discount = product.salePrice
+  const discount = product.salePrice && product.price > 0
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : null;
   const inWishlist = isInWishlist(product._id);

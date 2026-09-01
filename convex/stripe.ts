@@ -321,13 +321,24 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
       const expectedAmount = order.total;
       if (Math.abs(paidAmount - expectedAmount) > 0.01) {
         // Amount mismatch — possible tampering. Do NOT complete the order.
+        // Mark the order as failed and acknowledge the webhook with 200 so
+        // Stripe does not retry forever. (Returning 4xx triggers Stripe's
+        // exponential-backoff retry policy.)
+        await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+          id: order._id,
+          paymentStatus: "failed",
+          orderStatus: "pending",
+        });
         await ctx.runMutation(internal.notifications.createPublic, {
           type: "order",
           title: "Payment Amount Mismatch",
           message: `Stripe payment for order ${orderId}: expected $${expectedAmount}, got $${paidAmount}. Order NOT completed.`,
           link: "/admin/orders",
         });
-        return new Response("Amount mismatch", { status: 400 });
+        return new Response(JSON.stringify({ received: true, amountMismatch: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       let payment = await ctx.runQuery(internal.payments.getByPaymentId, {

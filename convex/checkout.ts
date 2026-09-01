@@ -34,7 +34,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     const body = await request.json();
-    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress } = body;
+    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress, currency } = body;
+    const orderCurrency = typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : "USD";
 
     // The submitted email must match the authenticated user's email. This
     // prevents creating orders on behalf of another account.
@@ -198,6 +199,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       country: country || undefined,
       region: region || undefined,
       city: city || undefined,
+      currency: orderCurrency,
       billingAddress: billing,
     });
 

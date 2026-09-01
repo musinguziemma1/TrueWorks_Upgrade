@@ -525,13 +525,18 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
   // SECURITY: verify the amount matches the order total before fulfilling
   const paidAmount = Number(data.amount);
   if (Number.isFinite(paidAmount) && Math.abs(paidAmount - order.total) > 0.01) {
+    await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+      id: order._id,
+      paymentStatus: "failed",
+      orderStatus: "pending",
+    });
     await ctx.runMutation(internal.notifications.createPublic, {
       type: "order",
       title: "Payment Amount Mismatch",
       message: `Pesapal payment for order ${order.orderNumber}: expected $${order.total}, got $${paidAmount}. Order NOT completed.`,
       link: "/admin/orders",
     });
-    return "completed";
+    return "failed";
   }
 
   await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {

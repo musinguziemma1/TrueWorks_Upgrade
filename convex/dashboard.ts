@@ -28,6 +28,8 @@ export const summary = query({
     const now = Date.now();
     const recentWindowStart = now - 45 * DAY_MS;
 
+    // All-time order stats (separate query, no time window)
+    const allOrders = await ctx.db.query("orders").collect();
     const orders = await ctx.db
       .query("orders")
       .withIndex("by_createdAt", (q) => q.gte("createdAt", recentWindowStart))
@@ -39,8 +41,9 @@ export const summary = query({
     const customers = await ctx.db.query("customers").collect();
     const downloads = await ctx.db.query("downloads").collect();
 
-    // All-time order stats. Recent-window orders are used for the revenue trend
-    // (the panel only ever shows the last handful of days).
+    // All-time order stats (from allOrders, not the 45-day windowed `orders`).
+    // Recent-window orders are used for the revenue trend (the panel only ever
+    // shows the last handful of days).
     let total = 0;
     let totalRevenue = 0;
     let pending = 0;
@@ -48,7 +51,7 @@ export const summary = query({
     let refunded = 0;
     const revenueByDay = new Map<string, number>();
 
-    for (const o of orders) {
+    for (const o of allOrders) {
       total++;
       if (o.paymentStatus === "completed") {
         completed++;

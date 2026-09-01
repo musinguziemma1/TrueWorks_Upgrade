@@ -251,6 +251,7 @@ export default defineSchema({
     country: v.optional(v.string()),
     region: v.optional(v.string()),
     city: v.optional(v.string()),
+    currency: v.optional(v.string()),
     billingAddress: v.optional(v.object({
       street: v.optional(v.string()),
       city: v.optional(v.string()),

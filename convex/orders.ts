@@ -89,6 +89,31 @@ export const getById = query({
   },
 });
 
+/**
+ * Public lookup by human-readable order number (e.g. "TW-..."). Used by the
+ * order confirmation page so the displayed total comes from the DB rather
+ * than a user-controllable URL parameter.
+ */
+export const getByOrderNumber = query({
+  args: { orderNumber: v.string() },
+  handler: async (ctx, args) => {
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_orderNumber", (q) => q.eq("orderNumber", args.orderNumber))
+      .first();
+    if (!order) return null;
+    const me = await getCurrentUser(ctx);
+    // Only the order owner or an admin can read it.
+    if (me && (me.role === "superadmin" || me.role === "admin" || me.role === "owner" || me.role === "editor")) {
+      return order;
+    }
+    if (me && me.email && order.customerEmail === me.email) {
+      return order;
+    }
+    return null;
+  },
+});
+
 // Internal: called by orderEmails action — requires admin auth.
 export const getByIdInternal = query({
   args: { id: v.id("orders") },
@@ -174,6 +199,7 @@ const orderCreateArgs = {
   country: v.optional(v.string()),
   region: v.optional(v.string()),
   city: v.optional(v.string()),
+  currency: v.optional(v.string()),
   billingAddress: v.optional(v.object({
     street: v.optional(v.string()),
     city: v.optional(v.string()),
@@ -444,10 +470,10 @@ export const customerLtvSegments = query({
     const all = await ctx.db.query("customers").collect();
     const brackets = [
       { label: "0", min: 0, max: 0, count: 0 },
-      { label: "< 50K", min: 1, max: 50_000, count: 0 },
+      { label: "< 50K", min: 1, max: 49_999, count: 0 },
       { label: "50K–250K", min: 50_000, max: 250_000, count: 0 },
-      { label: "250K–1M", min: 250_000, max: 1_000_000, count: 0 },
-      { label: "> 1M", min: 1_000_000, max: Number.MAX_SAFE_INTEGER, count: 0 },
+      { label: "250K–1M", min: 250_001, max: 1_000_000, count: 0 },
+      { label: "> 1M", min: 1_000_001, max: Number.MAX_SAFE_INTEGER, count: 0 },
     ];
     for (const c of all) {
       const ltv = c.lifetimeValue;

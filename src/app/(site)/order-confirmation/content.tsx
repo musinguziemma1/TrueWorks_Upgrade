@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFormatPrice } from "@/lib/use-format-price";
+import { api } from "@convex/_generated/api";
 
 const steps = ["Cart", "Checkout", "Confirmation"];
 
@@ -44,12 +46,16 @@ export default function OrderConfirmationContent() {
   const formatPrice = useFormatPrice();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("order") || "";
-  const total = Number(searchParams.get("total")) || 0;
   const rawStatus = searchParams.get("status") || "";
   const status: ConfirmationStatus =
     rawStatus === "completed" || rawStatus === "pending" || rawStatus === "failed" || rawStatus === "refunded"
       ? rawStatus
       : "completed";
+
+  // SECURITY: fetch the order from the DB so the displayed total is
+  // server-authoritative. Never trust the `total` URL parameter.
+  const order = useQuery(api.orders.getByOrderNumber, orderNumber ? { orderNumber } : "skip");
+  const total = order?.total ?? 0;
 
   const hasOrder = !!orderNumber;
 

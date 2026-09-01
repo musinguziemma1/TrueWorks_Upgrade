@@ -113,10 +113,12 @@ export default function ReportsPage() {
   const coupons = useQuery(api.coupons.list, {});
   const subscribers = useQuery(api.subscribers.list, {});
 
-  // Filter orders by date range
+  // Filter orders by date range. Use the application `createdAt` field
+  // (not Convex's internal `_creationTime`) so the filter matches what
+  // the server-side `orders.list` already applied.
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    return orders.filter((o) => o._creationTime >= since);
+    return orders.filter((o) => o.createdAt >= since);
   }, [orders, since]);
 
   const stats = useMemo(() => {

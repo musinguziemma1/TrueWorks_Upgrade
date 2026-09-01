@@ -135,14 +135,15 @@ export default function AnalyticsPage() {
     return Math.max(...productPerformance.map((p) => p.totalSales))
   }, [productPerformance])
 
-  const totalOrdersCount = paymentMethods?.reduce((sum: number, p: { name: string; value: number }) => sum + p.value, 0) ?? 0
   const ltvTotal = ltvSegments?.reduce((sum: number, s: { label: string; count: number }) => sum + s.count, 0) ?? 0
 
   const safeSummary = useMemo(() => summary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [summary])
   const safePrev = useMemo(() => prevSummary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [prevSummary])
-  const avgOrderValue = totalOrdersCount > 0 ? safeSummary.totalRevenue / totalOrdersCount : 0
+  // avgOrderValue is revenue / completed orders (not all orders including failed).
+  const completedOrdersCount = safeSummary.totalOrders ?? 0;
+  const avgOrderValue = completedOrdersCount > 0 ? safeSummary.totalRevenue / completedOrdersCount : 0
   const conversionRate = safeSummary.totalVisitors > 0
-    ? ((totalOrdersCount / safeSummary.totalVisitors) * 100).toFixed(1)
+    ? ((completedOrdersCount / safeSummary.totalVisitors) * 100).toFixed(1)
     : "0.0"
   const revenuePerVisitor = safeSummary.totalVisitors > 0
     ? formatPrice(safeSummary.totalRevenue / safeSummary.totalVisitors)
@@ -152,7 +153,7 @@ export default function AnalyticsPage() {
 
   const deltas = {
     revenue: pctDelta(safeSummary.totalRevenue, safePrev.totalRevenue),
-    orders: pctDelta(totalOrdersCount, prevOrdersCount),
+    orders: pctDelta(completedOrdersCount, prevOrdersCount),
     downloads: pctDelta(safeSummary.totalDownloads, safePrev.totalDownloads),
     visitors: pctDelta(safeSummary.totalVisitors, safePrev.totalVisitors),
     pageViews: pctDelta(safeSummary.totalPageViews, safePrev.totalPageViews),
@@ -161,7 +162,7 @@ export default function AnalyticsPage() {
   const revenueData = useMemo(() => {
     return (safeSummary.dailyData ?? []).map((d: { date: string; revenue: number; orders: number; downloads: number; visitors: number; pageViews: number }) => ({
       date: d.date,
-      revenue: d.revenue / 1_000_000,
+      revenue: d.revenue,
       orders: d.orders,
       downloads: d.downloads,
       visitors: d.visitors,
@@ -290,7 +291,7 @@ export default function AnalyticsPage() {
 
       section("Key Metrics")
       kvRow("Total Revenue", money(safeSummary.totalRevenue))
-      kvRow("Total Orders", fmt(totalOrdersCount))
+      kvRow("Total Orders", fmt(completedOrdersCount))
       kvRow("Downloads", fmt(safeSummary.totalDownloads))
       kvRow("Visitors", fmt(safeSummary.totalVisitors))
       kvRow("Page Views", fmt(safeSummary.totalPageViews))
@@ -302,7 +303,7 @@ export default function AnalyticsPage() {
       section("Daily Revenue Trend")
       table(
         ["Date", "Revenue", "Orders", "Downloads", "Visitors", "Page Views"],
-        revenueData.map((d) => [d.date, money(d.revenue * 1_000_000), d.orders, d.downloads, d.visitors, d.pageViews])
+        revenueData.map((d) => [d.date, money(d.revenue), d.orders, d.downloads, d.visitors, d.pageViews])
       )
 
       section("Top Products")
@@ -343,7 +344,7 @@ export default function AnalyticsPage() {
     } finally {
       setExporting(false)
     }
-  }, [rangeLabel, safeSummary, totalOrdersCount, conversionRate, avgOrderValue, revenuePerVisitor, revenueData, productPerformance, paymentChartData, geoChartData, funnelData, ltvSegments])
+  }, [rangeLabel, safeSummary, completedOrdersCount, conversionRate, avgOrderValue, revenuePerVisitor, revenueData, productPerformance, paymentChartData, geoChartData, funnelData, ltvSegments])
 
   if (loading) {
     return (
@@ -407,7 +408,7 @@ export default function AnalyticsPage() {
       <div ref={analyticsRef} className="space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} delta={deltas.revenue} spark={spark.revenue} />
-          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={totalOrdersCount.toLocaleString()} delta={deltas.orders} spark={spark.orders} />
+          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={completedOrdersCount.toLocaleString()} delta={deltas.orders} spark={spark.orders} />
           <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} delta={deltas.downloads} spark={spark.downloads} />
           <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} delta={deltas.visitors} spark={spark.visitors} />
           <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} delta={deltas.pageViews} spark={spark.pageViews} />
@@ -432,7 +433,7 @@ export default function AnalyticsPage() {
                   <LineChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}M`} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v}`} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Line type="monotone" dataKey="revenue" stroke="#0B2545" strokeWidth={2} dot={{ fill: "#0B2545" }} />
                   </LineChart>
