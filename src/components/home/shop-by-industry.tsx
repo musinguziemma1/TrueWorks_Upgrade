@@ -50,7 +50,7 @@ function ShopByIndustryInner() {
 
   if (categories === undefined) {
     return (
-      <section className="relative bg-white py-20 lg:py-24">
+      <section className="relative overflow-hidden py-20 lg:py-24">
         <NavyBackground />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-12 text-center">
@@ -74,7 +74,7 @@ function ShopByIndustryInner() {
   const items = categories;
 
   return (
-    <section className="relative bg-white py-20 lg:py-24">
+    <section className="relative overflow-hidden py-20 lg:py-24">
       <NavyBackground />
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div
