@@ -61,7 +61,7 @@ export function EngagementChart({ stats, loading }: { stats?: CampaignsStats; lo
                   wrapperStyle={{ fontSize: 12 }}
                 />
                 <Bar dataKey="openRate" fill="#3E6990" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="clickRate" fill="#C9A227" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="clickRate" fill="#B8860B" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

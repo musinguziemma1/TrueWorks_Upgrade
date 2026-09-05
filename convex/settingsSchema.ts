@@ -57,7 +57,7 @@ export const SETTING_FIELDS: SettingField[] = [
   // ─── Branding ───────────────────────────────────────────────────────────
   { key: "primaryColor", tab: "branding", type: "color", label: "Primary Color", default: "#0B2545", status: "live" },
   { key: "secondaryColor", tab: "branding", type: "color", label: "Secondary Color", default: "#3E6990", status: "live" },
-  { key: "accentColor", tab: "branding", type: "color", label: "Accent Color", default: "#C9A227", status: "live" },
+  { key: "accentColor", tab: "branding", type: "color", label: "Accent Color", default: "#B8860B", status: "live" },
   { key: "backgroundColor", tab: "branding", type: "color", label: "Background Color", default: "#FFFFFF", status: "live" },
   { key: "surfaceColor", tab: "branding", type: "color", label: "Surface Color", default: "#FAFBFC", status: "live" },
   { key: "foregroundColor", tab: "branding", type: "color", label: "Foreground Color", default: "#1E293B", status: "live" },

@@ -33,7 +33,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                     {/* Top bar */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#E3BC3F] rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 bg-[#DAA520] rounded-lg flex items-center justify-center">
                           <span className="text-[#04101F] font-bold text-sm">TW</span>
                         </div>
                         <span className="text-white font-semibold">TrueWorks BOS</span>
@@ -73,7 +73,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                         {Array.from({ length: 12 }, (_, i) => (
                           <motion.div
                             key={i}
-                            className="flex-1 bg-gradient-to-t from-[#E3BC3F] to-[#C9A227] rounded-sm"
+                            className="flex-1 bg-gradient-to-t from-[#DAA520] to-[#B8860B] rounded-sm"
                             initial={{ height: 0 }}
                             animate={isActive ? { height: `${Math.random() * 60 + 20}%` } : { height: 0 }}
                             transition={{ delay: 1 + i * 0.05 }}
@@ -194,7 +194,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
           {/* Background glow effect based on theme */}
           <div 
             className={`absolute inset-0 opacity-30 ${
-              slide.theme === 'finance' ? 'bg-gradient-radial from-[#E3BC3F]/20' :
+              slide.theme === 'finance' ? 'bg-gradient-radial from-[#DAA520]/20' :
               slide.theme === 'operations' ? 'bg-gradient-radial from-blue-500/20' :
               slide.theme === 'healthcare' ? 'bg-gradient-radial from-green-500/20' :
               slide.theme === 'manufacturing' ? 'bg-gradient-radial from-orange-500/20' :

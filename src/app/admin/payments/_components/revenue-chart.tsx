@@ -94,7 +94,7 @@ export function RevenueChart({ stats, loading }: { stats?: StatsResult; loading:
                 <Bar
                   yAxisId="count"
                   dataKey="count"
-                  fill="#C9A227"
+                  fill="#B8860B"
                   fillOpacity={0.5}
                   radius={[3, 3, 0, 0]}
                   barSize={14}

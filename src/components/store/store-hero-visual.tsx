@@ -6,7 +6,7 @@ import { CountUp } from "@/components/ui/count-up";
 
 const kpis = [
   { label: "Revenue Growth", value: 24.7, decimals: 1, suffix: "%", trend: "up", color: "#10B981" },
-  { label: "Active Templates", value: 500, suffix: "+", color: "#E3BC3F" },
+  { label: "Active Templates", value: 500, suffix: "+", color: "#DAA520" },
   { label: "Avg. Time Saved", value: 18, suffix: "hrs", color: "#3B82F6" },
 ];
 
@@ -29,7 +29,7 @@ export default function StoreHeroVisual() {
         {/* Window bar */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E3BC3F]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#DAA520]">
               <FileSpreadsheet className="h-4 w-4 text-[#04101F]" />
             </div>
             <div>
@@ -88,7 +88,7 @@ export default function StoreHeroVisual() {
             {barData.map((h, i) => (
               <motion.div
                 key={i}
-                className="flex-1 rounded-sm bg-gradient-to-t from-[#E3BC3F] to-[#C9A227]"
+                className="flex-1 rounded-sm bg-gradient-to-t from-[#DAA520] to-[#B8860B]"
                 initial={{ height: 0 }}
                 animate={{ height: `${h}%` }}
                 transition={{ duration: 0.6, delay: 0.9 + i * 0.06, ease: "easeOut" }}

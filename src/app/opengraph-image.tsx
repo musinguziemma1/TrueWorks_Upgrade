@@ -33,7 +33,7 @@ export default function OgImage() {
               width: "56px",
               height: "56px",
               borderRadius: "12px",
-              background: "#C9A227",
+              background: "#B8860B",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -69,7 +69,7 @@ export default function OgImage() {
             alignItems: "center",
             gap: "10px",
             fontSize: "22px",
-            color: "#C9A227",
+            color: "#B8860B",
             fontWeight: 700,
           }}
         >

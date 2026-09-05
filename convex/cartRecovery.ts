@@ -47,8 +47,8 @@ export const sendRecoveryEmails = internalAction({
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 36px 32px; text-align: center; }
     .banner h1 { color: #ffffff; font-size: 24px; margin: 0; }
-    .banner .accent { color: #c9a227; }
-    .gold-bar { height: 3px; background: linear-gradient(90deg, #c9a227, #e8d48b, #c9a227); }
+    .banner .accent { color: #B8860B; }
+    .gold-bar { height: 3px; background: linear-gradient(90deg, #B8860B, #E8C547, #B8860B); }
     .content { padding: 32px; color: #2A3548; line-height: 1.6; }
     .content h2 { color: #0b2545; font-size: 20px; margin: 0 0 12px 0; }
     .content p { margin: 0 0 16px 0; font-size: 15px; }
@@ -56,7 +56,7 @@ export const sendRecoveryEmails = internalAction({
     .cart-table th { background: #F4F6FA; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #5D6B7E; border-bottom: 2px solid #E2E7EE; }
     .total-box { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: right; }
     .total-box .amount { font-size: 24px; font-weight: 700; color: #0b2545; }
-    .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; }
+    .button { display: inline-block; background: #B8860B; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; }
     .footer { padding: 24px 32px; background: #0b2545; text-align: center; }
     .footer p { color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 8px 0; }
     .footer .brand { color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
@@ -78,7 +78,7 @@ export const sendRecoveryEmails = internalAction({
       </table>
       <div class="total-box"><div>Cart Total</div><div class="amount">$${cart.totalValue.toFixed(2)}</div></div>
       <div style="text-align: center; margin: 28px 0;"><a href="${SITE_URL}/cart" class="button">Complete Your Purchase →</a></div>
-      <p style="font-size: 13px; color: #5D6B7E;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.</p>
+      <p style="font-size: 13px; color: #5D6B7E;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #B8860B;">info@trueworksgroup.com</a>.</p>
     </div>
     <div class="footer">${brandContactLine()}<p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Limited.</p></div>
   </div>

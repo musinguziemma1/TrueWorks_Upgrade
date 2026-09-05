@@ -14,7 +14,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
     <div className="flex flex-col sm:flex-row gap-4 items-start">
       {/* Primary CTA - Explore Solutions */}
       <motion.button
-        className="group relative px-7 py-3.5 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] text-[#04101F] font-body font-bold text-base rounded-xl overflow-hidden transition-all duration-300"
+        className="group relative px-7 py-3.5 bg-gradient-to-r from-[#DAA520] to-[#B8860B] text-[#04101F] font-body font-bold text-base rounded-xl overflow-hidden transition-all duration-300"
         variants={buttonHover}
         initial="rest"
         whileHover="hover"
@@ -23,7 +23,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
       >
         {/* Button glow effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-[#E3BC3F] to-[#C9A227] rounded-xl"
+          className="absolute inset-0 bg-gradient-to-r from-[#DAA520] to-[#B8860B] rounded-xl"
           variants={glowEffect}
           initial="rest"
           whileHover="hover"

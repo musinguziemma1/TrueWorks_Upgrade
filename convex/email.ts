@@ -107,7 +107,7 @@ function baseTemplate(content: string): string {
     .header { background: #0b2545; padding: 32px; text-align: center; }
     .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
     .content { padding: 32px; color: #2A3548; line-height: 1.6; }
-    .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0; }
+    .button { display: inline-block; background: #B8860B; color: #0b2545; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0; }
     .footer { padding: 24px 32px; background: #EEF1F6; text-align: center; font-size: 12px; color: #5D6B7E; }
     .order-box { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 8px; padding: 16px; margin: 16px 0; }
     .item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E7EE; }
@@ -393,25 +393,25 @@ export const sendSubscriberWelcome = internalAction({
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 40px 32px; text-align: center; position: relative; overflow: hidden; }
     .banner::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 60%); }
     .banner h1 { color: #ffffff; font-size: 28px; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.5px; }
-    .banner .accent { color: #c9a227; }
+    .banner .accent { color: #B8860B; }
     .banner p { color: rgba(255,255,255,0.7); font-size: 14px; margin: 0; }
-    .gold-bar { height: 3px; background: linear-gradient(90deg, #c9a227, #e8d48b, #c9a227); }
+    .gold-bar { height: 3px; background: linear-gradient(90deg, #B8860B, #E8C547, #B8860B); }
     .content { padding: 36px 32px; color: #2A3548; line-height: 1.7; }
     .content h2 { color: #0b2545; font-size: 22px; margin: 0 0 16px 0; }
     .content p { margin: 0 0 16px 0; font-size: 15px; }
     .benefits { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 12px; padding: 24px; margin: 24px 0; }
     .benefits h3 { color: #0b2545; font-size: 16px; margin: 0 0 16px 0; }
     .benefit-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-    .benefit-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #c9a227, #e8d48b); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .benefit-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #B8860B, #E8C547); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .benefit-icon span { color: #0b2545; font-size: 16px; }
     .benefit-text { font-size: 14px; color: #2A3548; }
     .benefit-text strong { color: #0b2545; }
-    .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; letter-spacing: 0.3px; }
-    .button:hover { background: #d4af37; }
+    .button { display: inline-block; background: #B8860B; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; letter-spacing: 0.3px; }
+    .button:hover { background: #A07508; }
     .divider { height: 1px; background: #E2E7EE; margin: 24px 0; }
     .footer { padding: 28px 32px; background: #0b2545; text-align: center; }
     .footer p { color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 8px 0; }
-    .footer a { color: #c9a227; text-decoration: none; }
+    .footer a { color: #B8860B; text-decoration: none; }
     .footer .brand { color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
   </style>
 </head>
@@ -457,7 +457,7 @@ export const sendSubscriberWelcome = internalAction({
       <div class="divider"></div>
 
       <p style="font-size: 13px; color: #5D6B7E; margin: 0;">
-        We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.
+         We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:info@trueworksgroup.com" style="color: #B8860B;">info@trueworksgroup.com</a>.
       </p>
     </div>
     <div class="footer">
@@ -848,7 +848,7 @@ export const sendLoginCodeEmail = internalAction({
       <p>Hi ${escapeHtml(args.name ?? "")},</p>
       <p>Enter the following 6-digit code to complete your sign-in to TrueWorks:</p>
       <div style="text-align: center; margin: 28px 0;">
-        <div style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0B2545; background: #FAFBFC; padding: 16px 32px; border-radius: 8px; border: 2px solid #C9A227;">${escapeHtml(args.code)}</div>
+        <div style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0B2545; background: #FAFBFC; padding: 16px 32px; border-radius: 8px; border: 2px solid #B8860B;">${escapeHtml(args.code)}</div>
       </div>
       <p style="font-size: 13px; color: #5D6B7E;">This code expires in 10 minutes. If you did not request this code, please secure your account immediately.</p>
     `);

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { methodLabel, providerLabel, statusMeta } from "../lib/format"
 import type { StatsResult } from "../types"
 
-const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#34D399", "#94A8B8", "#F59E0B", "#EF4444"]
+const COLORS = ["#0B2545", "#3E6990", "#B8860B", "#60A5FA", "#34D399", "#94A8B8", "#F59E0B", "#EF4444"]
 
 const STATUS_ORDER = ["completed", "pending", "failed", "refunded"] as const
 const STATUS_BAR_COLORS: Record<string, string> = {

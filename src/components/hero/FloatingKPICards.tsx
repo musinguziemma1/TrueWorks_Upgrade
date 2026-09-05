@@ -92,8 +92,8 @@ export default function FloatingKPICards({ kpis, isVisible }: FloatingKPICardsPr
       >
         <div className="flex items-center justify-between mb-3">
           <div className={`flex items-center ${gap} min-w-0`}>
-            <div className={`relative flex items-center justify-center shrink-0 rounded-xl bg-[#E3BC3F]/15 ring-1 ring-[#E3BC3F]/25 ${size === 'sm' ? 'w-7 h-7' : 'w-8 h-8'}`}>
-              <Icon className={`${size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-[#E3BC3F]`} />
+            <div className={`relative flex items-center justify-center shrink-0 rounded-xl bg-[#DAA520]/15 ring-1 ring-[#DAA520]/25 ${size === 'sm' ? 'w-7 h-7' : 'w-8 h-8'}`}>
+              <Icon className={`${size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-[#DAA520]`} />
             </div>
             <h4 className={`${labelSize} font-medium text-white/75 truncate`}>{kpi.label}</h4>
           </div>

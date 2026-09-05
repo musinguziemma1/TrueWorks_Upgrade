@@ -35,9 +35,9 @@ export function AuthLayout({
       <div className="relative hidden w-1/2 lg:flex lg:flex-col lg:justify-between overflow-hidden bg-[#0B2545] p-12 text-white">
         {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-[#C9A227]" />
+          <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-[#B8860B]" />
           <div className="absolute bottom-12 right-12 h-64 w-64 rounded-full bg-[#3E6990]" />
-          <div className="absolute top-1/2 left-1/3 h-48 w-48 rounded-full bg-[#C9A227]/30" />
+          <div className="absolute top-1/2 left-1/3 h-48 w-48 rounded-full bg-[#B8860B]/30" />
         </div>
 
         <div className="relative z-10">
@@ -64,7 +64,7 @@ export function AuthLayout({
             {features.map((f) => (
               <div key={f.title} className="flex items-start gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <f.icon className="h-5 w-5 text-[#C9A227]" />
+                  <f.icon className="h-5 w-5 text-[#B8860B]" />
                 </div>
                 <div>
                   <p className="font-medium">{f.title}</p>

@@ -39,7 +39,7 @@ export function brandLogo(variant: "dark" | "light" = "dark", width = 220): stri
 }
 
 /** Contact line for email footers: email · phone · WhatsApp links. */
-export function brandContactLine(color = "#c9a227"): string {
+export function brandContactLine(color = "#B8860B"): string {
   return `<p>${BRAND_NAME} Limited · Kampala, Uganda<br />
     <a href="mailto:${CONTACT_EMAIL}" style="color:${color};text-decoration:none;">${CONTACT_EMAIL}</a>
     &nbsp;·&nbsp;

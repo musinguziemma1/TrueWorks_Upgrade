@@ -16,7 +16,7 @@ export function BrandingPreview({ values }: { values: SettingsValues }) {
   const { primary, secondary, accent, background, surface, foreground, heading, body } = useMemo(() => {
     const primary = String(values.primaryColor ?? "#0B2545")
     const secondary = String(values.secondaryColor ?? "#3E6990")
-    const accent = String(values.accentColor ?? "#C9A227")
+    const accent = String(values.accentColor ?? "#B8860B")
     const background = String(values.backgroundColor ?? "#FFFFFF")
     const surface = String(values.surfaceColor ?? "#FAFBFC")
     const foreground = String(values.foregroundColor ?? "#1E293B")

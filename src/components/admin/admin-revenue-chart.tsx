@@ -27,7 +27,7 @@ export default function AdminRevenueChart({ data }: { data: { month: string; rev
           stroke="#0B2545"
           strokeWidth={3}
           dot={{ fill: "#0B2545", strokeWidth: 2, r: 4, stroke: "#fff" }}
-          activeDot={{ r: 6, fill: "#C9A227", stroke: "#fff", strokeWidth: 2 }}
+          activeDot={{ r: 6, fill: "#B8860B", stroke: "#fff", strokeWidth: 2 }}
         />
       </LineChart>
     </ChartContainer>

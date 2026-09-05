@@ -206,14 +206,14 @@ export default function AdminSidebar() {
                         >
                           {active && (
                             <span
-                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#C9A227]"
+                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#B8860B]"
                               aria-hidden="true"
                             />
                           )}
                           <span
                             className={cn(
                               "shrink-0 transition-colors duration-200",
-                              active ? "text-[#D4B33A]" : "text-white/50 group-hover:text-white/80"
+                              active ? "text-[#DAA520]" : "text-white/50 group-hover:text-white/80"
                             )}
                           >
                             {item.icon}
@@ -225,7 +225,7 @@ export default function AdminSidebar() {
                               className={cn(
                                 "h-auto shrink-0 border px-1.5 py-0 text-[10px] font-medium",
                                 comingSoon
-                                  ? "border-[#C9A227]/40 text-[#C9A227] bg-[#C9A227]/10"
+                                  ? "border-[#B8860B]/40 text-[#B8860B] bg-[#B8860B]/10"
                                   : "border-white/20 text-white/80 bg-white/5"
                               )}
                             >
@@ -253,7 +253,7 @@ export default function AdminSidebar() {
             className="flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.04]"
             onClick={() => setMobileOpen(false)}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#C9A227]/30 to-[#C9A227]/10 ring-1 ring-white/10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#B8860B]/30 to-[#B8860B]/10 ring-1 ring-white/10">
               {user?.avatar ? (
                 <NextImage src={user.avatar} alt={user.name ?? "Admin"} width={36} height={36} className="h-full w-full object-cover" />
               ) : (

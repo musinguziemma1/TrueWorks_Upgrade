@@ -43,7 +43,7 @@ function buildPreviewDoc(content: string): string {
   .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
   .content { padding: 32px; line-height: 1.6; }
   .content h1, .content h2, .content h3 { color: #0b2545; }
-  .content a { color: #c9a227; }
+  .content a { color: #B8860B; }
   .footer { padding: 24px 32px; background: #EEF1F6; text-align: center; font-size: 12px; color: #5D6B7E; }
   img { max-width: 100%; }
 </style>

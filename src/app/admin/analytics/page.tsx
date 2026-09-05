@@ -29,12 +29,12 @@ const MapChart = dynamic(() => import("@/components/admin/map-chart").then(m => 
   loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
 })
 
-const COLORS = ["#0B2545", "#3E6990", "#C9A227", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
+const COLORS = ["#0B2545", "#3E6990", "#B8860B", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
 const chartConfig = {
   revenue: { label: "Revenue", color: "#0B2545" },
   orders: { label: "Orders", color: "#0B2545" },
   visitors: { label: "Visitors", color: "#3E6990" },
-  pageViews: { label: "Page Views", color: "#C9A227" },
+  pageViews: { label: "Page Views", color: "#B8860B" },
   downloads: { label: "Downloads", color: "#34D399" },
 }
 
@@ -474,7 +474,7 @@ export default function AnalyticsPage() {
                     <YAxis tick={{ fontSize: 12 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Line type="monotone" dataKey="visitors" stroke="#3E6990" strokeWidth={2} dot={{ fill: "#3E6990" }} name="Visitors" />
-                    <Line type="monotone" dataKey="pageViews" stroke="#C9A227" strokeWidth={2} dot={{ fill: "#C9A227" }} name="Page Views" />
+                    <Line type="monotone" dataKey="pageViews" stroke="#B8860B" strokeWidth={2} dot={{ fill: "#B8860B" }} name="Page Views" />
                   </LineChart>
                 </ChartContainer>
               )}

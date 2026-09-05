@@ -36,7 +36,7 @@ export default function HeroIndicators({
             className={`
               w-3 h-3 rounded-full transition-all duration-300
               ${index === currentSlide 
-                ? 'bg-[#E3BC3F] shadow-lg' 
+                ? 'bg-[#DAA520] shadow-lg' 
                 : 'bg-white/30 group-hover:bg-white/50'
               }
             `}
@@ -60,7 +60,7 @@ export default function HeroIndicators({
           {/* Active indicator line */}
           {index === currentSlide && (
             <motion.div
-              className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#E3BC3F] to-[#C9A227] rounded-r"
+              className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#DAA520] to-[#B8860B] rounded-r"
               layoutId="activeIndicator"
               transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
             />

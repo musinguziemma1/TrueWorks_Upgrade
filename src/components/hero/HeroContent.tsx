@@ -32,7 +32,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         className="mb-8"
         variants={textFadeIn}
       >
-        <span className="font-body text-[#E3BC3F] text-sm font-semibold tracking-wider uppercase">
+        <span className="font-body text-[#DAA520] text-sm font-semibold tracking-wider uppercase">
           Enterprise Business Operating Systems
         </span>
       </motion.div>
@@ -43,7 +43,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         variants={textSlideUp}
       >
         <span className="block">{slide.title}</span>
-        <span className="block text-[#E3BC3F]">{slide.subtitle}</span>
+        <span className="block text-[#DAA520]">{slide.subtitle}</span>
       </motion.h1>
 
       {/* Description */}
@@ -83,7 +83,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
             >
               <div className="flex flex-col items-center text-center p-6 rounded-2xl backdrop-blur-sm bg-white/5 border border-white/10 transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20">
                 <motion.div
-                  className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#E3BC3F] to-[#C9A227] flex items-center justify-center"
+                  className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-[#DAA520] to-[#B8860B] flex items-center justify-center"
                   whileHover={{ 
                     rotate: 10,
                     scale: 1.1,

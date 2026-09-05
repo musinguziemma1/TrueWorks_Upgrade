@@ -72,7 +72,7 @@ const defaultSettings: Settings = {
   siteFavicon: "",
   primaryColor: "#0B2545",
   secondaryColor: "#3E6990",
-  accentColor: "#C9A227",
+  accentColor: "#B8860B",
   backgroundColor: "#FFFFFF",
   surfaceColor: "#FAFBFC",
   foregroundColor: "#1E293B",

@@ -34,7 +34,7 @@ export const heroSlides: SlideData[] = [
     visualType: 'executive',
     kpis: [
       { label: 'Revenue Growth', value: '24.7%', change: '+12.3%', trend: 'up', color: '#10B981' },
-      { label: 'Operating Margin', value: '18.5%', change: '+5.2%', trend: 'up', color: '#E3BC3F' },
+      { label: 'Operating Margin', value: '18.5%', change: '+5.2%', trend: 'up', color: '#DAA520' },
       { label: 'Cash Flow', value: '$2.8B', change: '+$340M', trend: 'up', color: '#3B82F6' },
       { label: 'EBITDA', value: '32.1%', change: '+8.9%', trend: 'up', color: '#8B5CF6' }
     ],
@@ -54,7 +54,7 @@ export const heroSlides: SlideData[] = [
     visualType: 'operations',
     kpis: [
       { label: 'Operational Efficiency', value: '94.2%', change: '+15.8%', trend: 'up', color: '#10B981' },
-      { label: 'Process Automation', value: '87%', change: '+23%', trend: 'up', color: '#E3BC3F' },
+      { label: 'Process Automation', value: '87%', change: '+23%', trend: 'up', color: '#DAA520' },
       { label: 'Cost Reduction', value: '31%', change: '+12%', trend: 'up', color: '#3B82F6' },
       { label: 'Time Savings', value: '450hrs', change: '+180hrs', trend: 'up', color: '#8B5CF6' }
     ],
@@ -74,7 +74,7 @@ export const heroSlides: SlideData[] = [
     visualType: 'analytics',
     kpis: [
       { label: 'Patient Satisfaction', value: '96.8%', change: '+8.2%', trend: 'up', color: '#10B981' },
-      { label: 'Bed Utilization', value: '89.3%', change: '+12%', trend: 'up', color: '#E3BC3F' },
+      { label: 'Bed Utilization', value: '89.3%', change: '+12%', trend: 'up', color: '#DAA520' },
       { label: 'Revenue per Bed', value: '$3,420', change: '+$456', trend: 'up', color: '#3B82F6' },
       { label: 'Cost Efficiency', value: '23.7%', change: '+7.1%', trend: 'up', color: '#8B5CF6' }
     ],
@@ -94,7 +94,7 @@ export const heroSlides: SlideData[] = [
     visualType: 'manufacturing',
     kpis: [
       { label: 'Overall Equipment Effectiveness', value: '87.4%', change: '+14.2%', trend: 'up', color: '#10B981' },
-      { label: 'Production Yield', value: '96.8%', change: '+5.3%', trend: 'up', color: '#E3BC3F' },
+      { label: 'Production Yield', value: '96.8%', change: '+5.3%', trend: 'up', color: '#DAA520' },
       { label: 'Waste Reduction', value: '34.7%', change: '+18%', trend: 'up', color: '#3B82F6' },
       { label: 'Quality Score', value: '99.2%', change: '+2.1%', trend: 'up', color: '#8B5CF6' }
     ],
@@ -114,7 +114,7 @@ export const heroSlides: SlideData[] = [
     visualType: 'monitoring',
     kpis: [
       { label: 'Program Efficiency', value: '91.6%', change: '+18.4%', trend: 'up', color: '#10B981' },
-      { label: 'Citizen Satisfaction', value: '88.2%', change: '+12.7%', trend: 'up', color: '#E3BC3F' },
+      { label: 'Citizen Satisfaction', value: '88.2%', change: '+12.7%', trend: 'up', color: '#DAA520' },
       { label: 'Budget Utilization', value: '94.1%', change: '+8.3%', trend: 'up', color: '#3B82F6' },
       { label: 'Impact Score', value: '8.7/10', change: '+1.2', trend: 'up', color: '#8B5CF6' }
     ],

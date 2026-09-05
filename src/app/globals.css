@@ -11,9 +11,9 @@
   --color-primary-light: #123663;
   --color-secondary: #3E6990;
   --color-secondary-light: #8FB3CC;
-  --color-accent: #c9a227;
-  --color-accent-light: #E3BC3F;
-  --color-accent-dark: #9B7B14;
+  --color-accent: #B8860B;
+  --color-accent-light: #DAA520;
+  --color-accent-dark: #8B6914;
   --color-background: #FAFBFD;
   --color-surface: #F4F6FA;
   --color-foreground: #1F2937;
@@ -125,7 +125,7 @@
       linear-gradient(165deg, #04101F 0%, #071A33 55%, #0B2545 100%);
   }
   .gradient-gold {
-    background: linear-gradient(135deg, #E3BC3F 0%, #c9a227 100%);
+    background: linear-gradient(135deg, #DAA520 0%, #B8860B 100%);
   }
   .text-gradient {
     background: linear-gradient(135deg, #0b2545 0%, #3E6990 100%);
@@ -134,7 +134,7 @@
     background-clip: text;
   }
   .text-gradient-gold {
-    background: linear-gradient(120deg, #E8D9A0 0%, #c9a227 55%, #E3BC3F 100%);
+    background: linear-gradient(120deg, #E8C547 0%, #B8860B 55%, #DAA520 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

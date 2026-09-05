@@ -177,7 +177,7 @@ export default function AdminHeader() {
                   >
                     <div className="mt-0.5 flex h-2 w-2 shrink-0 pt-1">
                       {!n.read ? (
-                        <span className="h-2 w-2 rounded-full bg-[#C9A227]" />
+                        <span className="h-2 w-2 rounded-full bg-[#B8860B]" />
                       ) : (
                         <Check className="h-3.5 w-3.5 text-muted-foreground/60" />
                       )}

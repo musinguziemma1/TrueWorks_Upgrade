@@ -529,7 +529,7 @@ export default function EditProductPage() {
                                         : prev.filter((id) => id !== pl._id)
                                     );
                                   }}
-                                  className="accent-[#C9A227]"
+                                  className="accent-[#B8860B]"
                                 />
                                 <span className="truncate">{pl.name}</span>
                               </span>

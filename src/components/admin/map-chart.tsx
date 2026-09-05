@@ -109,7 +109,7 @@ function MapChartInner({ data }: MapChartProps) {
   if (!topology) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A227]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#B8860B]" />
       </div>
     )
   }
@@ -144,7 +144,7 @@ function MapChartInner({ data }: MapChartProps) {
                     default: { outline: "none" },
                     hover: {
                       outline: "none",
-                      fill: match ? "#C9A227" : "#CBD2DC",
+                      fill: match ? "#B8860B" : "#CBD2DC",
                       cursor: match ? "pointer" : "default",
                     },
                     pressed: { outline: "none" },

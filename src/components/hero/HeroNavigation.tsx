@@ -57,7 +57,7 @@ export default function HeroNavigation({
             className={`
               w-2 h-2 rounded-full transition-all duration-300
               ${index === currentSlide 
-                ? 'bg-[#E3BC3F] w-8' 
+                ? 'bg-[#DAA520] w-8' 
                 : 'bg-white/30 hover:bg-white/50'
               }
             `}

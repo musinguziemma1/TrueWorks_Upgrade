@@ -40,8 +40,8 @@ export function TrendChart({ stats, loading }: { stats?: StatsResult; loading: b
               <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                 <defs>
                   <linearGradient id="auditTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#C9A227" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#C9A227" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor="#B8860B" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#B8860B" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -71,7 +71,7 @@ export function TrendChart({ stats, loading }: { stats?: StatsResult; loading: b
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="#C9A227"
+                  stroke="#B8860B"
                   strokeWidth={2}
                   fill="url(#auditTrend)"
                   dot={false}
