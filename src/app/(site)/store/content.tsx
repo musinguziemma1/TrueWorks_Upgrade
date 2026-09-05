@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { PackageSearch, Loader2 } from "lucide-react";
+import { CheckCircle2, PackageSearch, Loader2 } from "lucide-react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { cn } from "@/lib/utils";
 import { convexClient } from "@/lib/convex";
 import { ProductCard, type StoreProduct } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
@@ -103,71 +104,95 @@ function StoreContentInner() {
 
   return (
     <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border bg-gradient-to-br from-primary via-primary-dark to-secondary">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 texture-dots opacity-30" />
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+      {/* ─── Hero ──────────────────────────────────────────────── */}
+      <section className="gradient-brand relative overflow-hidden">
+        <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-accent/[0.10] blur-3xl" aria-hidden />
+        <div className="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
 
-        <div className="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-sm border border-white/10 mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              The Store
+        <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 lg:px-8 lg:pb-28 lg:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-light backdrop-blur"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                The Store
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08, ease: "easeOut" }}
+                className="mt-5 font-heading text-4xl font-semibold leading-[1.05] text-white sm:text-5xl lg:text-6xl"
+              >
+                Premium templates &amp;{" "}
+                <span className="text-gradient-gold">business systems</span>.
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.16, ease: "easeOut" }}
+                className="mt-5 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg"
+              >
+                Professional-grade Excel templates and dashboards for Global
+                organizations. Pay securely, download instantly, and put them to
+                work the same day.
+              </motion.p>
+              <motion.ul
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.24, ease: "easeOut" }}
+                className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/70"
+              >
+                {[
+                  "Instant download",
+                  "Secure checkout",
+                  "30-day guarantee",
+                  "Free updates",
+                ].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-accent-light" />
+                    {t}
+                  </li>
+                ))}
+              </motion.ul>
             </div>
-            <h1 className="font-heading text-3xl font-bold text-white md:text-4xl lg:text-5xl leading-tight">
-              Premium Templates &amp;<br />
-              <span className="text-gradient-gold">Business Systems</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 lg:text-lg">
-              Professional-grade Excel templates and dashboards built for Global
-              organizations. Pay securely, download instantly, and put them to work
-              the same day.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/85">
-              <span className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                  ✓
-                </span>
-                Instant Download
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                  ✓
-                </span>
-                Secure Payment
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                  ✓
-                </span>
-                4-day Guarantee
-              </span>
-            </div>
-          </div>
 
-            {/* Animated dashboard visual */}
-            <div className="hidden lg:block">
-              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <p className="text-xs text-white/50">Portfolio Performance</p>
-                    <p className="text-2xl font-bold text-white">$48,392.00</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              className="lg:col-span-5"
+            >
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                {[
+                  { v: pageFacets.total.toLocaleString(), l: "Templates" },
+                  { v: categoryNames.length.toString(), l: "Categories" },
+                  { v: Object.values(pageFacets.industryCounts).reduce((s, n) => s + n, 0).toLocaleString(), l: "Industry picks" },
+                ].map((m, i) => (
+                  <div
+                    key={m.l}
+                    className={cn(
+                      "rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur",
+                      i === 0 && "sm:col-span-3 lg:col-span-1 xl:col-span-1"
+                    )}
+                  >
+                    <p className="font-heading text-3xl font-semibold text-white tabular-nums">
+                      {isLoading && m.l === "Templates" ? "—" : m.v}
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+                      {m.l}
+                    </p>
                   </div>
-                  <span className="rounded-full bg-green-500/20 text-green-300 text-xs px-3 py-1">+12.4%</span>
-                </div>
-                <div className="flex items-end gap-3 h-28">
-                  {[35, 55, 40, 65, 50, 75, 60, 85, 70, 95, 80, 100].map((h, i) => (
-                    <div key={i} className="flex-1 rounded-t-lg bg-gradient-to-t from-accent/60 to-accent/20" style={{ height: `${h}%` }} />
-                  ))}
-                </div>
+                ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Content */}
       <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
@@ -200,8 +225,8 @@ function StoreContentInner() {
 
           {/* Product Grid */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-muted">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-white px-4 py-3 shadow-card">
+              <p className="text-sm text-muted-foreground">
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -216,6 +241,9 @@ function StoreContentInner() {
                   </>
                 )}
               </p>
+              <span className="text-xs text-muted-foreground">
+                Updated weekly
+              </span>
             </div>
 
             {isLoading ? (
@@ -260,18 +288,18 @@ function StoreContentInner() {
                 ))}
               </motion.div>
             ) : (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-28 text-center">
-                <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface">
-                  <PackageSearch className="h-9 w-9 text-muted/60" />
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-24 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface">
+                  <PackageSearch className="h-8 w-8 text-muted-foreground" />
                 </span>
                 <p className="mt-6 font-heading text-xl font-semibold text-primary">
                   No templates found
                 </p>
-                <p className="mt-2 max-w-sm text-sm text-muted leading-relaxed">
+                <p className="mt-2 max-w-sm text-sm text-muted-foreground leading-relaxed">
                   We couldn&apos;t find any templates matching your filters.
                   Try adjusting your search or browse a different category.
                 </p>
-                <Button onClick={reset} className="mt-8 rounded-xl px-6">
+                <Button onClick={reset} className="mt-7 gradient-gold text-primary-dark">
                   Clear all filters
                 </Button>
               </div>

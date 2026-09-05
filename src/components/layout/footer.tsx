@@ -56,7 +56,8 @@ export default function Footer() {
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/85">
               Premium Excel templates, financial models and dashboards that help
-              Global organizations operate with clarity and confidence.
+              <span className="text-accent-light"> Global organizations</span> operate with
+              clarity and confidence.
             </p>
             <div className="mt-6 flex items-center gap-2.5">
               {socialLinks.map((social) => (
@@ -147,13 +148,14 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-white/10 pt-8 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <span className="mr-1 text-xs text-white/70">We accept</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-medium text-white/70">We accept</span>
             {paymentMethods.map((method) => (
               <span
                 key={method}
-                className="rounded-md bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold tracking-wide text-white/55"
+                className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold tracking-wide text-white/80"
               >
+                <span className="h-1.5 w-1.5 rounded-full bg-accent/80" />
                 {method}
               </span>
             ))}
