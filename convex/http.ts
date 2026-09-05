@@ -10,6 +10,7 @@ import {
   sendDownloadReady,
   sendPaymentFailed,
   sendRefundConfirmation,
+  sendSupportReply,
   handleWelcomeEmailHttp,
   sendNewsletter,
   trackOpen,
@@ -205,6 +206,12 @@ http.route({
   path: "/email/welcome",
   method: "POST",
   handler: httpAction(withAuditTiming(handleWelcomeEmailHttp)),
+});
+
+http.route({
+  path: "/email/support-reply",
+  method: "POST",
+  handler: httpAction(withAuditTiming(sendSupportReply)),
 });
 
 http.route({

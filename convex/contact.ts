@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin, requireAdminSilent } from "./users";
+import { requireAdmin, requireAdminSilent, getCurrentUser } from "./users";
 import { checkRateLimit } from "./rateLimit";
 import { auditLog } from "./lib/audit";
 
@@ -79,6 +79,35 @@ export const remove = mutation({
       entityType: "contactMessage",
       entityId: args.id,
       summary: `Deleted contact message from "${msg?.name ?? msg?.email ?? "unknown"}"`,
+    });
+  },
+});
+
+export const saveReply = mutation({
+  args: {
+    id: v.id("contactMessages"),
+    replyBy: v.string(),
+    replyPreview: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const admin = await getCurrentUser(ctx);
+    const preview = args.replyPreview.trim().slice(0, 200);
+    const replyBy =
+      args.replyBy.trim().slice(0, 120) ||
+      admin?.name ||
+      admin?.email ||
+      "Support agent";
+    await ctx.db.patch(args.id, {
+      lastReplyAt: Date.now(),
+      lastReplyBy: replyBy,
+      lastReplyPreview: preview,
+    });
+    await auditLog(ctx, {
+      action: "contact.reply",
+      entityType: "contactMessage",
+      entityId: args.id,
+      summary: `Replied to "${args.id}" (${preview.slice(0, 60)})`,
     });
   },
 });

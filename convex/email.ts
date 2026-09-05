@@ -1,4 +1,4 @@
-import { internalAction, ActionCtx } from "./_generated/server";
+import { internalAction, action, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -263,6 +263,195 @@ export const sendRefundConfirmation = async (ctx: ActionCtx, request: Request): 
 
   return new Response(JSON.stringify({ sent }), { status: 200 });
 };
+
+/**
+ * Send a branded reply to a customer who submitted the contact form. The
+ * reply quotes the original message and is sent from the same Resend
+ * account as the rest of TrueWorks transactional email so the customer's
+ * mail client threads the conversation correctly.
+ */
+export const sendSupportReply = async (ctx: ActionCtx, request: Request): Promise<Response> => {
+  const authError = requireEmailAuth(request);
+  if (authError) return authError;
+
+  const body = await request.json();
+  const {
+    customerEmail,
+    customerName,
+    originalMessage,
+    originalSubject,
+    originalCreatedAt,
+    replySubject,
+    replyBody,
+    agentName,
+  } = body ?? {};
+
+  if (!customerEmail || !replyBody || typeof customerEmail !== "string" || typeof replyBody !== "string") {
+    return new Response(
+      JSON.stringify({ error: "customerEmail and replyBody are required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const name = escapeHtml(customerName ?? "");
+  const email = String(customerEmail).trim().slice(0, 200);
+  const subject = String(replySubject ?? originalSubject ?? "Re: Your message to TrueWorks")
+    .trim()
+    .slice(0, 200);
+  const safeSubject = /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+  const originalDate = originalCreatedAt
+    ? new Date(Number(originalCreatedAt)).toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : null;
+
+  const replyHtml = escapeHtml(replyBody)
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/\n/g, "<br/>");
+  const originalQuote = escapeHtml(originalMessage ?? "").replace(/\n/g, "<br/>");
+
+  const agent = escapeHtml(agentName ?? "The TrueWorks Team");
+
+  const html = baseTemplate(`
+    <p style="margin:0 0 16px 0;font-size:15px;">Hi ${name || "there"},</p>
+    <p style="margin:0 0 16px 0;font-size:15px;">${agent} here from TrueWorks. Thanks for reaching out — here's our response to your message.</p>
+    <div class="order-box" style="border-left:3px solid #B8860B;background:#FAFBFD;">
+      <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5D6B7E;font-weight:600;">Our reply</p>
+      <div style="font-size:15px;line-height:1.7;color:#1F2937;">${replyHtml}</div>
+    </div>
+    ${
+      originalMessage
+        ? `
+    <div style="margin:24px 0 8px 0;padding:16px;border-radius:8px;background:#F4F6FA;border:1px solid #E2E7EE;">
+      <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5D6B7E;font-weight:600;">Your original message${originalDate ? ` · ${escapeHtml(originalDate)}` : ""}</p>
+      ${originalSubject ? `<p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0b2545;">${escapeHtml(String(originalSubject))}</p>` : ""}
+      <div style="font-size:14px;line-height:1.6;color:#2A3548;white-space:normal;">${originalQuote}</div>
+    </div>
+    `
+        : ""
+    }
+    <p style="margin:24px 0 0 0;font-size:14px;">If you have anything else to add, simply <strong>reply to this email</strong> and it'll come straight back to our team.</p>
+    <a href="${SITE_URL}/contact" class="button">Visit our Help Center</a>
+  `);
+
+  const sent = await sendEmail({
+    to: email,
+    subject: safeSubject,
+    html,
+  });
+
+  return new Response(JSON.stringify({ sent, subject: safeSubject }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+/**
+ * Public action used by the admin Support page: send a branded reply to a
+ * customer who submitted the contact form. Returns whether the send
+ * succeeded and the final subject line used (so the UI can show it).
+ *
+ * The reply template quotes the customer's original message and uses the
+ * same navy/gold branding as every other TrueWorks transactional email.
+ */
+export const sendSupportReplyAction = action({
+  args: {
+    contactMessageId: v.id("contactMessages"),
+    customerEmail: v.string(),
+    customerName: v.optional(v.string()),
+    originalMessage: v.optional(v.string()),
+    originalSubject: v.optional(v.string()),
+    originalCreatedAt: v.optional(v.number()),
+    replySubject: v.optional(v.string()),
+    replyBody: v.string(),
+    agentName: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    const email = String(args.customerEmail).trim();
+    if (!email) {
+      return { sent: false, error: "Recipient email is required" };
+    }
+    const body = String(args.replyBody ?? "").trim();
+    if (!body) {
+      return { sent: false, error: "Reply body cannot be empty" };
+    }
+    if (!RESEND_API_KEY || RESEND_API_KEY === "re_your_api_key_here") {
+      return {
+        sent: false,
+        error: "Resend is not configured. Set RESEND_API_KEY to enable support replies.",
+      };
+    }
+
+    const name = escapeHtml(args.customerName ?? "");
+    const subject = String(
+      args.replySubject ?? args.originalSubject ?? "Re: Your message to TrueWorks",
+    )
+      .trim()
+      .slice(0, 200);
+    const safeSubject = /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+    const originalDate = args.originalCreatedAt
+      ? new Date(args.originalCreatedAt).toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+      : null;
+
+    const replyHtml = escapeHtml(body).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br/>");
+    const originalQuote = escapeHtml(args.originalMessage ?? "").replace(/\n/g, "<br/>");
+    const agent = escapeHtml(args.agentName ?? "The TrueWorks Team");
+
+    const html = baseTemplate(`
+      <p style="margin:0 0 16px 0;font-size:15px;">Hi ${name || "there"},</p>
+      <p style="margin:0 0 16px 0;font-size:15px;">${agent} here from TrueWorks. Thanks for reaching out — here's our response to your message.</p>
+      <div class="order-box" style="border-left:3px solid #B8860B;background:#FAFBFD;">
+        <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5D6B7E;font-weight:600;">Our reply</p>
+        <div style="font-size:15px;line-height:1.7;color:#1F2937;">${replyHtml}</div>
+      </div>
+      ${
+        args.originalMessage
+          ? `
+      <div style="margin:24px 0 8px 0;padding:16px;border-radius:8px;background:#F4F6FA;border:1px solid #E2E7EE;">
+        <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5D6B7E;font-weight:600;">Your original message${originalDate ? ` · ${escapeHtml(originalDate)}` : ""}</p>
+        ${args.originalSubject ? `<p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0b2545;">${escapeHtml(String(args.originalSubject))}</p>` : ""}
+        <div style="font-size:14px;line-height:1.6;color:#2A3548;white-space:normal;">${originalQuote}</div>
+      </div>
+      `
+          : ""
+      }
+      <p style="margin:24px 0 0 0;font-size:14px;">If you have anything else to add, simply <strong>reply to this email</strong> and it'll come straight back to our team.</p>
+      <a href="${SITE_URL}/contact" class="button">Visit our Help Center</a>
+    `);
+
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: EMAIL_FROM,
+          to: [email],
+          subject: safeSubject,
+          html,
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        return {
+          sent: false,
+          error: `Resend returned ${response.status}: ${text.slice(0, 300)}`,
+          subject: safeSubject,
+        };
+      }
+      return { sent: true, subject: safeSubject };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { sent: false, error: `Failed to send: ${msg}`, subject: safeSubject };
+    }
+  },
+});
 
 export const handleWelcomeEmailHttp = async (ctx: ActionCtx, request: Request): Promise<Response> => {
   const authError = requireEmailAuth(request);

@@ -567,6 +567,9 @@ export default defineSchema({
     message: v.string(),
     read: v.boolean(),
     createdAt: v.number(),
+    lastReplyAt: v.optional(v.number()),
+    lastReplyBy: v.optional(v.string()),
+    lastReplyPreview: v.optional(v.string()),
   })
     .index("by_createdAt", ["createdAt"])
     .index("by_read", ["read"]),

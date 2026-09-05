@@ -2,16 +2,28 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@convex/_generated/api"
-import { LifeBuoy, Search, Loader2, Mail, MailOpen, Trash2, ArrowLeft } from "lucide-react"
+import {
+  LifeBuoy,
+  Search,
+  Loader2,
+  Mail,
+  MailOpen,
+  Trash2,
+  ArrowLeft,
+  Send,
+  X,
+  CheckCircle2,
+  Reply,
+} from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { EmptyState } from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { EmptyState } from "@/components/ui/empty-state"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { toast } from "sonner"
@@ -39,8 +51,16 @@ export default function SupportPage() {
   const [deleting, setDeleting] = useState(false)
 
   const messages = useQuery(api.contact.list, {})
+  const me = useQuery(api.users.current, {})
   const markRead = useMutation(api.contact.markRead)
   const remove = useMutation(api.contact.remove)
+  const saveReply = useMutation(api.contact.saveReply)
+  const sendSupportReply = useAction(api.email.sendSupportReplyAction)
+
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [replySubject, setReplySubject] = useState("")
+  const [replyBody, setReplyBody] = useState("")
+  const [sendingReply, setSendingReply] = useState(false)
 
   // Keep URL in sync with the active filters + selection.
   useEffect(() => {
@@ -68,6 +88,57 @@ export default function SupportPage() {
   const selected = selectedId ? (messages?.find((m) => m._id === selectedId) ?? null) : null
 
   const unreadCount = messages?.filter((m) => !m.read).length ?? 0
+
+  const primeReply = () => {
+    if (!selected) return
+    const base = selected.subject?.trim() || "Your message to TrueWorks"
+    setReplySubject(/^re:/i.test(base) ? base : `Re: ${base}`)
+    setReplyBody("")
+    setReplyOpen(true)
+  }
+
+  const cancelReply = () => {
+    setReplyOpen(false)
+  }
+
+  const sendReply = async () => {
+    if (!selected) return
+    const body = replyBody.trim()
+    if (!body) {
+      toast.error("Write a reply before sending.")
+      return
+    }
+    setSendingReply(true)
+    try {
+      const result = await sendSupportReply({
+        contactMessageId: selected._id,
+        customerEmail: selected.email,
+        customerName: selected.name,
+        originalMessage: selected.message,
+        originalSubject: selected.subject,
+        originalCreatedAt: selected.createdAt,
+        replySubject: replySubject.trim() || undefined,
+        replyBody: body,
+        agentName: me?.name ?? me?.email ?? undefined,
+      })
+      if (!result.sent) {
+        toast.error(result.error ?? "Failed to send reply")
+        return
+      }
+      await saveReply({
+        id: selected._id,
+        replyBy: me?.name ?? me?.email ?? "Support agent",
+        replyPreview: body,
+      })
+      toast.success(`Reply sent to ${selected.email}`)
+      setReplyOpen(false)
+      setReplyBody("")
+    } catch (e) {
+      toast.error(String(e))
+    } finally {
+      setSendingReply(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -177,6 +248,12 @@ export default function SupportPage() {
                         {m.subject ? <span className="font-medium">{m.subject} &mdash; </span> : null}
                         {m.message}
                       </p>
+                      {m.lastReplyAt && (
+                        <p className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          Replied
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -201,6 +278,14 @@ export default function SupportPage() {
               )}
               Message Detail
             </CardTitle>
+            {selected && !selected.read && (
+              <CardAction>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  New
+                </span>
+              </CardAction>
+            )}
           </CardHeader>
           <CardContent>
             {!selected ? (
@@ -210,45 +295,140 @@ export default function SupportPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">From</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
                   <p className="mt-1 font-semibold text-foreground">{selected.name}</p>
                   <a href={`mailto:${selected.email}`} className="text-sm text-primary hover:underline">
                     {selected.email}
                   </a>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">Received</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Received</p>
                   <p className="mt-1 text-sm text-foreground">{fmtDate(selected.createdAt)}</p>
                 </div>
                 {selected.subject && (
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-muted">Subject</p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
                     <p className="mt-1 text-sm font-medium text-foreground">{selected.subject}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">Message</p>
-                  <p className="mt-1 whitespace-pre-line rounded-lg border border-border bg-surface p-4 text-sm text-foreground">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Message</p>
+                  <p className="mt-1 whitespace-pre-line rounded-lg border border-border bg-muted p-4 text-sm text-foreground">
                     {selected.message}
                   </p>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <StatusBadge status={selected.read ? "read" : "unread"} />
-                  <div className="flex gap-2">
-                    <a href={`mailto:${selected.email}?subject=Re: ${encodeURIComponent(selected.subject ?? "Your message")}`}>
-                      <Button variant="outline" size="sm" aria-label={`Reply to ${selected.email} by email`}>Reply by email</Button>
-                    </a>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleteId(selected._id)}
-                      aria-label={`Delete message from ${selected.name}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+
+                {selected.lastReplyAt && (
+                  <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+                    <p className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Last reply sent
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      by {selected.lastReplyBy ?? "agent"} · {fmtDate(selected.lastReplyAt)}
+                    </p>
+                    {selected.lastReplyPreview && (
+                      <p className="mt-1.5 line-clamp-3 italic text-foreground/80">
+                        “{selected.lastReplyPreview}”
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {replyOpen ? (
+                  <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/[0.03] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+                        <Reply className="h-3.5 w-3.5" />
+                        Reply to {selected.email}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={cancelReply}
+                        disabled={sendingReply}
+                        aria-label="Cancel reply"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div>
+                      <label htmlFor="reply-subject" className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Subject
+                      </label>
+                      <Input
+                        id="reply-subject"
+                        value={replySubject}
+                        onChange={(e) => setReplySubject(e.target.value)}
+                        placeholder="Re: Your message"
+                        className="mt-1"
+                        disabled={sendingReply}
+                        maxLength={200}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="reply-body" className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Your reply
+                      </label>
+                      <Textarea
+                        id="reply-body"
+                        value={replyBody}
+                        onChange={(e) => setReplyBody(e.target.value)}
+                        placeholder="Hi there, thanks for reaching out…"
+                        className="mt-1 min-h-[140px]"
+                        disabled={sendingReply}
+                        maxLength={5000}
+                      />
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        The customer will see a branded email with your reply and their original message quoted below.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={cancelReply} disabled={sendingReply}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={sendReply}
+                        disabled={sendingReply || !replyBody.trim()}
+                      >
+                        {sendingReply ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Send className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        {sendingReply ? "Sending…" : "Send reply"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />
+                      {selected.read ? "Read" : "Unread"}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={primeReply}
+                        aria-label={`Reply to ${selected.email}`}
+                      >
+                        <Reply className="mr-1.5 h-3.5 w-3.5" />
+                        Reply
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setDeleteId(selected._id)}
+                        aria-label={`Delete message from ${selected.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
