@@ -17,6 +17,8 @@ import {
   Loader2,
   Tag,
   AlertCircle,
+  Lock,
+  Download,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/lib/auth/provider";
@@ -523,44 +525,68 @@ export default function CheckoutContent() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-6xl px-6 py-12 lg:px-8">
-        <div className="mb-6">
-          <h1 className="font-heading text-3xl font-semibold text-primary md:text-4xl">
+      {/* ─── Hero ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] py-10 lg:py-14">
+        <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-accent/[0.10] blur-3xl" />
+        <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.05] blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "400px 400px",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl px-6 lg:px-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+            Step 2 of 3
+          </p>
+          <h1 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
             Secure Checkout
           </h1>
-          <p className="mt-2 text-sm text-muted">
-            You&apos;re signed in — your order will be linked to your account.
+          <p className="mt-2 text-sm text-white/70">
+            You&apos;re signed in — your order will be linked to your account and
+            available in your dashboard.
           </p>
+
+          <ol className="mt-7 flex flex-wrap items-center gap-2 text-sm">
+            {steps.map((step, idx) => {
+              const active = step.label === "Checkout";
+              return (
+                <li key={step.label} className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3.5 py-1.5 backdrop-blur-sm",
+                      active
+                        ? "border-accent/40 bg-accent/15 font-semibold text-accent-light"
+                        : step.done
+                          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                          : "border-white/15 bg-white/5 text-white/60"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold",
+                        active
+                          ? "bg-accent text-primary-dark"
+                          : step.done
+                            ? "bg-emerald-400/30 text-emerald-100"
+                            : "bg-white/10 text-white/60"
+                      )}
+                    >
+                      {step.done ? <Check className="h-3 w-3" /> : idx + 1}
+                    </span>
+                    {step.label}
+                  </span>
+                  {idx < steps.length - 1 && <ChevronRight className="h-4 w-4 text-white/30" />}
+                </li>
+              );
+            })}
+          </ol>
         </div>
+      </section>
 
-        <ol className="mb-10 flex flex-wrap items-center gap-2 text-sm">
-          {steps.map((step, idx) => (
-            <li key={step.label} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-3.5 py-1.5",
-                  step.label === "Checkout"
-                    ? "bg-primary font-semibold text-white"
-                    : "text-muted"
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold",
-                    step.label === "Checkout"
-                      ? "bg-white/20 text-white"
-                      : "bg-white text-muted shadow-sm"
-                  )}
-                >
-                  {step.done ? <Check className="h-3 w-3" /> : idx + 1}
-                </span>
-                {step.label}
-              </span>
-              {idx < steps.length - 1 && <ChevronRight className="h-4 w-4 text-border" />}
-            </li>
-          ))}
-        </ol>
-
+      <div className="mx-auto max-w-6xl px-6 py-10 lg:px-8 lg:py-14">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
@@ -941,74 +967,102 @@ export default function CheckoutContent() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="sticky top-28 rounded-xl border border-border/70 bg-white p-6 shadow-card">
-                <h2 className="font-heading text-lg font-semibold text-primary">
-                  Order Summary
-                </h2>
+              <div className="sticky top-6 space-y-5">
+                {/* Order summary */}
+                <div className="rounded-2xl border border-border/70 bg-white p-6 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-heading text-lg font-semibold text-primary">
+                      Order Summary
+                    </h2>
+                    <span className="rounded-full bg-primary/[0.06] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary">
+                      {totalItems} {totalItems === 1 ? "item" : "items"}
+                    </span>
+                  </div>
 
-                <div className="mt-4 max-h-60 divide-y divide-border overflow-y-auto">
-                  {items.map((item) => (
-                    <div
-                      key={cartItemKey(item)}
-                      className="flex items-center justify-between gap-3 py-3 first:pt-0"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span
-                          className={cn(
-                            "h-10 w-10 shrink-0 rounded-lg bg-gradient-to-br",
-                            item.image || "from-primary to-primary-light"
-                          )}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {item.name}
-                            {item.tier && (
-                              <span className="ml-1.5 text-xs font-medium text-accent-dark">
-                                ({item.tier})
-                              </span>
+                  <div className="mt-5 max-h-64 divide-y divide-border overflow-y-auto">
+                    {items.map((item) => (
+                      <div
+                        key={cartItemKey(item)}
+                        className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span
+                            className={cn(
+                              "relative h-11 w-11 shrink-0 overflow-hidden rounded-lg",
+                              !item.image && "bg-gradient-to-br from-primary to-primary-light"
                             )}
-                          </p>
-                          <p className="text-xs text-muted">Qty: {item.quantity}</p>
+                          >
+                            {item.image && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                              />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                              {item.name}
+                              {item.tier && (
+                                <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-dark">
+                                  ({item.tier})
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted">Qty: {item.quantity}</p>
+                          </div>
                         </div>
+                        <span className="whitespace-nowrap text-sm font-semibold text-foreground">
+                          {formatPrice(item.price * item.quantity)}
+                        </span>
                       </div>
-                      <span className="whitespace-nowrap text-sm font-medium">
-                        {formatPrice(item.price * item.quantity)}
+                    ))}
+                  </div>
+
+                  <dl className="mt-5 space-y-2.5 border-t border-border pt-4 text-sm">
+                    <div className="flex justify-between text-muted">
+                      <dt>Subtotal</dt>
+                      <dd className="font-medium text-foreground">{formatPrice(totalPrice)}</dd>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-success">
+                        <dt>Discount ({appliedCoupon?.code})</dt>
+                        <dd className="font-medium">-{formatPrice(discountAmount)}</dd>
+                      </div>
+                    )}
+                    {taxAutoCalculate && taxRate > 0 && (
+                      <div className="flex justify-between text-muted">
+                        <dt>Tax ({taxRate}%)</dt>
+                        <dd className="font-medium">{formatPrice(taxAmount)}</dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {/* Total band */}
+                  <div className="mt-4 -mx-6 -mb-6 rounded-b-2xl bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] px-6 py-5">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light">
+                        Total due
+                      </span>
+                      <span className="font-heading text-2xl font-bold text-white">
+                        {formatPrice(finalTotal)}
                       </span>
                     </div>
-                  ))}
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/70">
+                      <Download className="h-3 w-3" />
+                      Instant digital download after payment
+                    </p>
+                  </div>
                 </div>
 
-                <dl className="mt-4 space-y-2.5 border-t border-border pt-4 text-sm">
-                  <div className="flex justify-between text-muted">
-                    <dt>Subtotal ({totalItems} items)</dt>
-                    <dd className="font-medium text-foreground">{formatPrice(totalPrice)}</dd>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-success">
-                      <dt>Discount ({appliedCoupon?.code})</dt>
-                      <dd className="font-medium">-{formatPrice(discountAmount)}</dd>
-                    </div>
-                  )}
-                  {taxAutoCalculate && taxRate > 0 && (
-                    <div className="flex justify-between text-muted">
-                      <dt>Tax ({taxRate}%)</dt>
-                      <dd className="font-medium">{formatPrice(taxAmount)}</dd>
-                    </div>
-                  )}
-                  <div className="flex items-baseline justify-between pt-1">
-                    <dt className="font-heading text-base font-semibold text-primary">Total</dt>
-                    <dd className="font-heading text-xl font-bold text-primary">
-                      {formatPrice(finalTotal)}
-                    </dd>
-                  </div>
-                </dl>
-
+                {/* Pay button (moved out of summary footer for clarity) */}
                 {safePaymentProvider === "pesapal" && (
                   <Button
                     type="submit"
                     size="lg"
                     disabled={isSubmitting}
-                    className="mt-5 w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    className="w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
                   >
                     {isSubmitting ? (
                       <>
@@ -1016,7 +1070,10 @@ export default function CheckoutContent() {
                         Processing...
                       </>
                     ) : (
-                      `Pay ${formatPrice(finalTotal)}`
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Pay {formatPrice(finalTotal)}
+                      </>
                     )}
                   </Button>
                 )}
@@ -1026,7 +1083,7 @@ export default function CheckoutContent() {
                     type="submit"
                     size="lg"
                     disabled={isSubmitting}
-                    className="mt-5 w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
+                    className="w-full gradient-gold text-sm font-semibold text-primary-dark shadow-md shadow-accent/20 hover:brightness-105"
                   >
                     {isSubmitting ? (
                       <>
@@ -1034,25 +1091,43 @@ export default function CheckoutContent() {
                         Creating Order...
                       </>
                     ) : (
-                      "Continue to Card Payment"
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Continue to Card Payment
+                      </>
                     )}
                   </Button>
                 )}
 
-                <div className="mt-5 space-y-2.5">
-                  <p className="flex items-center gap-2.5 text-xs text-muted">
-                    <ShieldCheck className="h-4 w-4 text-success" />
-                    SSL-secured payment
-                  </p>
-                  <p className="flex items-center gap-2.5 text-xs text-muted">
-                    <RotateCcw className="h-4 w-4 text-secondary" />
-                    4-day money-back guarantee
+                {/* Trust strip */}
+                <div className="rounded-2xl border border-border/70 bg-white p-5 shadow-card">
+                  <h3 className="font-heading text-xs font-semibold uppercase tracking-wider text-primary">
+                    Your order is protected
+                  </h3>
+                  <ul className="mt-3 space-y-2.5">
+                    <li className="flex items-center gap-2.5 text-xs text-muted">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent-dark">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </span>
+                      SSL-encrypted checkout
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-muted">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent-dark">
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </span>
+                      30-day money-back guarantee
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-muted">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent-dark">
+                        <Download className="h-3.5 w-3.5" />
+                      </span>
+                      Instant download links by email
+                    </li>
+                  </ul>
+                  <p className="mt-4 border-t border-border pt-3 text-[11px] leading-relaxed text-muted">
+                    By completing this purchase you agree to our terms of service and privacy policy.
                   </p>
                 </div>
-
-                <p className="mt-5 border-t border-border pt-4 text-center text-xs text-muted">
-                  By completing this purchase you agree to our terms of service and privacy policy.
-                </p>
               </div>
             </div>
           </div>

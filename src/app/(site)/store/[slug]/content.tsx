@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -145,6 +145,39 @@ export default function ProductDetail() {
     api.orders.getCoPurchased,
     product ? { productId: product._id as Id<"products"> } : "skip"
   );
+
+  // Recommended strip: try featured in the same category first, fall back to
+  // global featured. The list is computed after `p` is defined below so we can
+  // exclude the current product.
+  const recommendedInCategory = useQuery(
+    api.products.list,
+    product
+      ? { status: "published", category: product.category, featured: true, limit: 4 }
+      : "skip"
+  );
+  const recommendedFeatured = useQuery(
+    api.products.list,
+    product
+      ? { status: "published", featured: true, limit: 8 }
+      : "skip"
+  );
+  const recommended = useMemo(() => {
+    if (!product) return [] as StoreProduct[];
+    const selfId = product._id;
+    const pickFrom = (src: { items: StoreProduct[] } | undefined) => {
+      if (!src) return [] as StoreProduct[];
+      return src.items.filter((r) => r._id !== selfId);
+    };
+    const inCat = pickFrom(recommendedInCategory as { items: StoreProduct[] } | undefined);
+    if (inCat.length >= 4) return inCat.slice(0, 4);
+    const all = pickFrom(recommendedFeatured as { items: StoreProduct[] } | undefined);
+    const merged = [...inCat];
+    for (const r of all) {
+      if (merged.length >= 4) break;
+      if (!merged.find((m) => m._id === r._id)) merged.push(r);
+    }
+    return merged;
+  }, [recommendedInCategory, recommendedFeatured, product]);
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 500);
@@ -1150,6 +1183,37 @@ export default function ProductDetail() {
                     key={cp._id}
                     product={cp as unknown as StoreProduct}
                   />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Recommended for you ──────────────────────────────── */}
+          {recommended.length > 0 && (
+            <div className="mt-16 lg:mt-20">
+              <div className="mb-8 flex items-end justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
+                    Recommended for you
+                  </p>
+                  <h2 className="mt-2 font-heading text-2xl font-semibold text-primary md:text-3xl">
+                    More {p.category} picks
+                  </h2>
+                  <p className="mt-2 text-sm text-muted">
+                    Hand-picked by our team — premium templates in the same space as {p.name}.
+                  </p>
+                </div>
+                <Link
+                  href={`/store?category=${encodeURIComponent(p.category)}`}
+                  className="hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-accent-dark sm:inline-flex"
+                >
+                  View all
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {recommended.map((rp) => (
+                  <ProductCard key={rp._id} product={rp} />
                 ))}
               </div>
             </div>
