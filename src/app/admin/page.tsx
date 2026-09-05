@@ -18,12 +18,17 @@ import {
   Shield,
   Monitor,
   TrendingUp,
+  Sparkles,
+  Mail,
+  Clock,
+  AlertCircle,
+  BarChart3,
+  Award,
+  FileText,
 } from "lucide-react";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { buttonVariants } from "@/components/ui/button";
 import { StatCard } from "@/components/admin/stat-card";
 import { formatPrice, cn } from "@/lib/utils";
 
@@ -55,11 +60,12 @@ type Range = (typeof RANGE_OPTIONS)[number]["days"];
 
 export default function AdminDashboard() {
   const dash = useQuery(api.dashboard.summary);
+  const supportMessages = useQuery(api.contact.list, {});
   const [range, setRange] = useState<Range>(7);
 
   const orderStats = dash?.orderStats;
   const productStats = dash?.productStats;
-  const recentOrders = dash?.recentOrders ?? [];
+  const recentOrders = useMemo(() => dash?.recentOrders ?? [], [dash?.recentOrders]);
   const totalCustomers = dash?.customerCount ?? 0;
   const totalDownloads = dash?.totalDownloads ?? 0;
   const activeLicenses = dash?.activeLicenses ?? 0;
@@ -109,6 +115,7 @@ export default function AdminDashboard() {
       href: "/admin/orders?status=pending",
       tone: "text-amber-700 bg-amber-50 border-amber-200",
       dot: "bg-amber-500",
+      icon: Clock,
     },
     {
       label: "Draft products",
@@ -117,6 +124,7 @@ export default function AdminDashboard() {
       href: "/admin/products",
       tone: "text-blue-700 bg-blue-50 border-blue-200",
       dot: "bg-blue-500",
+      icon: FileText,
     },
     {
       label: "Refunds",
@@ -125,88 +133,221 @@ export default function AdminDashboard() {
       href: "/admin/orders?payment=refunded",
       tone: "text-red-700 bg-red-50 border-red-200",
       dot: "bg-red-500",
+      icon: AlertCircle,
     },
   ].filter((item) => item.count > 0);
   const hasAttention = attentionItems.length > 0;
 
+  // Greeting based on local hour.
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  // Top-selling products from the 5 most recent orders. Lightweight, no
+  // separate aggregate query.
+  const topProducts = useMemo(() => {
+    const map = new Map<string, { name: string; count: number; revenue: number }>();
+    for (const order of recentOrders) {
+      for (const item of order.items ?? []) {
+        const key = String(item.productId);
+        const prev = map.get(key) ?? { name: item.productName, count: 0, revenue: 0 };
+        prev.count += item.quantity;
+        prev.revenue += item.quantity * item.price;
+        map.set(key, prev);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 4);
+  }, [recentOrders]);
+
+  const unreadSupportCount = useMemo(() => {
+    if (!supportMessages) return 0;
+    return (supportMessages as { status?: string; readAt?: number }[]).filter(
+      (m) => !m.readAt,
+    ).length;
+  }, [supportMessages]);
+  const latestSupport = useMemo(() => {
+    if (!supportMessages) return [];
+    return (supportMessages as Array<{ _id: string; name?: string; email?: string; subject?: string; message?: string; createdAt: number; readAt?: number }>)
+      .slice()
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 4);
+  }, [supportMessages]);
+
   return (
     <div className="space-y-8">
-      <AdminPageHeader
-        title="Dashboard"
-        description={`${today} · A live snapshot of your TrueWorks storefront.`}
-        action={
-          <Link
-            href="/admin/analytics"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            aria-label="View analytics page"
-          >
-            <TrendingUp className="h-4 w-4" /> View analytics
-          </Link>
-        }
-      />
+      {/* ─── Hero ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] px-6 py-8 lg:px-8 lg:py-10">
+        <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-accent/[0.10] blur-3xl" />
+        <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.05] blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "400px 400px",
+          }}
+        />
+        <div className="relative flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+              {greeting}, admin
+            </p>
+            <h1 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
+              Dashboard
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-white/70">
+              {today} · A live snapshot of your TrueWorks storefront.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/products/new"
+              className="inline-flex items-center gap-1.5 rounded-full gradient-gold px-4 py-2 text-xs font-semibold text-primary-dark shadow-md shadow-accent/20 transition-all hover:brightness-105"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              New product
+            </Link>
+            <Link
+              href="/admin/analytics"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              Analytics
+            </Link>
+          </div>
+        </div>
 
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-5">
-<StatCard
-          label="Total Revenue"
-          value={formatPrice(revenue)}
-          icon={DollarSign}
-          tint="text-primary bg-primary/10"
-          href="/admin/analytics"
-          delta={{ value: revenueDelta, label: "vs prev 7d" }}
-          loading={isLoading}
-        />
-        <StatCard
-          label="Orders"
-          value={totalOrders}
-          icon={ShoppingCart}
-          tint="text-accent bg-accent/10"
-          href="/admin/orders"
-          footnote={`${completedOrders} completed`}
-          loading={isLoading}
-        />
-        <StatCard
-          label="Customers"
-          value={totalCustomers}
-          icon={Users}
-          tint="text-secondary bg-secondary/10"
-          href="/admin/customers"
-          footnote="People who purchased"
-          loading={isLoading}
-        />
-        <StatCard
-          label="Downloads"
-          value={totalDownloads}
-          icon={Download}
-          tint="text-secondary-foreground bg-secondary"
-          loading={isLoading}
-        />
-        <StatCard
-          label="Products"
-          value={totalProducts}
-          icon={Package}
-          tint="text-emerald-700 bg-emerald-50"
-          href="/admin/products"
-          footnote={`${publishedProducts} live · ${draftProducts} draft`}
-          loading={isLoading}
-        />
-        <StatCard
-          label="Active Licenses"
-          value={activeLicenses}
-          icon={Shield}
-          tint="text-emerald-700 bg-emerald-50"
-          href="/admin/licenses"
-          footnote="Currently valid"
-          loading={isLoading}
-        />
+        {/* Today-at-a-glance pills */}
+        <div className="relative mt-7 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Pending orders", value: pendingOrders, icon: Clock, href: "/admin/orders?status=pending", tone: "border-amber-300/30 bg-amber-400/10 text-amber-100" },
+            { label: "Drafts", value: draftProducts, icon: FileText, href: "/admin/products", tone: "border-blue-300/30 bg-blue-400/10 text-blue-100" },
+            { label: "Refunds", value: refundedOrders, icon: AlertCircle, href: "/admin/orders?payment=refunded", tone: "border-red-300/30 bg-red-400/10 text-red-100" },
+            { label: "Active licenses", value: activeLicenses, icon: Shield, href: "/admin/licenses", tone: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100" },
+            { label: "Downloads", value: totalDownloads, icon: Download, href: "/admin/downloads", tone: "border-cyan-300/30 bg-cyan-400/10 text-cyan-100" },
+            { label: "Unread support", value: unreadSupportCount, icon: Mail, href: "/admin/support", tone: "border-violet-300/30 bg-violet-400/10 text-violet-100" },
+          ].map((pill) => (
+            <Link
+              key={pill.label}
+              href={pill.href}
+              className={cn(
+                "group flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 backdrop-blur-sm transition-all hover:-translate-y-0.5",
+                pill.tone,
+              )}
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold">
+                <pill.icon className="h-3.5 w-3.5 opacity-80" />
+                {pill.label}
+              </span>
+              <span className="text-base font-bold tabular-nums">{pill.value}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── KPI grid: featured revenue + secondary cards ────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Featured revenue card (navy) */}
+        <div className="gradient-brand relative overflow-hidden rounded-2xl p-6 shadow-elevated lg:col-span-1">
+          <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light">
+                Total Revenue
+              </p>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent-light">
+                <DollarSign className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-4 font-heading text-3xl font-bold tracking-tight text-white tabular-nums sm:text-4xl">
+              {isLoading ? "—" : formatPrice(revenue)}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold tabular-nums",
+                  revenueDelta >= 0
+                    ? "bg-emerald-400/20 text-emerald-100"
+                    : "bg-red-400/20 text-red-100",
+                )}
+              >
+                {revenueDelta >= 0 ? "▲" : "▼"}{" "}
+                {Math.abs(revenueDelta).toFixed(0)}%
+                <span className="font-normal opacity-80">vs prev 7d</span>
+              </span>
+              <span className="text-white/60">
+                {completedOrders} completed orders
+              </span>
+            </div>
+            <Link
+              href="/admin/analytics"
+              className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-light transition-transform hover:translate-x-0.5"
+            >
+              View detailed analytics
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Secondary 2x2 grid */}
+        <div className="grid grid-cols-2 gap-4 lg:col-span-2">
+          <StatCard
+            label="Orders"
+            value={totalOrders}
+            icon={ShoppingCart}
+            tint="text-accent bg-accent/10"
+            href="/admin/orders"
+            footnote={`${completedOrders} completed`}
+            loading={isLoading}
+          />
+          <StatCard
+            label="Customers"
+            value={totalCustomers}
+            icon={Users}
+            tint="text-secondary bg-secondary/10"
+            href="/admin/customers"
+            footnote="People who purchased"
+            loading={isLoading}
+          />
+          <StatCard
+            label="Products"
+            value={totalProducts}
+            icon={Package}
+            tint="text-emerald-700 bg-emerald-50"
+            href="/admin/products"
+            footnote={`${publishedProducts} live · ${draftProducts} draft`}
+            loading={isLoading}
+          />
+          <StatCard
+            label="Downloads"
+            value={totalDownloads}
+            icon={Download}
+            tint="text-cyan-700 bg-cyan-50"
+            href="/admin/downloads"
+            footnote="Templates served"
+            loading={isLoading}
+          />
+        </div>
       </div>
-{/* Revenue + needs attention */}
+
+      {/* Revenue chart + needs attention */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="transition-shadow duration-200 hover:shadow-card lg:col-span-2">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle>Revenue</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <BarChart3 className="h-4 w-4" />
+                  </span>
+                  <CardTitle>Revenue</CardTitle>
+                </div>
                 <CardDescription>Completed orders over the selected period</CardDescription>
               </div>
               <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-0.5">
@@ -254,7 +395,12 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Needs attention</CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+                <AlertCircle className="h-4 w-4" />
+              </span>
+              <CardTitle>Needs attention</CardTitle>
+            </div>
             <CardDescription>Items that may need your input</CardDescription>
           </CardHeader>
           <CardContent>
@@ -276,7 +422,9 @@ export default function AdminDashboard() {
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={cn("h-2.5 w-2.5 rounded-full", item.dot)} />
+                        <span className={cn("flex h-9 w-9 items-center justify-center rounded-lg bg-white/60", item.dot.replace("bg-", "text-"))}>
+                          <item.icon className="h-4 w-4" />
+                        </span>
                         <div>
                           <p className="text-sm font-semibold">{item.label}</p>
                           <p className="text-xs opacity-80">{item.detail}</p>
@@ -304,11 +452,174 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-{/* Recent orders */}
+
+      {/* Top products + Support inbox */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className="transition-shadow duration-200 hover:shadow-card">
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/10 text-accent-dark">
+                    <Award className="h-4 w-4" />
+                  </span>
+                  <CardTitle>Top selling products</CardTitle>
+                </div>
+                <CardDescription>From the latest 5 orders</CardDescription>
+              </div>
+              <Link
+                href="/admin/orders"
+                className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
+              >
+                View orders
+                <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {topProducts.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted">
+                <Package className="h-7 w-7 opacity-40" />
+                <p className="text-sm">No products sold yet</p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {topProducts.map((p, i) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-3 rounded-xl border border-border/70 bg-surface px-3 py-2.5"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-heading text-sm font-bold text-primary">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {p.name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {p.count} sold
+                      </p>
+                    </div>
+                    <span className="font-heading text-sm font-bold text-primary tabular-nums">
+                      {formatPrice(p.revenue)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="transition-shadow duration-200 hover:shadow-card">
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-violet-100 text-violet-700">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <CardTitle>Support inbox</CardTitle>
+                  {unreadSupportCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                      {unreadSupportCount} unread
+                    </span>
+                  )}
+                </div>
+                <CardDescription>Latest customer messages</CardDescription>
+              </div>
+              <Link
+                href="/admin/support"
+                className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
+              >
+                Open inbox
+                <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!supportMessages ? (
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-12 animate-pulse rounded-xl bg-muted/50" />
+                ))}
+              </div>
+            ) : latestSupport.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted">
+                <Mail className="h-7 w-7 opacity-40" />
+                <p className="text-sm">No support messages yet</p>
+              </div>
+            ) : (
+              <ul className="space-y-2.5">
+                {latestSupport.map((m) => (
+                  <li
+                    key={m._id}
+                    className={cn(
+                      "flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors",
+                      m.readAt
+                        ? "border-border/70 bg-white"
+                        : "border-violet-200 bg-violet-50/50"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                        m.readAt
+                          ? "bg-surface text-muted"
+                          : "gradient-gold text-primary-dark"
+                      )}
+                    >
+                      {(m.name ?? m.email ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {m.name ?? m.email ?? "Anonymous"}
+                        </p>
+                        <span className="shrink-0 text-[11px] text-muted">
+                          {new Date(m.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="truncate text-xs font-medium text-primary">
+                        {m.subject ?? "No subject"}
+                      </p>
+                      {m.message && (
+                        <p className="mt-0.5 line-clamp-1 text-xs text-muted">
+                          {m.message}
+                        </p>
+                      )}
+                    </div>
+                    {!m.readAt && (
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-500" />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent orders */}
       <Card className="transition-shadow duration-200 hover:shadow-card">
         <CardHeader>
-          <CardTitle>Recent orders</CardTitle>
-          <CardDescription>Latest 5 orders across your storefront</CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <ShoppingCart className="h-4 w-4" />
+                </span>
+                <CardTitle>Recent orders</CardTitle>
+              </div>
+              <CardDescription>Latest 5 orders across your storefront</CardDescription>
+            </div>
+            <Link
+              href="/admin/orders"
+              className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
+            >
+              View all
+              <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+            </Link>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -361,37 +672,45 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Quick actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick actions</CardTitle>
-          <CardDescription>Frequently used admin tools</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-3">
-            {[
-              { label: "Add Product", icon: ShoppingBag, href: "/admin/products/new", color: "bg-primary", aria: "Add a new product" },
-              { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary", aria: "View all orders" },
-              { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent", aria: "Manage products" },
-              { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600", aria: "View customers" },
-              { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-[#3E6990]", aria: "Open settings" },
-              { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600", aria: "Manage authentication" },
-            ].map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                aria-label={action.aria}
-                className="inline-flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium shadow-soft transition-all hover:-translate-y-0.5 hover:bg-muted hover:border-secondary/30 hover:shadow-card"
-              >
-                <span className={`rounded-lg p-2 text-white ${action.color}`}>
-                  <action.icon className="h-4 w-4" />
-                </span>
-                <span className="font-medium text-foreground">{action.label}</span>
-              </Link>
-            ))}
+      {/* Quick actions (navy gradient) */}
+      <div className="gradient-brand relative overflow-hidden rounded-2xl p-6 shadow-elevated lg:p-8">
+        <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
+        <div className="relative flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+              Quick actions
+            </p>
+            <h2 className="mt-2 font-heading text-2xl font-semibold text-white md:text-3xl">
+              Jump back in
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-white/75">
+              The most-used admin tools, one click away.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Add product", icon: ShoppingBag, href: "/admin/products/new", aria: "Add a new product" },
+            { label: "View orders", icon: ShoppingCart, href: "/admin/orders", aria: "View all orders" },
+            { label: "Products", icon: Package, href: "/admin/products", aria: "Manage products" },
+            { label: "Customers", icon: Users, href: "/admin/customers", aria: "View customers" },
+            { label: "Settings", icon: Monitor, href: "/admin/settings", aria: "Open settings" },
+            { label: "Auth", icon: Shield, href: "/admin/auth", aria: "Manage authentication" },
+          ].map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              aria-label={action.aria}
+              className="group flex flex-col items-start gap-3 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-4 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.10]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/20 text-accent-light transition-colors group-hover:bg-accent/30">
+                <action.icon className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-semibold text-white">{action.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
