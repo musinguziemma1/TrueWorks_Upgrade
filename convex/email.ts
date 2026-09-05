@@ -2,10 +2,11 @@ import { internalAction, action, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { brandLogo, brandContactLine } from "./emailBranding";
+import { brandLogo, brandContactLine, CONTACT_EMAIL } from "./emailBranding";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
+const REPLY_TO = process.env.EMAIL_REPLY_TO ?? CONTACT_EMAIL;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com";
 const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET ?? "";
 
@@ -82,6 +83,7 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
       },
       body: JSON.stringify({
         from: EMAIL_FROM,
+        reply_to: REPLY_TO,
         to: [payload.to],
         subject: payload.subject,
         html: payload.html,
@@ -432,6 +434,7 @@ export const sendSupportReplyAction = action({
         },
         body: JSON.stringify({
           from: EMAIL_FROM,
+          reply_to: REPLY_TO,
           to: [email],
           subject: safeSubject,
           html,

@@ -33,9 +33,10 @@ const LOGO_ASPECT = 0.48;
  * @param width   Rendered width in px (height follows the logo aspect ratio).
  */
 export function brandLogo(variant: "dark" | "light" = "dark", width = 220): string {
-  const src = variant === "dark" ? LOGO_URL_DARK : LOGO_URL_LIGHT;
+  const base = variant === "dark" ? LOGO_URL_DARK : LOGO_URL_LIGHT;
+  const retina = base.replace(/\.png$/, "@2x.png");
   const height = Math.round(width * LOGO_ASPECT);
-  return `<img src="${src}" width="${width}" height="${height}" alt="${BRAND_NAME} — ${BRAND_TAGLINE}" style="display:inline-block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;" />`;
+  return `<img src="${base}" srcset="${base} 1x, ${retina} 2x" width="${width}" height="${height}" alt="${BRAND_NAME} — ${BRAND_TAGLINE}" style="display:inline-block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;" />`;
 }
 
 /** Contact line for email footers: email · phone · WhatsApp links. */
