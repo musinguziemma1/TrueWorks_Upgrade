@@ -234,7 +234,7 @@ export default function ProductsPage() {
         {[
           { label: "Published", value: productStats?.published ?? 0, icon: CheckCircle2, color: "text-emerald-600" },
           { label: "Drafts", value: productStats?.draft ?? 0, icon: FileText, color: "text-amber-600" },
-          { label: "Archived", value: productStats?.archived ?? 0, icon: Archive, color: "text-slate-600" },
+          { label: "Archived", value: productStats?.archived ?? 0, icon: Archive, color: "text-muted-foreground" },
           { label: "Est. Revenue", value: fmtPrice(productStats?.totalRevenue ?? 0), icon: DollarSign, color: "text-[#0B2545]" },
         ].map((s) => (
           <Card key={s.label}>

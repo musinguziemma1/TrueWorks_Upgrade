@@ -194,7 +194,7 @@ export default function AdminReturnsPage() {
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Pending", value: stats.pending, color: "text-amber-600" },
           { label: "Approved", value: stats.approved, color: "text-green-600" },
-          { label: "Completed", value: stats.completed, color: "text-slate-600" },
+          { label: "Completed", value: stats.completed, color: "text-muted-foreground" },
           { label: "Rejected", value: stats.rejected, color: "text-red-600" },
           { label: "Pending Value", value: fmtMoney(stats.pendingValue), color: "text-[#0B2545]" },
         ].map((stat) => (

@@ -102,15 +102,15 @@ function baseTemplate(content: string): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .header { background: #0b2545; padding: 32px; text-align: center; }
     .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
-    .content { padding: 32px; color: #334155; line-height: 1.6; }
+    .content { padding: 32px; color: #2A3548; line-height: 1.6; }
     .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0; }
-    .footer { padding: 24px 32px; background: #f1f5f9; text-align: center; font-size: 12px; color: #64748b; }
-    .order-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; }
-    .item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+    .footer { padding: 24px 32px; background: #EEF1F6; text-align: center; font-size: 12px; color: #5D6B7E; }
+    .order-box { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E2E7EE; }
     .item-row:last-child { border-bottom: none; }
     .total { font-weight: 700; font-size: 18px; color: #0b2545; }
   </style>
@@ -183,7 +183,7 @@ export const sendDownloadReady = async (ctx: ActionCtx, request: Request): Promi
       <p style="margin: 0 0 4px 0;"><strong>Order:</strong> ${escapeHtml(orderNumber)}</p>
       <p style="margin: 0 0 4px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</p>
       <p style="margin: 0 0 12px 0;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: 600;">Paid</span></p>
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+      <div style="border-top: 1px solid #E2E7EE; padding-top: 12px;">
         <p style="margin: 0;"><strong>Product(s):</strong> ${escapeHtml(productName)}</p>
       </div>
     </div>
@@ -194,7 +194,7 @@ export const sendDownloadReady = async (ctx: ActionCtx, request: Request): Promi
     <p>You can also access your downloads anytime from your account:</p>
     <a href="${SITE_URL}/account/downloads" class="button">View All Downloads</a>
 
-    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+    <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
       Please keep this email for your records. If you have any questions about your order, reply to this email or contact us at <a href="mailto:info@trueworksgroup.com">info@trueworksgroup.com</a>.
     </p>
   `);
@@ -307,7 +307,7 @@ export const handleVerificationEmailHttp = async (ctx: ActionCtx, request: Reque
     <p>Hi ${escapeHtml(name ?? "")},</p>
     <p>Thanks for signing up for TrueWorks! Please verify your email address to activate your account.</p>
     <a href="${escapeUrl(verifyUrl)}" class="button">Verify Email</a>
-    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+    <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
       This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
     </p>
   `);
@@ -334,7 +334,7 @@ export const handlePasswordResetEmailHttp = async (ctx: ActionCtx, request: Requ
     <p>Hi ${escapeHtml(name ?? "")},</p>
     <p>We received a request to reset your TrueWorks password. Click the button below to choose a new one.</p>
     <a href="${escapeUrl(resetUrl)}" class="button">Reset Password</a>
-    <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+    <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
       This link expires in 1 hour. If you did not request a reset, you can safely ignore this email.
     </p>
   `);
@@ -388,7 +388,7 @@ export const sendSubscriberWelcome = internalAction({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 40px 32px; text-align: center; position: relative; overflow: hidden; }
     .banner::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 60%); }
@@ -396,19 +396,19 @@ export const sendSubscriberWelcome = internalAction({
     .banner .accent { color: #c9a227; }
     .banner p { color: rgba(255,255,255,0.7); font-size: 14px; margin: 0; }
     .gold-bar { height: 3px; background: linear-gradient(90deg, #c9a227, #e8d48b, #c9a227); }
-    .content { padding: 36px 32px; color: #334155; line-height: 1.7; }
+    .content { padding: 36px 32px; color: #2A3548; line-height: 1.7; }
     .content h2 { color: #0b2545; font-size: 22px; margin: 0 0 16px 0; }
     .content p { margin: 0 0 16px 0; font-size: 15px; }
-    .benefits { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .benefits { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 12px; padding: 24px; margin: 24px 0; }
     .benefits h3 { color: #0b2545; font-size: 16px; margin: 0 0 16px 0; }
     .benefit-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
     .benefit-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #c9a227, #e8d48b); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .benefit-icon span { color: #0b2545; font-size: 16px; }
-    .benefit-text { font-size: 14px; color: #475569; }
+    .benefit-text { font-size: 14px; color: #2A3548; }
     .benefit-text strong { color: #0b2545; }
     .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; letter-spacing: 0.3px; }
     .button:hover { background: #d4af37; }
-    .divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
+    .divider { height: 1px; background: #E2E7EE; margin: 24px 0; }
     .footer { padding: 28px 32px; background: #0b2545; text-align: center; }
     .footer p { color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 8px 0; }
     .footer a { color: #c9a227; text-decoration: none; }
@@ -456,7 +456,7 @@ export const sendSubscriberWelcome = internalAction({
 
       <div class="divider"></div>
 
-      <p style="font-size: 13px; color: #64748b; margin: 0;">
+      <p style="font-size: 13px; color: #5D6B7E; margin: 0;">
         We respect your inbox. You'll receive newsletters no more than twice a month. If you ever want to unsubscribe, click the link at the bottom of any newsletter email or email us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.
       </p>
     </div>
@@ -735,7 +735,7 @@ export const sendTeamInvitation = internalAction({
       <p>Hi there,</p>
       <p><strong>${escapeHtml(args.invitedBy)}</strong> has invited you to join the TrueWorks admin team as an <strong>${escapeHtml(ROLE_LABELS[args.role] ?? args.role)}</strong>.</p>
 
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <div style="background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <p style="margin: 0 0 8px 0;"><strong>Your Role:</strong> ${escapeHtml(ROLE_LABELS[args.role] ?? args.role)}</p>
         <p style="margin: 0 0 8px 0;"><strong>Invited By:</strong> ${escapeHtml(args.invitedBy)}</p>
         <p style="margin: 0;"><strong>Expires:</strong> ${expiryDate}</p>
@@ -754,7 +754,7 @@ export const sendTeamInvitation = internalAction({
 
       <a href="${escapeUrl(signupUrl)}" class="button">Accept Invitation & Sign Up</a>
 
-      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
         This invitation expires on <strong>${expiryDate}</strong>. If you did not expect this invitation, you can safely ignore this email.
       </p>
 
@@ -785,7 +785,7 @@ export const sendVerificationEmail = internalAction({
       <p>Hi ${escapeHtml(args.name ?? "")},</p>
       <p>Thanks for signing up for TrueWorks! Please verify your email address to activate your account.</p>
       <a href="${escapeUrl(verifyUrl)}" class="button">Verify Email</a>
-      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
         This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
       </p>
     `);
@@ -803,7 +803,7 @@ export const sendPasswordResetEmail = internalAction({
       <p>Hi ${escapeHtml(args.name ?? "")},</p>
       <p>We received a request to reset your TrueWorks password. Click the button below to choose a new one.</p>
       <a href="${escapeUrl(resetUrl)}" class="button">Reset Password</a>
-      <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+      <p style="font-size: 13px; color: #5D6B7E; margin-top: 20px;">
         This link expires in 1 hour. If you did not request a reset, you can safely ignore this email.
       </p>
     `);
@@ -850,7 +850,7 @@ export const sendLoginCodeEmail = internalAction({
       <div style="text-align: center; margin: 28px 0;">
         <div style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0B2545; background: #FAFBFC; padding: 16px 32px; border-radius: 8px; border: 2px solid #C9A227;">${escapeHtml(args.code)}</div>
       </div>
-      <p style="font-size: 13px; color: #64748b;">This code expires in 10 minutes. If you did not request this code, please secure your account immediately.</p>
+      <p style="font-size: 13px; color: #5D6B7E;">This code expires in 10 minutes. If you did not request this code, please secure your account immediately.</p>
     `);
     const sent = await sendEmail({ to: args.to, subject: "Your TrueWorks sign-in code", html });
     return { sent };

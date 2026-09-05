@@ -94,7 +94,7 @@ export function SubscribersTable({
                       className={
                         s.active
                           ? "border-green-200 bg-green-50 text-green-700"
-                          : "border-slate-200 bg-slate-100 text-slate-600"
+                          : "border-border bg-muted text-muted-foreground"
                       }
                     >
                       {s.active ? "Active" : "Inactive"}

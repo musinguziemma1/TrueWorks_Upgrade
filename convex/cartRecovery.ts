@@ -27,11 +27,11 @@ export const sendRecoveryEmails = internalAction({
         .map(
           (item: AbandonedCart["items"][number]) =>
             `<tr>
-              <td style="padding:12px;border-bottom:1px solid #e2e8f0;">
+              <td style="padding:12px;border-bottom:1px solid #E2E7EE;">
                 <a href="${SITE_URL}/store/${item.slug}" style="color:#0b2545;text-decoration:none;font-weight:600;">${item.name}</a>
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.quantity}</td>
-              <td style="padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;">$${item.price.toFixed(2)}</td>
+              <td style="padding:12px;border-bottom:1px solid #E2E7EE;text-align:center;">${item.quantity}</td>
+              <td style="padding:12px;border-bottom:1px solid #E2E7EE;text-align:right;">$${item.price.toFixed(2)}</td>
             </tr>`
         )
         .join("");
@@ -43,18 +43,18 @@ export const sendRecoveryEmails = internalAction({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 36px 32px; text-align: center; }
     .banner h1 { color: #ffffff; font-size: 24px; margin: 0; }
     .banner .accent { color: #c9a227; }
     .gold-bar { height: 3px; background: linear-gradient(90deg, #c9a227, #e8d48b, #c9a227); }
-    .content { padding: 32px; color: #334155; line-height: 1.6; }
+    .content { padding: 32px; color: #2A3548; line-height: 1.6; }
     .content h2 { color: #0b2545; font-size: 20px; margin: 0 0 12px 0; }
     .content p { margin: 0 0 16px 0; font-size: 15px; }
     .cart-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .cart-table th { background: #f8fafc; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-    .total-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: right; }
+    .cart-table th { background: #F4F6FA; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #5D6B7E; border-bottom: 2px solid #E2E7EE; }
+    .total-box { background: #F4F6FA; border: 1px solid #E2E7EE; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: right; }
     .total-box .amount { font-size: 24px; font-weight: 700; color: #0b2545; }
     .button { display: inline-block; background: #c9a227; color: #0b2545; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin: 8px 0; }
     .footer { padding: 24px 32px; background: #0b2545; text-align: center; }
@@ -78,7 +78,7 @@ export const sendRecoveryEmails = internalAction({
       </table>
       <div class="total-box"><div>Cart Total</div><div class="amount">$${cart.totalValue.toFixed(2)}</div></div>
       <div style="text-align: center; margin: 28px 0;"><a href="${SITE_URL}/cart" class="button">Complete Your Purchase →</a></div>
-      <p style="font-size: 13px; color: #64748b;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.</p>
+      <p style="font-size: 13px; color: #5D6B7E;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #c9a227;">info@trueworksgroup.com</a>.</p>
     </div>
     <div class="footer">${brandContactLine()}<p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Limited.</p></div>
   </div>

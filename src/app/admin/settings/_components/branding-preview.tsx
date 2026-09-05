@@ -80,7 +80,7 @@ export function BrandingPreview({ values }: { values: SettingsValues }) {
             <span className="h-3 w-8 rounded-sm" style={{ backgroundColor: primary }} />
             <span className="h-3 w-8 rounded-sm" style={{ backgroundColor: secondary }} />
             <span className="h-3 w-8 rounded-sm" style={{ backgroundColor: accent }} />
-            <span className="h-3 w-8 rounded-sm" style={{ backgroundColor: background, border: "1px solid #e2e8f0" }} />
+            <span className="h-3 w-8 rounded-sm" style={{ backgroundColor: background, border: "1px solid #E2E7EE" }} />
           </div>
 
           <p className="mt-3 text-[11px]" style={{ color: foreground, opacity: 0.7 }}>

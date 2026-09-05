@@ -318,9 +318,9 @@ export function ExcelPreview({ url, fileName }: ExcelPreviewProps) {
                       return (
                         <tr
                           key={visibleIdx}
-                          className={visibleIdx % 2 === 0 ? "bg-white" : "bg-gray-50/80"}
+                          className={visibleIdx % 2 === 0 ? "bg-white" : "bg-muted/50"}
                         >
-                          <td className="sticky left-0 z-10 border border-r border-b border-border bg-gray-100 px-2 py-1.5 text-center text-xs text-muted font-medium">
+                          <td className="sticky left-0 z-10 border border-r border-b border-border bg-muted px-2 py-1.5 text-center text-xs text-muted font-medium">
                             {globalRowIdx}
                           </td>
                           {Array.from({ length: maxCols }, (_, colIdx) => {

@@ -66,7 +66,7 @@ export const sendTestEmail = action({
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #0B2545;">Email delivery is working! 🎉</h2>
               <p>This is a test email sent from the TrueWorks admin settings.</p>
-              <p style="color: #64748b;">If you received this, your email provider is configured correctly.</p>
+              <p style="color: #5D6B7E;">If you received this, your email provider is configured correctly.</p>
             </div>
           `,
         }),

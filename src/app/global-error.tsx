@@ -13,8 +13,8 @@ export default function GlobalError({
           margin: 0,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          background: "#FAFBFC",
-          color: "#1E293B",
+          background: "#F4F6FA",
+          color: "#1F2937",
           display: "flex",
           minHeight: "100vh",
           alignItems: "center",
@@ -27,7 +27,7 @@ export default function GlobalError({
         <h1 style={{ fontSize: "1.75rem", color: "#0B2545", marginBottom: "0.75rem" }}>
           Something went wrong
         </h1>
-        <p style={{ maxWidth: "28rem", color: "#64748b", marginBottom: "1.5rem" }}>
+        <p style={{ maxWidth: "28rem", color: "#5D6B7E", marginBottom: "1.5rem" }}>
           A critical error occurred. Please try again.
         </p>
         <button

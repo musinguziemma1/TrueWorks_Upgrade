@@ -17,9 +17,9 @@ export default function AdminRevenueChart({ data }: { data: { month: string; rev
   return (
     <ChartContainer config={chartConfig} className="aspect-auto h-[300px]">
       <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E7EE" />
+        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#5D6B7E" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 12, fill: "#5D6B7E" }} axisLine={false} tickLine={false} />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Line
           type="monotone"

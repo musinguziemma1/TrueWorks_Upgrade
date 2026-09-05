@@ -37,14 +37,14 @@ function buildPreviewDoc(content: string): string {
 <head>
 <meta charset="utf-8" />
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #334155; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; color: #2A3548; }
   .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
   .header { background: #0b2545; padding: 32px; text-align: center; }
   .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
   .content { padding: 32px; line-height: 1.6; }
   .content h1, .content h2, .content h3 { color: #0b2545; }
   .content a { color: #c9a227; }
-  .footer { padding: 24px 32px; background: #f1f5f9; text-align: center; font-size: 12px; color: #64748b; }
+  .footer { padding: 24px 32px; background: #EEF1F6; text-align: center; font-size: 12px; color: #5D6B7E; }
   img { max-width: 100%; }
 </style>
 </head>

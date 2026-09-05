@@ -27,7 +27,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                 animate={isActive ? "animate" : "initial"}
               >
                 {/* Laptop screen */}
-                <div className="relative w-full h-80 bg-gradient-to-b from-gray-900 to-black rounded-t-2xl border-4 border-gray-700 overflow-hidden">
+                <div className="relative w-full h-80 bg-gradient-to-b from-[#0b2545] to-[#04101F] rounded-t-2xl border-4 border-[#0a1f38] overflow-hidden">
                   {/* Dashboard content */}
                   <div className="p-6 h-full bg-gradient-to-br from-[#04101F] to-[#071A33]">
                     {/* Top bar */}
@@ -85,8 +85,8 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                 </div>
                 
                 {/* Laptop base */}
-                <div className="w-full h-8 bg-gradient-to-b from-gray-700 to-gray-800 rounded-b-2xl" />
-                <div className="w-32 h-2 bg-gray-600 rounded-b-lg mx-auto" />
+                <div className="w-full h-8 bg-gradient-to-b from-[#123663] to-[#0a1f38] rounded-b-2xl" />
+                <div className="w-32 h-2 bg-[#1a3656] rounded-b-lg mx-auto" />
               </motion.div>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
             {/* Large wall display */}
             <div className="relative w-[700px] h-[400px]">
               <motion.div
-                className="w-full h-full bg-gradient-to-br from-[#04101F] to-[#071A33] rounded-3xl border-8 border-gray-800 overflow-hidden"
+                className="w-full h-full bg-gradient-to-br from-[#04101F] to-[#071A33] rounded-3xl border-8 border-[#0a1f38] overflow-hidden"
                 variants={kenBurnsEffect}
                 initial="initial"
                 animate={isActive ? "animate" : "initial"}

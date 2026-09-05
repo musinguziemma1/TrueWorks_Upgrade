@@ -178,7 +178,7 @@ export default function AdminDashboard() {
           label="Downloads"
           value={totalDownloads}
           icon={Download}
-          tint="text-slate-600 bg-slate-100"
+          tint="text-muted-foreground bg-muted"
           loading={isLoading}
         />
         <StatCard
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
               { label: "View Orders", icon: ShoppingCart, href: "/admin/orders", color: "bg-secondary", aria: "View all orders" },
               { label: "Manage Products", icon: Package, href: "/admin/products", color: "bg-accent", aria: "Manage products" },
               { label: "Customers", icon: Users, href: "/admin/customers", color: "bg-emerald-600", aria: "View customers" },
-              { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-slate-600", aria: "Open settings" },
+              { label: "Settings", icon: Monitor, href: "/admin/settings", color: "bg-[#3E6990]", aria: "Open settings" },
               { label: "Auth Management", icon: Shield, href: "/admin/auth", color: "bg-red-600", aria: "Manage authentication" },
             ].map((action) => (
               <Link

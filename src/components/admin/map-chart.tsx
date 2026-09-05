@@ -40,7 +40,7 @@ function normalizeCountryName(name: string): string {
 }
 
 function getColorScale(value: number, max: number): string {
-  if (max === 0) return "#E5E7EB"
+  if (max === 0) return "#E2E7EE"
   const ratio = value / max
   if (ratio > 0.75) return "#0B2545"
   if (ratio > 0.5) return "#071A33"
@@ -131,7 +131,7 @@ function MapChartInner({ data }: MapChartProps) {
               const match = dataMap.get(geoName)
               const fill = match
                 ? getColorScale(match.orders, maxOrders)
-                : "#E5E7EB"
+                : "#E2E7EE"
 
               return (
                 <Geography
@@ -144,7 +144,7 @@ function MapChartInner({ data }: MapChartProps) {
                     default: { outline: "none" },
                     hover: {
                       outline: "none",
-                      fill: match ? "#C9A227" : "#D1D5DB",
+                      fill: match ? "#C9A227" : "#CBD2DC",
                       cursor: match ? "pointer" : "default",
                     },
                     pressed: { outline: "none" },

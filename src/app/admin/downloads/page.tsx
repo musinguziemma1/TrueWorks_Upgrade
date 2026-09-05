@@ -91,7 +91,7 @@ export default function DownloadsPage() {
         {[
           { label: "Total Records", value: downloadStats?.total ?? 0, icon: FileDown, color: "text-[#0B2545]" },
           { label: "Active", value: downloadStats?.active ?? 0, icon: CheckCircle2, color: "text-emerald-600" },
-          { label: "Expired", value: downloadStats?.expired ?? 0, icon: XCircle, color: "text-slate-500" },
+          { label: "Expired", value: downloadStats?.expired ?? 0, icon: XCircle, color: "text-muted-foreground" },
           { label: "Disabled", value: downloadStats?.disabled ?? 0, icon: Shield, color: "text-red-600" },
           { label: "Total Downloads", value: downloadStats?.totalDownloads ?? 0, icon: Activity, color: "text-[#3E6990]" },
         ].map((s) => (

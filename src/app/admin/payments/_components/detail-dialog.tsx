@@ -198,8 +198,8 @@ export function DetailDialog({ payment, onClose }: { payment: Payment | null; on
           </div>
 
           {refundedAt && (
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-500/20 dark:bg-slate-500/5">
-              <Fingerprint className="h-4 w-4 shrink-0 text-slate-500" />
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3 text-xs dark:border-white/10 dark:bg-white/5">
+              <Fingerprint className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>
                 Refunded on <span className="font-medium">{formatDateTime(refundedAt)}</span>
                 {refundMethod && (

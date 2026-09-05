@@ -13,7 +13,7 @@ const STATUS_BAR_COLORS: Record<string, string> = {
   completed: "bg-emerald-500",
   pending: "bg-amber-500",
   failed: "bg-red-500",
-  refunded: "bg-slate-400",
+  refunded: "bg-muted-foreground",
 }
 
 function MiniLeaderboard({

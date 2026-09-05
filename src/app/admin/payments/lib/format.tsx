@@ -9,8 +9,8 @@ const PROVIDER_STYLES: Record<string, string> = {
 }
 
 export function providerStyle(provider?: string): string {
-  if (!provider) return "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300"
-  return PROVIDER_STYLES[provider] ?? "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300"
+  if (!provider) return "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground"
+  return PROVIDER_STYLES[provider] ?? "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground"
 }
 
 export function providerLabel(provider?: string): string {
@@ -78,8 +78,8 @@ export const STATUS_META: Record<PaymentStatus, { label: string; className: stri
   },
   refunded: {
     label: "Refunded",
-    className: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300",
-    dot: "bg-slate-500",
+    className: "bg-muted text-muted-foreground dark:bg-white/10 dark:text-muted-foreground",
+    dot: "bg-muted-foreground",
   },
 }
 

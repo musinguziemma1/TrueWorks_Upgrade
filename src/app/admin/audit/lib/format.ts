@@ -94,7 +94,7 @@ export function actionStyle(action: string): { className: string; icon: typeof F
   if (action.includes("status_update")) {
     return { className: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", icon: Activity }
   }
-  return { className: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300", icon: FileText }
+  return { className: "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground", icon: FileText }
 }
 
 export const SOURCE_LABELS: Record<string, string> = {
@@ -112,7 +112,7 @@ const SOURCE_STYLES: Record<string, string> = {
   http: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
   webhook: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
   action: "bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400",
-  scheduler: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300",
+  scheduler: "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground",
 }
 
 export function sourceStyle(source?: string): string {

@@ -3,8 +3,8 @@ import type { CampaignStatus } from "../types"
 export const STATUS_META: Record<CampaignStatus, { label: string; className: string; dot: string }> = {
   draft: {
     label: "Draft",
-    className: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300",
-    dot: "bg-slate-500",
+    className: "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground",
+    dot: "bg-muted-foreground",
   },
   scheduled: {
     label: "Scheduled",
@@ -76,5 +76,5 @@ export function formatCompact(value: number): string {
 export function rateColor(rate: number): string {
   if (rate >= 25) return "text-emerald-600 dark:text-emerald-400"
   if (rate >= 10) return "text-amber-600 dark:text-amber-400"
-  return "text-slate-500"
+  return "text-muted-foreground"
 }

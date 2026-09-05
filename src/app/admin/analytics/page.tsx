@@ -431,7 +431,7 @@ export default function AnalyticsPage() {
               ) : (
                 <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
                   <LineChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E7EE" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v}`} />
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -450,7 +450,7 @@ export default function AnalyticsPage() {
               ) : (
                 <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
                   <BarChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E7EE" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -469,7 +469,7 @@ export default function AnalyticsPage() {
               ) : (
                 <ChartContainer config={chartConfig} className="aspect-auto h-[220px]">
                   <LineChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E7EE" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
