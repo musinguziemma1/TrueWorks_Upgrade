@@ -1,14 +1,14 @@
 "use client"
 
 import { useMemo, useState, useRef, useCallback } from "react"
+import Link from "next/link"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
   BarChart3, Download, Globe, ShoppingCart, CreditCard,
   ArrowUpRight, DollarSign, Package, Loader2, Eye, TrendingUp,
-  FileText, Users, MousePointerClick, Map,
+  FileText, Users, MousePointerClick, Map, ChevronRight, Sparkles,
 } from "lucide-react"
-import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -17,7 +17,7 @@ import {
   PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts"
 import dynamic from "next/dynamic"
-import { formatPrice } from "@/lib/utils"
+import { cn, formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 import { MetricCard } from "./_components/metric-card"
 import { EventFunnel } from "./_components/event-funnel"
@@ -349,38 +349,74 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <AdminPageHeader
-          title="Analytics"
-          description="Deep dive into your store performance, traffic, and customer behavior."
-          breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Analytics" }]}
-        />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-[#0B2545]" />
-        </div>
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] px-6 py-8 lg:px-8 lg:py-10">
+          <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-accent/[0.10] blur-3xl" />
+          <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
+          <div className="relative flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+                Analytics
+              </p>
+              <h1 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
+                Loading insights...
+              </h1>
+            </div>
+            <Loader2 className="h-8 w-8 animate-spin text-accent-light" />
+          </div>
+        </section>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Analytics"
-        description="Deep dive into your store performance, traffic, and customer behavior."
-        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Analytics" }]}
-        action={
+      {/* ─── Hero ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] px-6 py-8 lg:px-8 lg:py-10">
+        <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-accent/[0.10] blur-3xl" />
+        <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.05] blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "400px 400px",
+          }}
+        />
+        <div className="relative flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <nav className="flex items-center gap-1.5 text-xs text-white/60">
+              <Link href="/admin" className="transition-colors hover:text-white">Dashboard</Link>
+              <ChevronRight className="h-3 w-3 opacity-50" />
+              <span className="font-semibold text-white">Analytics</span>
+            </nav>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
+              Performance insights
+            </p>
+            <h1 className="mt-2 font-heading text-3xl font-semibold text-white md:text-4xl">
+              Analytics
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-white/70">
+              Deep dive into your store performance, traffic, and customer behavior.
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <RangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              customFrom={customFrom}
-              customTo={customTo}
-              onCustomFromChange={setCustomFrom}
-              onCustomToChange={setCustomTo}
-            />
+            <div className="[&_button]:border-white/20 [&_button]:bg-white/5 [&_button]:text-white [&_button]:hover:bg-white/10 [&_button]:hover:text-white">
+              <RangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                customFrom={customFrom}
+                customTo={customTo}
+                onCustomFromChange={setCustomFrom}
+                onCustomToChange={setCustomTo}
+              />
+            </div>
             <Button
               variant="outline"
               size="sm"
-              className={compare ? "border-[#0B2545] text-[#0B2545]" : ""}
+              className={cn(
+                "border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white",
+                compare && "border-accent/60 bg-accent/10 text-accent-light hover:bg-accent/20"
+              )}
               onClick={() => setCompare((c) => !c)}
               aria-pressed={compare}
             >
@@ -392,6 +428,7 @@ export default function AnalyticsPage() {
               size="sm"
               onClick={handleExportPdf}
               disabled={exporting}
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               aria-label="Export analytics report as PDF"
             >
               {exporting ? (
@@ -402,29 +439,144 @@ export default function AnalyticsPage() {
               Export PDF
             </Button>
           </div>
-        }
-      />
+        </div>
+      </section>
 
       <div ref={analyticsRef} className="space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatPrice(safeSummary.totalRevenue)} delta={deltas.revenue} spark={spark.revenue} />
-          <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Total Orders" value={completedOrdersCount.toLocaleString()} delta={deltas.orders} spark={spark.orders} />
-          <MetricCard icon={<Download className="h-5 w-5" />} label="Downloads" value={safeSummary.totalDownloads.toLocaleString()} delta={deltas.downloads} spark={spark.downloads} />
-          <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitors" value={safeSummary.totalVisitors.toLocaleString()} delta={deltas.visitors} spark={spark.visitors} />
-          <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label="Page Views" value={safeSummary.totalPageViews.toLocaleString()} delta={deltas.pageViews} spark={spark.pageViews} />
-          <MetricCard icon={<TrendingUp className="h-5 w-5" />} label="Conv. Rate" value={`${conversionRate}%`} sub={`${formatPrice(avgOrderValue)} avg order`} />
+        {/* ─── KPI strip: featured revenue + 5 secondary ──────── */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="gradient-brand relative overflow-hidden rounded-2xl p-6 shadow-elevated">
+            <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light">
+                  Total Revenue
+                </p>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent-light">
+                  <DollarSign className="h-4 w-4" />
+                </span>
+              </div>
+              <p className="mt-4 font-heading text-3xl font-bold tracking-tight text-white tabular-nums sm:text-4xl">
+                {formatPrice(safeSummary.totalRevenue)}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                {deltas.revenue !== undefined && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold tabular-nums",
+                      deltas.revenue >= 0
+                        ? "bg-emerald-400/20 text-emerald-100"
+                        : "bg-red-400/20 text-red-100"
+                    )}
+                  >
+                    {deltas.revenue >= 0 ? "▲" : "▼"}{" "}
+                    {Math.abs(deltas.revenue).toFixed(1)}%
+                    <span className="font-normal opacity-80">vs prev</span>
+                  </span>
+                )}
+                <span className="text-white/70">
+                  {completedOrdersCount.toLocaleString()} orders
+                </span>
+              </div>
+              {/* Sparkline */}
+              {spark.revenue && spark.revenue.length > 1 && (
+                <div className="mt-5 flex h-12 items-end gap-[2px]">
+                  {spark.revenue.map((v, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-sm bg-white/30"
+                      style={{
+                        height: `${Math.max(8, (v / Math.max(...spark.revenue, 1)) * 100)}%`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:col-span-2">
+            <MetricCard
+              icon={<ShoppingCart className="h-5 w-5" />}
+              label="Orders"
+              value={completedOrdersCount.toLocaleString()}
+              delta={deltas.orders}
+              spark={spark.orders}
+            />
+            <MetricCard
+              icon={<Download className="h-5 w-5" />}
+              label="Downloads"
+              value={safeSummary.totalDownloads.toLocaleString()}
+              delta={deltas.downloads}
+              spark={spark.downloads}
+            />
+            <MetricCard
+              icon={<Eye className="h-5 w-5" />}
+              label="Visitors"
+              value={safeSummary.totalVisitors.toLocaleString()}
+              delta={deltas.visitors}
+              spark={spark.visitors}
+            />
+            <MetricCard
+              icon={<MousePointerClick className="h-5 w-5" />}
+              label="Page Views"
+              value={safeSummary.totalPageViews.toLocaleString()}
+              delta={deltas.pageViews}
+              spark={spark.pageViews}
+            />
+          </div>
+        </div>
+
+        {/* ─── Secondary metrics ─────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <MetricCard
+            icon={<DollarSign className="h-5 w-5" />}
+            label="Avg Order Value"
+            value={formatPrice(avgOrderValue)}
+          />
+          <MetricCard
+            icon={<ArrowUpRight className="h-5 w-5" />}
+            label="Revenue / Visitor"
+            value={revenuePerVisitor}
+          />
+          <MetricCard
+            icon={<Package className="h-5 w-5" />}
+            label="Products Sold"
+            value={productPerformance.reduce((s, p) => s + p.totalSales, 0).toLocaleString()}
+          />
+          <MetricCard
+            icon={<TrendingUp className="h-5 w-5" />}
+            label="Conv. Rate"
+            value={`${conversionRate}%`}
+            sub={`${formatPrice(avgOrderValue)} avg order`}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard icon={<DollarSign className="h-5 w-5" />} label="Avg Order Value" value={formatPrice(avgOrderValue)} />
-          <MetricCard icon={<ArrowUpRight className="h-5 w-5" />} label="Revenue / Visitor" value={revenuePerVisitor} />
-          <MetricCard icon={<Package className="h-5 w-5" />} label="Products Sold" value={productPerformance.reduce((s, p) => s + p.totalSales, 0).toLocaleString()} />
-          <MetricCard icon={<Users className="h-5 w-5" />} label="Refunds" value={((orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded") ?? []).length.toLocaleString()} />
+          <MetricCard
+            icon={<Users className="h-5 w-5" />}
+            label="Refunds"
+            value={((orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded") ?? []).length.toLocaleString()}
+          />
+          <MetricCard
+            icon={<Sparkles className="h-5 w-5" />}
+            label="Active Products"
+            value={(products?.items ?? []).length.toLocaleString()}
+          />
+          <MetricCard
+            icon={<Globe className="h-5 w-5" />}
+            label="Countries"
+            value={(geoData ?? []).length.toLocaleString()}
+          />
+          <MetricCard
+            icon={<CreditCard className="h-5 w-5" />}
+            label="Payment Methods"
+            value={(paymentMethods ?? []).length.toLocaleString()}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><TrendingUp className="h-5 w-5" /> Revenue Trend</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><TrendingUp className="h-4 w-4" /> Revenue Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No revenue data yet.</p>
@@ -443,7 +595,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><BarChart3 className="h-5 w-5" /> Orders Trend</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><BarChart3 className="h-4 w-4" /> Orders Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No order data yet.</p>
@@ -462,7 +614,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Eye className="h-5 w-5" /> Traffic Trend</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Eye className="h-4 w-4" /> Traffic Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No traffic data yet.</p>
@@ -482,7 +634,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Package className="h-5 w-5" /> Product Performance</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Package className="h-4 w-4" /> Product Performance</span></CardTitle></CardHeader>
             <CardContent>
               {productPerformance.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No completed product sales yet.</p>
@@ -494,8 +646,8 @@ export default function AnalyticsPage() {
                         <span className="truncate">{item.name}</span>
                         <span className="text-muted-foreground text-xs">{formatPrice(item.totalRevenue)}</span>
                       </div>
-                      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${(item.totalSales / maxProductSales) * 100}%` }} />
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full rounded-full gradient-gold" style={{ width: `${(item.totalSales / maxProductSales) * 100}%` }} />
                       </div>
                     </div>
                   ))}
@@ -507,7 +659,7 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><CreditCard className="h-5 w-5" /> Payment Methods</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><CreditCard className="h-4 w-4" /> Payment Methods</span></CardTitle></CardHeader>
             <CardContent>
               {paymentChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No payment data yet.</p>
@@ -526,7 +678,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><ArrowUpRight className="h-5 w-5" /> Conversion Funnel</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><ArrowUpRight className="h-4 w-4" /> Conversion Funnel</span></CardTitle></CardHeader>
             <CardContent>
               <EventFunnel funnel={funnelData?.funnel ?? []} />
             </CardContent>
@@ -534,7 +686,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Globe className="h-5 w-5" /> Geographic Sales</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Globe className="h-4 w-4" /> Geographic Sales</span></CardTitle></CardHeader>
             <CardContent>
               {geoChartData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -585,7 +737,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-[#0B2545]"><Download className="h-5 w-5" /> Customer Lifetime Value</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Download className="h-4 w-4" /> Customer Lifetime Value</span></CardTitle></CardHeader>
             <CardContent>
               {(ltvSegments ?? []).length === 0 || ltvTotal === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No customer LTV data yet.</p>
@@ -599,8 +751,8 @@ export default function AnalyticsPage() {
                           <span>{seg.label}</span>
                           <span className="text-muted-foreground">{seg.count} customers ({pct}%)</span>
                         </div>
-                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-[#0B2545]" style={{ width: `${pct}%` }} />
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full rounded-full gradient-gold" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
