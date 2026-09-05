@@ -8,10 +8,13 @@ import StatsBand from "@/components/home/stats-band";
 export const revalidate = 300;
 
 const FeaturedProducts = dynamic(() => import("@/components/home/featured-products"));
+const FeaturedBundle = dynamic(() => import("@/components/home/featured-bundle"));
 const ShopByIndustry = dynamic(() => import("@/components/home/shop-by-industry"));
 const WhyTrueWorks = dynamic(() => import("@/components/home/why-trueworks"));
+const HowItWorks = dynamic(() => import("@/components/home/how-it-works"));
 const ProductShowcase = dynamic(() => import("@/components/home/product-showcase"));
 const Testimonials = dynamic(() => import("@/components/home/testimonials"));
+const Comparison = dynamic(() => import("@/components/home/comparison"));
 const FreeResource = dynamic(() => import("@/components/home/free-resource"));
 const FinalCTA = dynamic(() => import("@/components/home/final-cta"));
 
@@ -41,8 +44,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "TrueWorks Limited - Business Operating Systems for Global organizations",
-    description:
-      "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",
+    description: "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",
     images: ["/og-image.png"],
   },
   alternates: {
@@ -75,10 +77,13 @@ export default function HomePage() {
       <TrustedBy />
       <StatsBand />
       <FeaturedProducts />
+      <FeaturedBundle />
       <ShopByIndustry />
+      <HowItWorks />
       <WhyTrueWorks />
       <ProductShowcase />
       <Testimonials />
+      <Comparison />
       <FreeResource />
       <FinalCTA />
     </>

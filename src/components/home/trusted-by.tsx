@@ -29,7 +29,7 @@ function MarqueeItem({ name, icon: Icon }: { name: string; icon: React.Component
 
 export default function TrustedBy() {
   return (
-    <section className="relative overflow-hidden border-b border-border bg-white py-16">
+    <section className="relative overflow-hidden border-b border-border bg-white py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div
           className="text-center"
@@ -45,6 +45,13 @@ export default function TrustedBy() {
             </span>
             Trusted by professionals across the Globe
           </span>
+          <h2 className="mt-4 font-heading text-2xl font-semibold text-primary sm:text-3xl">
+            Built for the organizations that keep the world running
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
+            From hospitals to schools, NGOs to SMEs - TrueWorks is the
+            operating system behind thousands of daily decisions.
+          </p>
         </motion.div>
       </div>
 
