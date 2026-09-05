@@ -1,12 +1,12 @@
 "use client"
 
-import { CalendarRange, FilterX, Play } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { CalendarRange, Filter, FilterX, X } from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { SearchInput } from "@/components/ui/search-input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { providerLabel, methodLabel } from "../lib/format"
+import { methodLabel, providerLabel } from "../lib/format"
 import type { PaymentsState } from "../use-payments-state"
 
 const DAY_PRESETS: { value: number; label: string }[] = [
@@ -17,7 +17,12 @@ const DAY_PRESETS: { value: number; label: string }[] = [
   { value: 0, label: "All time" },
 ]
 
-const STATUSES = ["completed", "pending", "failed", "refunded"]
+const STATUSES = [
+  { value: "completed", label: "Completed" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" },
+  { value: "refunded", label: "Refunded" },
+]
 
 export function FilterBar({
   state,
@@ -28,21 +33,60 @@ export function FilterBar({
   providers: string[]
   methods: string[]
 }) {
-  const activeChips: { label: string; onClear: () => void }[] = []
+  const activeChips: { key: string; label: string; onClear: () => void }[] = []
   if (state.debouncedSearch)
-    activeChips.push({ label: `Search: “${state.debouncedSearch}”`, onClear: () => state.setSearch("") })
+    activeChips.push({
+      key: "search",
+      label: `Search: “${state.debouncedSearch}”`,
+      onClear: () => state.setSearch(""),
+    })
   if (state.provider !== "all")
-    activeChips.push({ label: `Provider: ${providerLabel(state.provider)}`, onClear: () => state.setProvider("all") })
+    activeChips.push({
+      key: "provider",
+      label: `Provider: ${providerLabel(state.provider)}`,
+      onClear: () => state.setProvider("all"),
+    })
   if (state.method !== "all")
-    activeChips.push({ label: `Method: ${methodLabel(state.method)}`, onClear: () => state.setMethod("all") })
+    activeChips.push({
+      key: "method",
+      label: `Method: ${methodLabel(state.method)}`,
+      onClear: () => state.setMethod("all"),
+    })
   if (state.status !== "all")
-    activeChips.push({ label: `Status: ${state.status}`, onClear: () => state.setStatus("all") })
+    activeChips.push({
+      key: "status",
+      label: `Status: ${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`,
+      onClear: () => state.setStatus("all"),
+    })
 
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-[200px] flex-1">
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border pb-3 [.border-b]:pb-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Filter className="h-3.5 w-3.5" />
+          </span>
+          <h3 className="font-heading text-sm font-semibold">Filters</h3>
+          {activeChips.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px] font-semibold">
+              {activeChips.length} active
+            </Badge>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={state.resetFilters}
+          disabled={!state.hasFilters}
+          className="text-muted-foreground"
+        >
+          <FilterX className="mr-1.5 h-3.5 w-3.5" />
+          Reset
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-3 pt-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="md:col-span-2">
             <SearchInput
               placeholder="Search payment ID, customer, email, order…"
               value={state.search}
@@ -52,19 +96,19 @@ export function FilterBar({
           </div>
 
           <Select value={state.status} onValueChange={(v) => state.setStatus(v ?? "all")}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select value={state.provider} onValueChange={(v) => state.setProvider(v ?? "all")}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger>
               <SelectValue placeholder="Provider" />
             </SelectTrigger>
             <SelectContent>
@@ -75,21 +119,9 @@ export function FilterBar({
             </SelectContent>
           </Select>
 
-          <Select value={state.method} onValueChange={(v) => state.setMethod(v ?? "all")}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Method" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Methods</SelectItem>
-              {methods.map((m) => (
-                <SelectItem key={m} value={m}>{methodLabel(m)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={String(state.days)} onValueChange={(v) => state.setDays(Number(v ?? 30))}>
-            <SelectTrigger className="w-[130px]">
-              <CalendarRange className="mr-2 h-3.5 w-3.5" />
+          <Select value={state.days > 0 ? String(state.days) : "0"} onValueChange={(v) => state.setDays(Number(v ?? 30))}>
+            <SelectTrigger>
+              <CalendarRange className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -98,32 +130,46 @@ export function FilterBar({
               ))}
             </SelectContent>
           </Select>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={state.resetFilters}
-            disabled={!state.hasFilters}
-            className="text-muted-foreground"
-          >
-            <FilterX className="h-4 w-4 mr-2" />
-            Reset
-          </Button>
         </div>
 
+        {methods.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Methods:</span>
+            <Button
+              variant={state.method === "all" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => state.setMethod("all")}
+              className="h-7 px-2 text-xs"
+            >
+              All
+            </Button>
+            {methods.map((m) => (
+              <Button
+                key={m}
+                variant={state.method === m ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => state.setMethod(m)}
+                className="h-7 px-2 text-xs"
+              >
+                {methodLabel(m)}
+              </Button>
+            ))}
+          </div>
+        )}
+
         {activeChips.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+            <span className="text-xs font-medium text-muted-foreground">Active:</span>
             {activeChips.map((chip) => (
-              <Badge key={chip.label} variant="secondary" className="gap-1 py-0.5">
-                <Play className="h-2.5 w-2.5" />
+              <Badge key={chip.key} variant="secondary" className="gap-1 py-0.5 pr-1 text-xs font-normal">
                 <span className="max-w-[220px] truncate">{chip.label}</span>
                 <button
                   type="button"
                   onClick={chip.onClear}
-                  className="ml-0.5 rounded-full text-muted-foreground hover:text-foreground"
+                  className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted-foreground/15 hover:text-foreground"
                   aria-label={`Remove filter ${chip.label}`}
                 >
-                  ×
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </Badge>
             ))}

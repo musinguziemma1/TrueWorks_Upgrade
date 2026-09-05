@@ -1,7 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Check, Copy, Wallet, ExternalLink } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Copy,
+  Wallet,
+  ExternalLink,
+  ListChecks,
+} from "lucide-react"
 import {
   Table,
   TableBody,
@@ -14,9 +22,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/ui/empty-state"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { TableSkeleton } from "@/components/admin/table-skeleton"
 import {
   formatMoney,
   formatTimeAgo,
@@ -55,18 +63,22 @@ export function TransactionsTable({
   page,
   pageSize,
   loading,
+  hasFilters,
   onPageChange,
   onPageSizeChange,
   onOpen,
+  onClearFilters,
 }: {
   payments: Payment[]
   total: number
   page: number
   pageSize: number
   loading: boolean
+  hasFilters: boolean
   onPageChange: (p: number) => void
   onPageSizeChange: (s: number) => void
   onOpen: (p: Payment) => void
+  onClearFilters: () => void
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -74,19 +86,17 @@ export function TransactionsTable({
     return (
       <Card>
         <CardHeader className="pb-3">
-          <Skeleton className="h-5 w-44" />
+          <CardTitle className="flex items-baseline justify-between text-base">
+            <span className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <ListChecks className="h-3.5 w-3.5" />
+              </span>
+              Transactions
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-3 flex-1" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            ))}
-          </div>
+          <TableSkeleton rows={8} cols={6} />
         </CardContent>
       </Card>
     )
@@ -95,20 +105,37 @@ export function TransactionsTable({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-baseline justify-between text-base">
-          <span>Transactions</span>
+        <CardTitle className="flex flex-wrap items-baseline justify-between gap-2 text-base">
+          <span className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <ListChecks className="h-3.5 w-3.5" />
+            </span>
+            Transactions
+          </span>
           <span className="text-xs font-normal text-muted-foreground">
             {total.toLocaleString()} payment{total === 1 ? "" : "s"}
+            {hasFilters && payments.length > 0 && " · filtered"}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {payments.length === 0 ? (
-          <div className="py-16">
+          <div className="py-12">
             <EmptyState
-              icon={<Wallet className="h-8 w-8" />}
+              icon={<Wallet className="h-10 w-10" />}
               title="No payments found"
-              description="Try adjusting your search or filters to find what you're looking for."
+              description={
+                hasFilters
+                  ? "Try adjusting your search or filters to find what you're looking for."
+                  : "Payments will appear here once customers start checking out."
+              }
+              action={
+                hasFilters ? (
+                  <Button variant="outline" size="sm" onClick={onClearFilters}>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
             />
           </div>
         ) : (
@@ -118,11 +145,11 @@ export function TransactionsTable({
                 <TableRow>
                   <TableHead className="w-[110px]">Date</TableHead>
                   <TableHead>Payment</TableHead>
-                  <TableHead className="w-[200px]">Customer</TableHead>
+                  <TableHead className="w-[210px]">Customer</TableHead>
                   <TableHead className="w-[130px]">Order</TableHead>
-                  <TableHead className="w-[120px]">Method</TableHead>
-                  <TableHead className="w-[110px] text-right">Amount</TableHead>
-                  <TableHead className="w-[110px] text-center">Status</TableHead>
+                  <TableHead className="w-[130px]">Method</TableHead>
+                  <TableHead className="w-[120px] text-right">Amount</TableHead>
+                  <TableHead className="w-[120px] text-center">Status</TableHead>
                   <TableHead className="w-[40px]" />
                 </TableRow>
               </TableHeader>
@@ -194,30 +221,33 @@ export function TransactionsTable({
           </div>
         )}
 
-        <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v ?? 25))}>
-              <SelectTrigger className="h-7 w-[110px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 25, 50, 100].map((s) => (
-                  <SelectItem key={s} value={String(s)}>{s} / page</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>
-              Page {page} of {totalPages} · {total.toLocaleString()} total
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v ?? 25))}>
+                <SelectTrigger className="h-7 w-[88px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((s) => (
+                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="hidden sm:inline">
+              Page <span className="font-medium text-foreground">{page}</span> of {totalPages} · {total.toLocaleString()} total
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => onPageChange(page - 1)}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ChevronLeft className="mr-1 h-4 w-4" />
               Previous
             </Button>
             <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => onPageChange(page + 1)}>
               Next
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>

@@ -157,3 +157,47 @@ export function providerDashboardUrl(provider: string, paymentId: string): strin
   if (provider === "stripe") return `https://dashboard.stripe.com/payments/${paymentId}`
   return null
 }
+
+export function providerDashboardLabel(provider?: string): string {
+  if (provider === "stripe") return "Open Stripe"
+  if (provider === "pesapal") return "Open Pesapal"
+  return "Open dashboard"
+}
+
+/**
+ * Shared chart palette. Ordered to give the donut / leaderboard the most
+ * visually distinct slices for the categories most likely to lead.
+ */
+export const CHART_COLORS = [
+  "#0B2545",
+  "#B8860B",
+  "#3E6990",
+  "#60A5FA",
+  "#34D399",
+  "#94A3B8",
+  "#F59E0B",
+  "#EF4444",
+] as const
+
+/**
+ * Stat-card icon tint helper. Pass an intent and receive a token-driven
+ * `text-* bg-*` pair that the StatCard can apply to the icon chip.
+ */
+export function statTone(
+  intent: "revenue" | "success" | "pending" | "failed" | "refund" | "primary"
+): string {
+  switch (intent) {
+    case "revenue":
+      return "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10"
+    case "success":
+      return "text-primary bg-primary/10"
+    case "pending":
+      return "text-amber-700 dark:text-amber-400 bg-amber-500/10"
+    case "failed":
+      return "text-red-700 dark:text-red-400 bg-red-500/10"
+    case "refund":
+      return "text-muted-foreground bg-muted"
+    default:
+      return "text-primary bg-primary/10"
+  }
+}

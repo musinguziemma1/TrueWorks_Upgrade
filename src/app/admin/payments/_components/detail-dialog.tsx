@@ -25,9 +25,10 @@ import {
   initials,
   MethodIcon,
   methodLabel,
+  providerDashboardLabel,
+  providerDashboardUrl,
   providerLabel,
   providerStyle,
-  providerDashboardUrl,
   statusMeta,
 } from "../lib/format"
 import type { Payment } from "../types"
@@ -87,7 +88,7 @@ export function DetailDialog({ payment, onClose }: { payment: Payment | null; on
               </span>
               <DialogTitle className="sr-only">Payment detail</DialogTitle>
             </div>
-            <span className="font-mono text-lg font-bold">{formatMoney(payment.amount, payment.currency)}</span>
+            <span className="font-mono text-2xl font-bold tabular-nums">{formatMoney(payment.amount, payment.currency)}</span>
           </div>
         </DialogHeader>
 
@@ -188,7 +189,7 @@ export function DetailDialog({ payment, onClose }: { payment: Payment | null; on
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Open Stripe
+                    {providerDashboardLabel(payment.provider)}
                   </a>
                 ) : (
                   <span className="text-xs text-muted-foreground">Not available</span>

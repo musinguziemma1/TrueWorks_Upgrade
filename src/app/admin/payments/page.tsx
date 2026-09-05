@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Radio, RefreshCw } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Radio, RefreshCw } from "lucide-react"
 import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
+import { Button } from "@/components/ui/button"
 import { usePaymentsState } from "./use-payments-state"
 import { StatCards } from "./_components/stat-cards"
 import { RevenueChart } from "./_components/revenue-chart"
@@ -26,7 +27,7 @@ export default function PaymentsPage() {
   const [syncing, setSyncing] = useState(false)
   const [confirmOrphanRemoval, setConfirmOrphanRemoval] = useState(false)
   const [removingOrphans, setRemovingOrphans] = useState(false)
-  const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const [syncMessage, setSyncMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null)
   const [orphaned, setOrphaned] = useState(0)
 
   const handleSync = async () => {
@@ -35,11 +36,12 @@ export default function PaymentsPage() {
     try {
       const res = await reconcile({})
       setOrphaned(res.orphaned)
-      setSyncMessage(
-        `Synced with orders — ${res.created} created, ${res.updated} updated, ${res.orphaned} orphaned`
-      )
+      setSyncMessage({
+        tone: "success",
+        text: `Synced with orders — ${res.created} created, ${res.updated} updated, ${res.orphaned} orphaned`,
+      })
     } catch {
-      setSyncMessage("Sync failed")
+      setSyncMessage({ tone: "error", text: "Sync failed" })
     } finally {
       setSyncing(false)
     }
@@ -52,9 +54,12 @@ export default function PaymentsPage() {
     try {
       const res = await reconcile({ removeOrphans: true })
       setOrphaned(0)
-      setSyncMessage(`Removed ${res.removedOrphans} orphaned payment record${res.removedOrphans === 1 ? "" : "s"}`)
+      setSyncMessage({
+        tone: "success",
+        text: `Removed ${res.removedOrphans} orphaned payment record${res.removedOrphans === 1 ? "" : "s"}`,
+      })
     } catch {
-      setSyncMessage("Orphan removal failed")
+      setSyncMessage({ tone: "error", text: "Orphan removal failed" })
     } finally {
       setRemovingOrphans(false)
       setConfirmOrphanRemoval(false)
@@ -79,7 +84,6 @@ export default function PaymentsPage() {
   const loadingStats = stats === undefined
   const loadingData = paymentsResult === undefined
 
-  // Dropdown options derived from the window stats so they're complete.
   const providers = Object.keys(stats?.byProvider ?? {}).sort()
   const methods = Object.keys(stats?.byMethod ?? {}).sort()
 
@@ -92,33 +96,33 @@ export default function PaymentsPage() {
         description="Monitor revenue, reconcile transactions, and track payment health across providers."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Payments" }]}
         action={
-          <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-              <Radio className="h-3.5 w-3.5 text-emerald-600" />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+              <Radio className="h-3 w-3 text-emerald-600" />
               Live data
             </span>
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-60"
               title="Rebuild payment records from the orders table"
-              aria-label="Sync payment records with orders"
             >
-              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync with orders"}
-            </button>
+            </Button>
             {orphaned > 0 && (
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setConfirmOrphanRemoval(true)}
                 disabled={removingOrphans}
-                className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/20 disabled:opacity-60"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 title="Delete payment records that have no matching order"
-                aria-label={`Remove ${orphaned} orphaned payment records`}
               >
+                <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
                 {removingOrphans ? "Removing..." : `Remove ${orphaned} orphaned`}
-              </button>
+              </Button>
             )}
             <ExportButton state={state} disabled={loadingStats && loadingData} />
           </div>
@@ -126,7 +130,22 @@ export default function PaymentsPage() {
       />
 
       {syncMessage && (
-        <p className="text-xs text-muted-foreground">{syncMessage}</p>
+        <div
+          role="status"
+          aria-live="polite"
+          className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${
+            syncMessage.tone === "error"
+              ? "border-destructive/30 bg-destructive/5 text-destructive"
+              : "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+          }`}
+        >
+          {syncMessage.tone === "error" ? (
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          )}
+          <span>{syncMessage.text}</span>
+        </div>
       )}
 
       <StatCards stats={stats} loading={loadingStats} />
@@ -148,9 +167,11 @@ export default function PaymentsPage() {
         page={state.page}
         pageSize={state.pageSize}
         loading={loadingData}
+        hasFilters={state.hasFilters}
         onPageChange={state.setPage}
         onPageSizeChange={state.setPageSize}
         onOpen={handleOpen}
+        onClearFilters={state.resetFilters}
       />
 
       <DetailDialog payment={state.detailPayment} onClose={() => state.setDetailPayment(null)} />
