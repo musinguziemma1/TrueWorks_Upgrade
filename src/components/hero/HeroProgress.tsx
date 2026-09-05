@@ -10,22 +10,22 @@ interface HeroProgressProps {
   onProgressComplete?: () => void;
 }
 
-export default function HeroProgress({ 
-  currentSlide, 
-  totalSlides, 
+export default function HeroProgress({
+  currentSlide,
+  totalSlides,
   autoPlay,
-  onProgressComplete 
+  onProgressComplete,
 }: HeroProgressProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={totalSlides} aria-valuenow={currentSlide + 1}>
       {Array.from({ length: totalSlides }, (_, index) => (
         <div
           key={index}
-          className="relative h-1 flex-1 bg-white/20 rounded-full overflow-hidden"
+          className="relative h-1 flex-1 overflow-hidden rounded-full bg-white/15"
         >
           {index === currentSlide && autoPlay && (
             <motion.div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#DAA520] to-[#B8860B] rounded-full"
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-dark"
               variants={progressFill}
               initial="hidden"
               animate="visible"
@@ -34,7 +34,7 @@ export default function HeroProgress({
             />
           )}
           {index < currentSlide && (
-            <div className="absolute inset-0 bg-gradient-to-r from-[#DAA520] to-[#B8860B] rounded-full" />
+            <div className="absolute inset-0 rounded-full bg-accent-light/80" />
           )}
         </div>
       ))}
