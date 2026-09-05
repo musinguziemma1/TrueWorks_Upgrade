@@ -170,10 +170,10 @@ export const staggerChildren: Variants = {
 
 // Particle animations
 export const floatingParticle = (delay: number, duration: number) => ({
-  y: [-20, 20, -20],
-  x: [-10, 10, -10],
-  opacity: [0.3, 0.7, 0.3],
-  scale: [0.8, 1.2, 0.8],
+  y: [-28, 28, -28],
+  x: [-14, 14, -14],
+  opacity: [0.3, 0.85, 0.3],
+  scale: [0.85, 1.25, 0.85],
   transition: {
     duration,
     repeat: Infinity,
