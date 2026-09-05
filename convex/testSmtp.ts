@@ -1,8 +1,10 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
+import { CONTACT_EMAIL } from "./emailBranding";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "TrueWorks <noreply@trueworksgroup.com>";
+const REPLY_TO = process.env.EMAIL_REPLY_TO ?? CONTACT_EMAIL;
 
 /**
  * Check that the configured SMTP host/port is reachable over the network.
@@ -60,6 +62,7 @@ export const sendTestEmail = action({
         },
         body: JSON.stringify({
           from: EMAIL_FROM,
+          reply_to: REPLY_TO,
           to: [email],
           subject: "TrueWorks — Test Email",
           html: `

@@ -89,7 +89,15 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
         html: payload.html,
       }),
     });
-    return response.ok;
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      console.error(
+        `Resend send failed (${response.status}) for "${payload.subject}" to ${payload.to}:`,
+        text.slice(0, 500),
+      );
+      return false;
+    }
+    return true;
   } catch (error) {
     console.error("Email send failed:", error);
     return false;
