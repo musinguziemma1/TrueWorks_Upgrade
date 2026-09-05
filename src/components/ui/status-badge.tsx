@@ -31,12 +31,12 @@ const statusColorMap: Record<string, string> = {
   high: "bg-red-50 text-red-700 border-red-200",
   critical: "bg-red-50 text-red-700 border-red-200",
   // Slate / Gray
-  archived: "bg-muted text-muted-foreground border-border",
-  refunded: "bg-muted text-muted-foreground border-border",
-  disabled: "bg-muted text-muted-foreground border-border",
-  closed: "bg-muted text-muted-foreground border-border",
-  inactive: "bg-muted text-muted-foreground border-border",
-  unsubscribed: "bg-muted text-muted-foreground border-border",
+  archived: "bg-secondary text-secondary-foreground border-border",
+  refunded: "bg-secondary text-secondary-foreground border-border",
+  disabled: "bg-secondary text-secondary-foreground border-border",
+  closed: "bg-secondary text-secondary-foreground border-border",
+  inactive: "bg-secondary text-secondary-foreground border-border",
+  unsubscribed: "bg-secondary text-secondary-foreground border-border",
   // Blue
   published: "bg-blue-50 text-blue-700 border-blue-200",
   live: "bg-blue-50 text-blue-700 border-blue-200",
@@ -50,7 +50,7 @@ const statusColorMap: Record<string, string> = {
 
 function getDotColor(classes: string) {
   const textClass = classes.split(" ").find((c) => c.startsWith("text-"))
-  return textClass ? textClass.replace("text-", "bg-") : "bg-muted-foreground"
+  return textClass ? textClass.replace("text-", "bg-") : "bg-secondary-foreground"
 }
 
 interface StatusBadgeProps {
@@ -61,7 +61,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, size = "sm" }: StatusBadgeProps) {
   const normalized = status?.toString().trim().toLowerCase() || ""
   const colorClasses =
-    statusColorMap[normalized] || "bg-muted text-muted-foreground border-border"
+    statusColorMap[normalized] || "bg-secondary text-secondary-foreground border-border"
   const dotColor = getDotColor(colorClasses)
 
   return (

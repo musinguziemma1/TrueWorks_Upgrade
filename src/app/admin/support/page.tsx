@@ -161,7 +161,7 @@ export default function SupportPage() {
                     } ${!m.read ? "bg-accent/[0.04]" : ""}`}
                   >
                     <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      m.read ? "bg-muted text-muted-foreground" : "bg-primary text-white"
+                      m.read ? "bg-secondary text-secondary-foreground" : "bg-primary text-white"
                     }`}>
                       {m.read ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                     </span>

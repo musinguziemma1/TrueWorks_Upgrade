@@ -93,7 +93,7 @@ export default function FreeResource() {
                         setEmail(e.target.value);
                         setStatus("idle");
                       }}
-                      className={`h-12 w-full rounded-lg border bg-white/[0.08] px-4 text-sm text-white placeholder:text-white/40 outline-none transition-colors focus:bg-white/[0.12] ${
+                      className={`h-12 w-full rounded-lg border bg-white/[0.08] px-4 text-sm text-white placeholder:text-white/70 outline-none transition-colors focus:bg-white/[0.12] ${
                         status === "error"
                           ? "border-error/70"
                           : "border-white/20 focus:border-accent/60"
@@ -126,7 +126,7 @@ export default function FreeResource() {
                     Check your inbox - the download link is on its way.
                   </p>
                 )}
-                <p className="mt-3 text-xs text-white/40">
+                <p className="mt-3 text-xs text-white/70">
                   No spam. Unsubscribe anytime.
                 </p>
               </form>

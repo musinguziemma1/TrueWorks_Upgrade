@@ -98,7 +98,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                   {feature.name}
                 </h3>
                 
-                <p className="font-body text-white/60 text-sm leading-relaxed">
+                <p className="font-body text-white/85 text-sm leading-relaxed">
                   {feature.description}
                 </p>
                 

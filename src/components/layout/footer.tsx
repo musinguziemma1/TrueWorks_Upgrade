@@ -54,7 +54,7 @@ export default function Footer() {
             <Link href="/" aria-label="TrueWorks home" className="inline-block">
               <Logo variant="horizontal-white" width={160} height={40} />
             </Link>
-            <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/60">
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/85">
               Premium Excel templates, financial models and dashboards that help
               Global organizations operate with clarity and confidence.
             </p>
@@ -65,7 +65,7 @@ export default function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-white/60 transition-all hover:bg-accent hover:text-primary-dark"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-white/85 transition-all hover:bg-accent hover:text-primary-dark"
                   aria-label={social.name}
                 >
                   <SocialIcon iconKey={social.key} />
@@ -81,7 +81,7 @@ export default function Footer() {
             </h3>
             <ul className="mt-5 space-y-3">
               <li>
-                <Link href="/store" className="text-sm text-white/60 transition-colors hover:text-accent-light">
+                <Link href="/store" className="text-sm text-white/85 transition-colors hover:text-accent-light">
                   All Templates
                 </Link>
               </li>
@@ -89,7 +89,7 @@ export default function Footer() {
                 <li key={cat}>
                   <Link
                     href={`/store?category=${encodeURIComponent(cat)}`}
-                    className="text-sm text-white/60 transition-colors hover:text-accent-light"
+                    className="text-sm text-white/85 transition-colors hover:text-accent-light"
                   >
                     {cat} Templates
                   </Link>
@@ -108,7 +108,7 @@ export default function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/60 transition-colors hover:text-accent-light"
+                    className="text-sm text-white/85 transition-colors hover:text-accent-light"
                   >
                     {link.label}
                   </Link>
@@ -124,7 +124,7 @@ export default function Footer() {
             </h3>
             <ul className="mt-5 space-y-3">
               {contactRows.map((row) => (
-                <li key={row.text} className="flex items-start gap-3 text-sm text-white/60">
+                <li key={row.text} className="flex items-start gap-3 text-sm text-white/85">
                   <row.icon className="mt-0.5 h-4 w-4 shrink-0 text-accent/80" />
                   {row.href ? (
                     <a href={row.href} className="transition-colors hover:text-accent-light">
@@ -148,7 +148,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-white/10 pt-8 sm:flex-row">
           <div className="flex items-center gap-2">
-            <span className="mr-1 text-xs text-white/40">We accept</span>
+            <span className="mr-1 text-xs text-white/70">We accept</span>
             {paymentMethods.map((method) => (
               <span
                 key={method}

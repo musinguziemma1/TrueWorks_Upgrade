@@ -163,7 +163,7 @@ export default function AdminSidebar() {
           </Link>
           <button
             onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-4 w-4" />
@@ -200,7 +200,7 @@ export default function AdminSidebar() {
                             "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-all duration-200",
                             active
                               ? "bg-white/10 text-white"
-                              : "text-white/60 hover:bg-white/[0.04] hover:text-white",
+                              : "text-white/85 hover:bg-white/[0.04] hover:text-white",
                             comingSoon && "pointer-events-none opacity-80"
                           )}
                         >
@@ -233,7 +233,7 @@ export default function AdminSidebar() {
                             </Badge>
                           )}
                           {active && (
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/70" />
                           )}
                         </Link>
                       </li>
@@ -266,7 +266,7 @@ export default function AdminSidebar() {
               <p className="truncate text-sm font-semibold text-white">
                 {user?.name ?? "Admin"}
               </p>
-              <p className="truncate text-xs text-white/40">
+              <p className="truncate text-xs text-white/70">
                 {me ? (ROLE_LABELS[me.role] ?? me.role) : "Loading..."}
               </p>
             </div>

@@ -64,7 +64,7 @@ function SearchBar() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="hidden h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-primary lg:flex"
+        className="hidden h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary lg:flex"
         aria-label="Search templates"
       >
         <Search className="h-5 w-5" />
@@ -81,7 +81,7 @@ function SearchBar() {
       onSubmit={submit}
       className="relative hidden items-center lg:flex"
     >
-      <Search className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted" />
+      <Search className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted-foreground" />
       <input
         ref={inputRef}
         value={query}
@@ -96,7 +96,7 @@ function SearchBar() {
             setOpen(false);
             setQuery("");
           }}
-          className="absolute right-2 flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold text-muted transition-colors hover:bg-surface hover:text-primary"
+          className="absolute right-2 flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
           aria-label="Close search"
         >
           ✕
@@ -188,7 +188,7 @@ export default function Header() {
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "group relative flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-                      active ? "text-primary" : "text-muted hover:text-primary"
+                      active ? "text-primary" : "text-muted-foreground hover:text-primary"
                     )}
                   >
                     {active && (
@@ -220,7 +220,7 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-all hover:bg-surface hover:text-primary hover:ring-1 hover:ring-accent/30"
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-surface hover:text-primary hover:ring-1 hover:ring-accent/30"
                 aria-label={`Cart, ${totalItems} items`}
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -290,7 +290,7 @@ export default function Header() {
 
               <button
                 onClick={() => setMobileOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-primary md:hidden"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary md:hidden"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />

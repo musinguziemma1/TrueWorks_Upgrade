@@ -88,7 +88,7 @@ export function StatCard({
               className={cn(
                 "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold tabular-nums",
                 isFlat
-                  ? "bg-muted text-muted-foreground"
+                  ? "bg-secondary text-secondary-foreground"
                   : good
                     ? "bg-primary/10 text-primary"
                     : "bg-destructive/10 text-destructive"

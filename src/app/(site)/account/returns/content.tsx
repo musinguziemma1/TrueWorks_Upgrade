@@ -51,7 +51,7 @@ function ReturnTimeline({ status }: { status: string }) {
                     ? "bg-red-50 text-red-500"
                     : reached
                       ? "bg-primary text-white"
-                      : "bg-muted text-muted-foreground"
+                      : "bg-secondary text-secondary-foreground"
                 }`}
               >
                 {rejected && isLast ? (

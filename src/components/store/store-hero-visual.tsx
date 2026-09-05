@@ -131,7 +131,7 @@ export default function StoreHeroVisual() {
           <Users className="h-4 w-4 text-emerald-400" />
         </span>
         <div>
-          <p className="text-[10px] text-white/60">Active Users</p>
+          <p className="text-[10px] text-white/85">Active Users</p>
           <p className="font-heading text-sm font-bold text-white">2,400+</p>
         </div>
       </motion.div>
@@ -147,7 +147,7 @@ export default function StoreHeroVisual() {
           <FileSpreadsheet className="h-4 w-4 text-accent" />
         </span>
         <div>
-          <p className="text-[10px] text-white/60">Ready-to-use</p>
+          <p className="text-[10px] text-white/85">Ready-to-use</p>
           <p className="font-heading text-sm font-bold text-white">Excel Templates</p>
         </div>
       </motion.div>

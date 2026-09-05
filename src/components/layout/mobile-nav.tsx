@@ -57,7 +57,7 @@ export function MobileNav({ open: externalOpen, onClose, onToggle }: MobileNavPr
       <>
         <button
           onClick={toggle}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-foreground md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground md:hidden"
           aria-label="Toggle menu"
         >
           <Menu className="h-5 w-5" />
@@ -101,7 +101,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
           </Link>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -135,7 +135,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                       {link.label}
                     </span>
                     {!isActive(link.href) && (
-                      <ArrowRight className="h-4 w-4 text-muted transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent" />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent" />
                     )}
                   </Link>
                 </motion.div>
@@ -212,7 +212,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
         </motion.div>
 
         <div className="border-t border-border px-5 pb-8 pt-5">
-          <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-muted">
+          <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
             Connect with us
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -222,7 +222,7 @@ function MobileNavPanel({ onClose }: { onClose: () => void }) {
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted transition-all hover:bg-primary hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted-foreground transition-all hover:bg-primary hover:text-white"
                 aria-label={social.name}
               >
                 <SocialIcon iconKey={social.key} />

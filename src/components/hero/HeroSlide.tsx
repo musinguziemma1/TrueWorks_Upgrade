@@ -38,7 +38,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                         </div>
                         <span className="text-white font-semibold">TrueWorks BOS</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-white/60">
+                      <div className="flex items-center gap-2 text-xs text-white/85">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                         Live Dashboard
                       </div>
@@ -54,7 +54,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                           animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
                           transition={{ delay: 0.5 + index * 0.1 }}
                         >
-                          <div className="text-xs text-white/60 mb-1">{kpi.label}</div>
+                          <div className="text-xs text-white/85 mb-1">{kpi.label}</div>
                           <div className="text-lg font-bold text-white">{kpi.value}</div>
                           <div className={`text-xs ${kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                             {kpi.change}
@@ -107,7 +107,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                 <div className="p-8 h-full">
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold text-white mb-2">Operations Command Center</h3>
-                    <p className="text-white/60">Real-time Enterprise Monitoring</p>
+                    <p className="text-white/85">Real-time Enterprise Monitoring</p>
                   </div>
                   
                   {/* Module grid */}
@@ -129,7 +129,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                             <div className="w-6 h-6 bg-current rounded opacity-60" />
                           </div>
                           <div className="text-white text-sm font-medium mb-1">{module.name}</div>
-                          <div className="text-xs text-white/60">{module.value}</div>
+                          <div className="text-xs text-white/85">{module.value}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -153,7 +153,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
               >
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-bold text-white capitalize">{slide.theme} Analytics</h3>
-                  <p className="text-white/60 text-sm">Enterprise Performance Dashboard</p>
+                  <p className="text-white/85 text-sm">Enterprise Performance Dashboard</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -165,7 +165,7 @@ export default function HeroSlide({ slide, isActive }: HeroSlideProps) {
                       animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.6 + index * 0.15 }}
                     >
-                      <div className="text-xs text-white/60 mb-2">{kpi.label}</div>
+                      <div className="text-xs text-white/85 mb-2">{kpi.label}</div>
                       <div className="text-2xl font-bold text-white mb-1">{kpi.value}</div>
                       <div className={`text-sm ${kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                         {kpi.change}

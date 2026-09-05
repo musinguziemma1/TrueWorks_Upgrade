@@ -178,7 +178,7 @@ export default function AdminDashboard() {
           label="Downloads"
           value={totalDownloads}
           icon={Download}
-          tint="text-muted-foreground bg-muted"
+          tint="text-secondary-foreground bg-secondary"
           loading={isLoading}
         />
         <StatCard

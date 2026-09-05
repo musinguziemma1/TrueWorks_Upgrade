@@ -50,7 +50,7 @@ export default function HeroIndicators({
               font-body text-sm font-medium transition-all duration-300
               ${index === currentSlide 
                 ? 'text-white' 
-                : 'text-white/60 group-hover:text-white/80'
+                : 'text-white/85 group-hover:text-white/80'
               }
             `}
           >

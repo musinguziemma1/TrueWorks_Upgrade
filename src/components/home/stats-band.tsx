@@ -27,7 +27,7 @@ export default function StatsBand() {
               <span className="block font-heading text-3xl font-bold tracking-tight text-white lg:text-4xl">
                 <CountUp end={stat.end} suffix={stat.suffix} />
               </span>
-              <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-white/60">
+              <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-white/85">
                 {stat.label}
               </span>
             </div>

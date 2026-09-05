@@ -166,7 +166,7 @@ function ShopByIndustryInner() {
           <h2 className="mt-3 font-heading text-3xl font-semibold text-white md:text-4xl">
             Built for Your Sector
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-white/60">
+          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-white/85">
             Every template is designed around the real workflows of your industry -
             not generic spreadsheets.
           </p>

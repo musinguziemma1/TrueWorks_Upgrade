@@ -68,14 +68,14 @@ export function AuthLayout({
                 </div>
                 <div>
                   <p className="font-medium">{f.title}</p>
-                  <p className="text-sm text-white/60">{f.desc}</p>
+                  <p className="text-sm text-white/85">{f.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative z-10 text-sm text-white/40">
+        <div className="relative z-10 text-sm text-white/70">
           &copy; {new Date().getFullYear()} TrueWorks Limited. All rights reserved.
         </div>
       </div>

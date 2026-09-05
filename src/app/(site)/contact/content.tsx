@@ -265,7 +265,7 @@ export default function ContactContent() {
                     <p className="mt-3 font-heading text-lg font-semibold text-white">
                       TrueWorks Limited
                     </p>
-                    <p className="mt-1 text-sm text-white/60">
+                    <p className="mt-1 text-sm text-white/85">
                       Plot 42, Acacia Avenue
                       <br />
                       Kampala, Uganda

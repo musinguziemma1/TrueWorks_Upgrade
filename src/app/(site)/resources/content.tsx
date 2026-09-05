@@ -392,7 +392,7 @@ function ResourcesContentInner() {
                       <h3 className="font-heading text-lg font-semibold text-white">
                         The TrueWorks Brief
                       </h3>
-                      <p className="mt-1.5 text-sm text-white/60">
+                      <p className="mt-1.5 text-sm text-white/85">
                         Practical insights for better organizations - once a month,
                         no spam.
                       </p>
@@ -413,7 +413,7 @@ function ResourcesContentInner() {
                             value={newsletterEmail}
                             onChange={(e) => setNewsletterEmail(e.target.value)}
                             placeholder="Your email address"
-                            className="h-11 w-full rounded-lg border border-white/15 bg-white/[0.08] px-3.5 text-sm text-white placeholder:text-white/40 outline-none transition-colors focus:border-accent/60 focus:bg-white/[0.12]"
+                            className="h-11 w-full rounded-lg border border-white/15 bg-white/[0.08] px-3.5 text-sm text-white placeholder:text-white/70 outline-none transition-colors focus:border-accent/60 focus:bg-white/[0.12]"
                           />
                           <button
                             type="submit"

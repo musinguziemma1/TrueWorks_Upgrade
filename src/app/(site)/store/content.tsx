@@ -126,7 +126,7 @@ function StoreContentInner() {
               organizations. Pay securely, download instantly, and put them to work
               the same day.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/60">
+            <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/85">
               <span className="flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
                   ✓

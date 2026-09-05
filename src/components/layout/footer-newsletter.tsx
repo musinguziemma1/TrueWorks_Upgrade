@@ -53,7 +53,7 @@ export function FooterNewsletter() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Your email address"
-          className="h-10 w-full min-w-0 rounded-lg border border-white/15 bg-white/5 px-3.5 text-sm text-white placeholder:text-white/40 outline-none transition-colors focus:border-accent/60 focus:bg-white/10"
+          className="h-10 w-full min-w-0 rounded-lg border border-white/15 bg-white/5 px-3.5 text-sm text-white placeholder:text-white/70 outline-none transition-colors focus:border-accent/60 focus:bg-white/10"
         />
         <button
           type="submit"

@@ -19,10 +19,10 @@ function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center", className)}>
-      <div className="mb-4 text-muted">{icon || <Inbox className="h-12 w-12" />}</div>
+      <div className="mb-4 text-muted-foreground">{icon || <Inbox className="h-12 w-12" />}</div>
       <h3 className="text-lg font-heading font-bold text-primary mb-2">{title}</h3>
       {description && (
-        <p className="text-sm font-body text-muted max-w-sm mb-6">{description}</p>
+        <p className="text-sm font-body text-foreground/70 max-w-sm mb-6">{description}</p>
       )}
       {action && <div>{action}</div>}
     </div>

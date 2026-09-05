@@ -3,7 +3,7 @@ import type { CampaignStatus } from "../types"
 export const STATUS_META: Record<CampaignStatus, { label: string; className: string; dot: string }> = {
   draft: {
     label: "Draft",
-    className: "bg-muted text-muted-foreground dark:bg-white/5 dark:text-muted-foreground",
+    className: "bg-secondary text-secondary-foreground dark:bg-white/5 dark:text-muted-foreground",
     dot: "bg-muted-foreground",
   },
   scheduled: {

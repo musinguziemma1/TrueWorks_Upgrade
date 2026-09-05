@@ -91,14 +91,14 @@ const ACTION_COLORS: Record<string, string> = {
   registration: "bg-emerald-50 text-emerald-700 border-emerald-200",
   login: "bg-blue-50 text-blue-700 border-blue-200",
   login_failed: "bg-red-50 text-red-700 border-red-200",
-  logout: "bg-muted text-muted-foreground border-border",
+  logout: "bg-secondary text-secondary-foreground border-border",
   session_revoked: "bg-orange-50 text-orange-700 border-orange-200",
   all_sessions_revoked: "bg-orange-50 text-orange-700 border-orange-200",
   password_changed: "bg-purple-50 text-purple-700 border-purple-200",
   password_reset: "bg-purple-50 text-purple-700 border-purple-200",
   email_verified: "bg-emerald-50 text-emerald-700 border-emerald-200",
   mfa_enabled: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  mfa_disabled: "bg-muted text-muted-foreground border-border",
+  mfa_disabled: "bg-secondary text-secondary-foreground border-border",
   mfa_failed: "bg-red-50 text-red-700 border-red-200",
   recovery_code_used: "bg-amber-50 text-amber-700 border-amber-200",
   recovery_codes_regenerated: "bg-amber-50 text-amber-700 border-amber-200",
@@ -298,7 +298,7 @@ export default function AdminAuthPage() {
                                     Revoked
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="bg-muted text-muted-foreground border-border gap-1">
+                                  <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border gap-1">
                                     <Clock className="h-3 w-3" />
                                     Expired
                                   </Badge>
@@ -369,7 +369,7 @@ export default function AdminAuthPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium">{ACTION_LABELS[e.action] ?? e.action}</p>
-                              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", ACTION_COLORS[e.action] ?? "bg-muted text-muted-foreground border-border")}>
+                              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", ACTION_COLORS[e.action] ?? "bg-secondary text-secondary-foreground border-border")}>
                                 {e.result}
                               </Badge>
                             </div>
