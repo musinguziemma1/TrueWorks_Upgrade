@@ -20,6 +20,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
+import NavyBackground from "./navy-background";
 
 const iconMap: Record<string, LucideIcon> = {
   Hospital,
@@ -39,83 +40,6 @@ function getIcon(name: string): LucideIcon {
   return iconMap[name] ?? Folder;
 }
 
-const bgParticles = Array.from({ length: 15 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: Math.random() * 3 + 1,
-  delay: Math.random() * 4,
-  duration: Math.random() * 12 + 18,
-}));
-
-const bgBeams = Array.from({ length: 3 }, (_, i) => ({
-  id: i,
-  rotation: Math.random() * 360,
-  delay: Math.random() * 3,
-}));
-
-function AnimatedBackground() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33]" />
-
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/[0.08] rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/[0.06] rounded-full blur-3xl" />
-
-      {bgBeams.map((beam) => (
-        <motion.div
-          key={beam.id}
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.1, 0] }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            delay: beam.delay,
-            ease: "easeInOut",
-          }}
-          style={{ rotate: beam.rotation }}
-        >
-          <div className="w-px h-full bg-gradient-to-b from-transparent via-white/20 to-transparent mx-auto" />
-        </motion.div>
-      ))}
-
-      {bgParticles.map((p) => (
-        <motion.div
-          key={p.id}
-          className="absolute rounded-full bg-white/30"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-          }}
-          animate={{
-            y: [-12, 12, -12],
-            x: [-6, 6, -6],
-            opacity: [0.2, 0.5, 0.2],
-            scale: [0.8, 1.2, 0.8],
-          }}
-          transition={{
-            duration: p.duration,
-            repeat: Infinity,
-            ease: "easeInOut" as const,
-            delay: p.delay,
-          }}
-        />
-      ))}
-
-      <div
-        className="absolute inset-0 opacity-20 mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundSize: "400px 400px",
-        }}
-      />
-    </div>
-  );
-}
-
 export default function ShopByIndustry() {
   if (!convexClient) return null;
   return <ShopByIndustryInner />;
@@ -127,7 +51,7 @@ function ShopByIndustryInner() {
   if (categories === undefined) {
     return (
       <section className="relative bg-white py-20 lg:py-24">
-        <AnimatedBackground />
+        <NavyBackground />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#DAA520]">Industries</p>
@@ -151,7 +75,7 @@ function ShopByIndustryInner() {
 
   return (
     <section className="relative bg-white py-20 lg:py-24">
-      <AnimatedBackground />
+      <NavyBackground />
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

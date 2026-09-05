@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Download, RefreshCw, MessageCircle, Check, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import NavyBackground from "./navy-background";
 
 function FadeIn({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -28,8 +29,8 @@ const assurances = [
 
 export default function FinalCTA() {
   return (
-    <section className="gradient-brand relative overflow-hidden py-20 lg:py-28">
-      <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+    <section className="relative overflow-hidden py-20 lg:py-28">
+      <NavyBackground intensity="rich" />
       <div className="absolute left-1/2 top-1/2 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-3xl" aria-hidden />
       <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
 

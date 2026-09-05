@@ -2,6 +2,7 @@
 
 import { Download, Building2, Users, Sparkles } from "lucide-react";
 import { CountUp } from "@/components/ui/count-up";
+import NavyBackground from "./navy-background";
 
 const stats = [
   { icon: Building2, end: 1200, suffix: "+", label: "Organizations served" },
@@ -19,16 +20,13 @@ const accentByIcon: Record<string, { tint: string; iconText: string; ring: strin
 
 export default function StatsBand() {
   return (
-    <section className="gradient-brand relative overflow-hidden py-14 lg:py-16">
-      <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" aria-hidden />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#071A33] via-transparent to-[#071A33]" aria-hidden />
+    <section className="relative overflow-hidden py-14 lg:py-16">
+      <NavyBackground intensity="subtle" />
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 divide-y divide-white/10 px-6 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:px-8">
         {stats.map((stat) => {
           const accent =
-            accentByIcon[stat.icon.displayName ?? stat.icon.name] ??
-            {
+            accentByIcon[stat.icon.displayName ?? stat.icon.name] ?? {
               tint: "from-accent/15 to-accent/0",
               iconText: "text-accent-light",
               ring: "ring-accent/30",

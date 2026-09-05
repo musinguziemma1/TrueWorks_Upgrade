@@ -23,6 +23,7 @@ import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import NavyBackground from "./navy-background";
 
 type SectorKpi = {
   icon: LucideIcon;
@@ -175,10 +176,10 @@ export default function FreeResource() {
   return (
     <section id="free-template" className="bg-surface py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="gradient-brand relative overflow-hidden rounded-3xl">
-          <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
-          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden />
-          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
+          <div className="relative overflow-hidden rounded-3xl">
+            <NavyBackground intensity="rich" variant="dense" />
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+            <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
 
           <div className="relative grid items-center gap-12 p-8 sm:p-12 lg:grid-cols-2 lg:p-16">
             <FadeIn>
