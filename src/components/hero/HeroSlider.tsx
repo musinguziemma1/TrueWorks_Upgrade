@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { heroSlides } from './data';
 import HeroBackground from './HeroBackground';
 import HeroContent from './HeroContent';
@@ -30,7 +30,8 @@ export default function HeroSlider({
   const [isHovered, setIsHovered] = useState(false);
   const [canNavigate] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-
+  
+  // Auto-advance slides
   const nextSlide = useCallback(() => {
     if (!canNavigate) return;
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -46,14 +47,18 @@ export default function HeroSlider({
     setCurrentSlide(index);
   }, [canNavigate]);
 
+  // Auto play functionality
   useEffect(() => {
     if (!isAutoPlaying || isHovered) return;
+
     const interval = setInterval(nextSlide, autoPlayDuration);
     return () => clearInterval(interval);
   }, [isAutoPlaying, isHovered, nextSlide, autoPlayDuration]);
 
+  // Keyboard navigation
   useEffect(() => {
     if (!enableKeyboard) return;
+
     const handleKeyPress = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowLeft':
@@ -66,41 +71,54 @@ export default function HeroSlider({
           break;
         case ' ':
           e.preventDefault();
-          setIsAutoPlaying((prev) => !prev);
+          setIsAutoPlaying(prev => !prev);
           break;
       }
     };
+
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [enableKeyboard, nextSlide, prevSlide]);
 
+  // Touch/swipe support
   useEffect(() => {
     if (!enableTouch || !containerRef.current) return;
+
     const container = containerRef.current;
     let startX = 0;
     let startY = 0;
     let endX = 0;
     let endY = 0;
+
     const handleTouchStart = (e: TouchEvent) => {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
     };
+
     const handleTouchMove = (e: TouchEvent) => {
       endX = e.touches[0].clientX;
       endY = e.touches[0].clientY;
     };
+
     const handleTouchEnd = () => {
       const deltaX = endX - startX;
       const deltaY = endY - startY;
       const minSwipeDistance = 50;
+
+      // Only trigger if horizontal swipe is more significant than vertical
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-        if (deltaX > 0) prevSlide();
-        else nextSlide();
+        if (deltaX > 0) {
+          prevSlide();
+        } else {
+          nextSlide();
+        }
       }
     };
+
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: true });
     container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
@@ -108,11 +126,14 @@ export default function HeroSlider({
     };
   }, [enableTouch, nextSlide, prevSlide]);
 
+  // Mouse parallax effect
   const handleMouseMove = (e: React.MouseEvent) => {
     const { clientX, clientY } = e;
     const { innerWidth, innerHeight } = window;
     const x = (clientX / innerWidth - 0.5) * 2;
     const y = (clientY / innerHeight - 0.5) * 2;
+
+    // Apply subtle parallax to visual elements
     const visualElements = document.querySelectorAll('[data-parallax]');
     visualElements.forEach((element) => {
       const intensity = parseFloat(element.getAttribute('data-parallax') || '1');
@@ -126,14 +147,17 @@ export default function HeroSlider({
   return (
     <div
       ref={containerRef}
-      className="relative w-full min-h-[100svh] overflow-hidden bg-[#04101F]"
+      className="relative w-full h-screen overflow-hidden bg-[#04101F]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseMove={handleMouseMove}
     >
+      {/* Background */}
       <HeroBackground />
 
-      <div className="relative z-10 grid min-h-[100svh] lg:grid-cols-2">
+      {/* Main content grid */}
+      <div className="relative z-10 h-full grid lg:grid-cols-2">
+        {/* Left: Content */}
         <div className="relative flex items-center">
           <HeroContent
             slide={currentSlideData}
@@ -142,25 +166,35 @@ export default function HeroSlider({
           />
         </div>
 
+        {/* Right: Visual */}
         <div className="relative hidden lg:block" data-parallax="0.5">
           <div className="absolute inset-0">
-            <AnimatePresence mode="wait">
-              {heroSlides.map(
-                (slide, index) =>
-                  index === currentSlide && (
-                    <HeroSlide key={slide.id} slide={slide} isActive />
-                  ),
-              )}
-            </AnimatePresence>
+            {heroSlides.map((slide, index) => (
+              <HeroSlide
+                key={slide.id}
+                slide={slide}
+                isActive={index === currentSlide}
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Bottom controls — unified bar on mobile, three-column on desktop */}
-      <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-5 sm:px-8 sm:pb-7">
-        {/* Mobile: progress + nav row, indicators hidden (use swipe) */}
-        <div className="flex items-center gap-3 lg:hidden">
-          <div className="flex-1">
+      {/* Controls overlay */}
+      <div className="absolute bottom-8 left-8 right-8 z-20">
+        <div className="flex items-center justify-between">
+          {/* Left: Slide indicators */}
+          <div className="hidden lg:block">
+            <HeroIndicators
+              currentSlide={currentSlide}
+              totalSlides={heroSlides.length}
+              onSlideChange={goToSlide}
+              slideLabels={heroSlides.map(slide => slide.theme)}
+            />
+          </div>
+
+          {/* Center: Progress bar (mobile) */}
+          <div className="lg:hidden flex-1 mx-8">
             <HeroProgress
               currentSlide={currentSlide}
               totalSlides={heroSlides.length}
@@ -168,98 +202,56 @@ export default function HeroSlider({
               onProgressComplete={nextSlide}
             />
           </div>
-          <motion.button
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 backdrop-blur transition-all hover:bg-white/10"
-            onClick={() => setIsAutoPlaying((p) => !p)}
-            whileTap={{ scale: 0.95 }}
-            aria-label={isAutoPlaying ? 'Pause autoplay' : 'Resume autoplay'}
-          >
-            <motion.div
-              className={`h-1.5 w-1.5 rounded-full ${isAutoPlaying ? 'bg-emerald-400' : 'bg-white/60'}`}
-              animate={isAutoPlaying ? { scale: [1, 1.4, 1] } : { scale: 1 }}
-              transition={isAutoPlaying ? { duration: 1, repeat: Infinity } : { duration: 0.2 }}
-            />
-          </motion.button>
-          <HeroNavigation
-            currentSlide={currentSlide}
-            totalSlides={heroSlides.length}
-            onPrevious={prevSlide}
-            onNext={nextSlide}
-            canNavigate={canNavigate}
-            size="sm"
-          />
-        </div>
 
-        {/* Desktop: 3-column grid (indicators | spacer | autoplay + nav) */}
-        <div className="hidden lg:grid lg:grid-cols-3 lg:items-end lg:gap-8">
-          <div>
-            <HeroIndicators
-              currentSlide={currentSlide}
-              totalSlides={heroSlides.length}
-              onSlideChange={goToSlide}
-              slideLabels={heroSlides.map((slide) => slide.theme)}
-            />
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlideData.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.3 }}
-                className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55"
-              >
-                <span className="font-mono text-accent-light">
-                  0{currentSlide + 1}
-                </span>
-                <span className="h-px w-8 bg-white/20" />
-                <span>0{heroSlides.length}</span>
-                <span className="ml-1 text-white/40 normal-case tracking-normal">
-                  — {currentSlideData.title.trim()}
-                </span>
-              </motion.div>
-            </AnimatePresence>
-            <div className="w-full max-w-md">
-              <HeroProgress
-                currentSlide={currentSlide}
-                totalSlides={heroSlides.length}
-                autoPlay={isAutoPlaying && !isHovered}
-                onProgressComplete={nextSlide}
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-4">
+          {/* Right: Navigation */}
+          <div className="flex items-center gap-6">
+            {/* Auto play indicator */}
             <motion.button
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur transition-all hover:border-white/25 hover:bg-white/10"
+              className={`
+                hidden lg:flex items-center gap-2 px-4 py-2 rounded-full 
+                backdrop-blur-xl bg-white/5 border border-white/10
+                text-white/70 text-sm font-medium
+                transition-all duration-300 hover:bg-white/10
+              `}
               onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              aria-label={isAutoPlaying ? 'Pause autoplay' : 'Resume autoplay'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <motion.div
-                className={`h-2 w-2 rounded-full ${isAutoPlaying ? 'bg-emerald-400' : 'bg-rose-400'}`}
-                animate={isAutoPlaying ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-                transition={isAutoPlaying ? { duration: 1.5, repeat: Infinity } : { duration: 0.2 }}
+                className={`w-2 h-2 rounded-full ${
+                  isAutoPlaying ? 'bg-green-400' : 'bg-red-400'
+                }`}
+                animate={{ scale: isAutoPlaying ? [1, 1.2, 1] : 1 }}
+                transition={{ duration: 1, repeat: isAutoPlaying ? Infinity : 0 }}
               />
               {isAutoPlaying ? 'Auto' : 'Paused'}
             </motion.button>
+
+            {/* Navigation arrows */}
             <HeroNavigation
               currentSlide={currentSlide}
               totalSlides={heroSlides.length}
               onPrevious={prevSlide}
               onNext={nextSlide}
               canNavigate={canNavigate}
-              size="md"
             />
           </div>
         </div>
+
+        {/* Progress bar for desktop */}
+        <div className="hidden lg:block mt-6">
+          <HeroProgress
+            currentSlide={currentSlide}
+            totalSlides={heroSlides.length}
+            autoPlay={isAutoPlaying && !isHovered}
+            onProgressComplete={nextSlide}
+          />
+        </div>
       </div>
 
-      {/* Screen-reader announcement */}
+      {/* Accessibility announcements */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        Slide {currentSlide + 1} of {heroSlides.length}: {currentSlideData.title}{' '}
-        {currentSlideData.subtitle}
+        Slide {currentSlide + 1} of {heroSlides.length}: {currentSlideData.title} {currentSlideData.subtitle}
       </div>
     </div>
   );

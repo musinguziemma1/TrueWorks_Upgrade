@@ -9,64 +9,72 @@ interface HeroIndicatorsProps {
   slideLabels: string[];
 }
 
-const labelMap: Record<string, string> = {
-  finance: 'Finance & executive',
-  operations: 'Operations & integration',
-  healthcare: 'Healthcare analytics',
-  manufacturing: 'Smart manufacturing',
-  government: 'Government & public sector',
-};
-
 export default function HeroIndicators({
   currentSlide,
   totalSlides,
   onSlideChange,
-  slideLabels,
+  slideLabels
 }: HeroIndicatorsProps) {
   return (
-    <div className="flex flex-col gap-1.5" role="tablist" aria-label="Hero slides">
-      {Array.from({ length: totalSlides }, (_, index) => {
-        const active = index === currentSlide;
-        return (
-          <motion.button
-            key={index}
-            role="tab"
-            aria-selected={active}
-            className={`group relative flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-all duration-300 ${
-              active
-                ? 'border-white/20 bg-white/[0.08] backdrop-blur-xl'
-                : 'border-transparent hover:border-white/10 hover:bg-white/[0.04]'
-            }`}
-            onClick={() => onSlideChange(index)}
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.98 }}
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: totalSlides }, (_, index) => (
+        <motion.button
+          key={index}
+          className={`
+            group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-300
+            ${index === currentSlide 
+              ? 'bg-white/10 backdrop-blur-xl border border-white/20' 
+              : 'hover:bg-white/5 backdrop-blur-sm border border-transparent hover:border-white/10'
+            }
+          `}
+          onClick={() => onSlideChange(index)}
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {/* Indicator dot */}
+          <motion.div
+            className={`
+              w-3 h-3 rounded-full transition-all duration-300
+              ${index === currentSlide 
+                ? 'bg-[#DAA520] shadow-lg' 
+                : 'bg-white/30 group-hover:bg-white/50'
+              }
+            `}
+            animate={index === currentSlide ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          
+          {/* Label */}
+          <span 
+            className={`
+              font-body text-sm font-medium transition-all duration-300
+              ${index === currentSlide 
+                ? 'text-white' 
+                : 'text-white/85 group-hover:text-white/80'
+              }
+            `}
           >
-            <motion.span
-              className={`shrink-0 rounded-full transition-all duration-300 ${
-                active
-                  ? 'h-2.5 w-2.5 bg-accent-light shadow-[0_0_10px_rgba(218,165,32,0.5)]'
-                  : 'h-2 w-2 bg-white/30 group-hover:bg-white/50'
-              }`}
-              animate={active ? { scale: [1, 1.25, 1] } : { scale: 1 }}
-              transition={active ? { duration: 2, repeat: Infinity } : { duration: 0.2 }}
+            {slideLabels[index]}
+          </span>
+          
+          {/* Active indicator line */}
+          {index === currentSlide && (
+            <motion.div
+              className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#DAA520] to-[#B8860B] rounded-r"
+              layoutId="activeIndicator"
+              transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
             />
-            <span
-              className={`font-body text-sm font-medium transition-colors ${
-                active ? 'text-white' : 'text-white/70 group-hover:text-white/85'
-              }`}
-            >
-              {labelMap[slideLabels[index]] ?? slideLabels[index]}
-            </span>
-            {active && (
-              <motion.span
-                className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-gradient-to-b from-accent-light to-accent-dark"
-                layoutId="activeHeroIndicator"
-                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-          </motion.button>
-        );
-      })}
+          )}
+          
+          {/* Glow effect on hover */}
+          <motion.div
+            className="absolute inset-0 rounded-xl"
+            initial={{ boxShadow: '0 0 0 rgba(227, 188, 63, 0)' }}
+            whileHover={{ boxShadow: '0 0 20px rgba(227, 188, 63, 0.1)' }}
+            transition={{ duration: 0.3 }}
+          />
+        </motion.button>
+      ))}
     </div>
   );
 }
