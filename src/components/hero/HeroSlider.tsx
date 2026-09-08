@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { heroSlides } from './data';
 import HeroBackground from './HeroBackground';
 import HeroContent from './HeroContent';
-import HeroSlide from './HeroSlide';
+import HeroSlide from './HeroImageSlide';
 import HeroProgress from './HeroProgress';
 import HeroNavigation from './HeroNavigation';
 import HeroIndicators from './HeroIndicators';
