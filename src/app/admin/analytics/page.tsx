@@ -369,12 +369,11 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       {/* ─── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071A33] via-[#071A33] to-[#071A33] px-6 py-8 lg:px-8 lg:py-10">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#04101F] via-[#071A33] to-[#123663] px-6 py-8 shadow-elevated lg:px-10 lg:py-11">
         <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-accent/[0.10] blur-3xl" />
-        <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.05] blur-3xl" />
+          <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/[0.10] blur-3xl" />
         <div
           className="absolute inset-0 opacity-20 mix-blend-overlay"
           style={{
@@ -392,7 +391,7 @@ export default function AnalyticsPage() {
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-accent-light">
               Performance insights
             </p>
-            <h1 className="mt-2 font-heading text-3xl font-semibold text-white md:text-4xl">
+            <h1 className="mt-2 font-heading text-3xl font-bold tracking-normal text-white md:text-4xl">
               Analytics
             </h1>
             <p className="mt-2 max-w-xl text-sm text-white/70">
@@ -442,10 +441,15 @@ export default function AnalyticsPage() {
         </div>
       </section>
 
-      <div ref={analyticsRef} className="space-y-6">
+      <div ref={analyticsRef} className="space-y-8">
         {/* ─── KPI strip: featured revenue + 5 secondary ──────── */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="gradient-brand relative overflow-hidden rounded-2xl p-6 shadow-elevated">
+        <section className="space-y-3">
+          <div className="flex items-end justify-between gap-4 px-1">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-dark">Performance snapshot</p><h2 className="mt-1 text-xl font-semibold text-primary">How the store is moving</h2></div>
+            <p className="hidden text-xs text-muted-foreground sm:block">{rangeLabel}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="gradient-brand relative overflow-hidden rounded-2xl p-6 shadow-elevated lg:min-h-[220px]">
             <div className="texture-dots absolute inset-0 opacity-30" aria-hidden />
             <div className="relative">
               <div className="flex items-center justify-between">
@@ -524,10 +528,11 @@ export default function AnalyticsPage() {
               spark={spark.pageViews}
             />
           </div>
-        </div>
+          </div>
+        </section>
 
         {/* ─── Secondary metrics ─────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MetricCard
             icon={<DollarSign className="h-5 w-5" />}
             label="Avg Order Value"
@@ -549,9 +554,9 @@ export default function AnalyticsPage() {
             value={`${conversionRate}%`}
             sub={`${formatPrice(avgOrderValue)} avg order`}
           />
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MetricCard
             icon={<Users className="h-5 w-5" />}
             label="Refunds"
@@ -572,11 +577,11 @@ export default function AnalyticsPage() {
             label="Payment Methods"
             value={(paymentMethods ?? []).length.toLocaleString()}
           />
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><TrendingUp className="h-4 w-4" /> Revenue Trend</span></CardTitle></CardHeader>
+        <section className="grid grid-cols-1 gap-5 lg:grid-cols-6">
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><TrendingUp className="h-4 w-4" /> Revenue Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No revenue data yet.</p>
@@ -594,8 +599,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><BarChart3 className="h-4 w-4" /> Orders Trend</span></CardTitle></CardHeader>
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><BarChart3 className="h-4 w-4" /> Orders Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No order data yet.</p>
@@ -613,8 +618,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Eye className="h-4 w-4" /> Traffic Trend</span></CardTitle></CardHeader>
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><Eye className="h-4 w-4" /> Traffic Trend</span></CardTitle></CardHeader>
             <CardContent>
               {revenueData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No traffic data yet.</p>
@@ -633,8 +638,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Package className="h-4 w-4" /> Product Performance</span></CardTitle></CardHeader>
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><Package className="h-4 w-4" /> Product Performance</span></CardTitle></CardHeader>
             <CardContent>
               {productPerformance.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No completed product sales yet.</p>
@@ -655,11 +660,11 @@ export default function AnalyticsPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><CreditCard className="h-4 w-4" /> Payment Methods</span></CardTitle></CardHeader>
+        <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><CreditCard className="h-4 w-4" /> Payment Methods</span></CardTitle></CardHeader>
             <CardContent>
               {paymentChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No payment data yet.</p>
@@ -677,16 +682,16 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><ArrowUpRight className="h-4 w-4" /> Conversion Funnel</span></CardTitle></CardHeader>
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><ArrowUpRight className="h-4 w-4" /> Conversion Funnel</span></CardTitle></CardHeader>
             <CardContent>
               <EventFunnel funnel={funnelData?.funnel ?? []} />
             </CardContent>
           </Card>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Globe className="h-4 w-4" /> Geographic Sales</span></CardTitle></CardHeader>
+        </section>
+        <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><Globe className="h-4 w-4" /> Geographic Sales</span></CardTitle></CardHeader>
             <CardContent>
               {geoChartData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -736,8 +741,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"><Download className="h-4 w-4" /> Customer Lifetime Value</span></CardTitle></CardHeader>
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-base text-foreground"><span className="flex items-center gap-2 text-primary"><Download className="h-4 w-4" /> Customer Lifetime Value</span></CardTitle></CardHeader>
             <CardContent>
               {(ltvSegments ?? []).length === 0 || ltvTotal === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No customer LTV data yet.</p>
@@ -761,7 +766,7 @@ export default function AnalyticsPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </section>
       </div>
     </div>
   )

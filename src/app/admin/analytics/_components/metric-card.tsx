@@ -19,8 +19,8 @@ export function MetricCard({
   const deltaArrow = delta === undefined ? "" : delta >= 0 ? "\u25B2" : "\u25BC";
   const max = spark && spark.length ? Math.max(...spark, 1) : 0;
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
+    <Card className="overflow-hidden border-border/80 shadow-soft transition-shadow hover:shadow-card">
+      <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg bg-[#0B2545]/10 text-[#0B2545]">{icon}</div>
           {delta !== undefined && (
