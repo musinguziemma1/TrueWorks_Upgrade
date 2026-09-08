@@ -139,7 +139,7 @@ export async function requireAdminSilent(ctx: MutationCtx | QueryCtx): Promise<b
     const user = await findUserByIdentity(ctx);
     if (user) {
       const level = ROLE_HIERARCHY[user.role] ?? 0;
-      if (level < ROLE_HIERARCHY.editor) return false;
+      if (level < ROLE_HIERARCHY.admin) return false;
       // Backfill tokenIdentifier in mutation context for future fast lookups
       if ("patch" in ctx.db && user.tokenIdentifier !== identity.tokenIdentifier) {
         await ctx.db.patch(user._id, { tokenIdentifier: identity.tokenIdentifier });

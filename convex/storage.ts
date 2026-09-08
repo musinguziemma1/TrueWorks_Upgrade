@@ -1,4 +1,4 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
@@ -94,9 +94,8 @@ export const backfillFileUrls = mutation({
 export const getFileUrl = action({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY: Require authentication to access file URLs
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const me = await ctx.runQuery(api.users.current, {});
+    if (!me || !["superadmin", "owner", "admin"].includes(me.role)) throw new Error("Forbidden");
     return await ctx.storage.getUrl(args.storageId as Id<"_storage">);
   },
 });
@@ -115,7 +114,7 @@ export const resolveFileUrl = query({
   },
 });
 
-export const backfillFileUrl = mutation({
+export const backfillFileUrl = internalMutation({
   args: { storageId: v.string(), url: v.string() },
   handler: async (ctx, args) => {
     const file = await ctx.db

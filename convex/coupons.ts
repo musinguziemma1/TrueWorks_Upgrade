@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent, requireEditor } from "./users";
 import { auditLog } from "./lib/audit";
@@ -110,7 +110,7 @@ export const validate = query({
   },
 });
 
-export const incrementUsage = mutation({
+export const incrementUsage = internalMutation({
   args: { code: v.string() },
   handler: async (ctx, args) => {
     const results = await ctx.db
@@ -130,7 +130,7 @@ export const incrementUsage = mutation({
  * This eliminates the check-then-act race where concurrent checkouts could
  * both pass validation before either increments the count.
  */
-export const validateAndIncrement = mutation({
+export const validateAndIncrement = internalMutation({
   args: { code: v.string(), minPurchase: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const results = await ctx.db

@@ -49,7 +49,8 @@ export function isAtLeast(user: Pick<AuthUser, "role"> | null, role: string): bo
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("tw_session")?.value;
+  const sessionCookie =
+    cookieStore.get("__Host-tw_session")?.value ?? cookieStore.get("tw_session")?.value;
   if (!sessionCookie) return null;
 
   const convexSiteUrl = getConvexSiteUrl();

@@ -151,7 +151,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
 
     let discountAmount = 0;
     if (couponCode) {
-      const couponResult = await ctx.runMutation(api.coupons.validateAndIncrement, { code: couponCode });
+      const couponResult = await ctx.runMutation(internal.coupons.validateAndIncrement, { code: couponCode });
       if (couponResult.valid && couponResult.coupon) {
         const coupon = couponResult.coupon;
         if (coupon.minPurchase && subtotal < coupon.minPurchase) {
@@ -214,6 +214,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       message: `Order ${orderNumber} from ${verifiedName} for ${totalWithTax.toLocaleString()}`,
       link: `/admin/orders`,
     });
+
+    await ctx.runMutation(internal.abandonedCarts.markRecovered, { email: verifiedEmail });
 
     try {
       // Server-to-server call to the Convex site URL with the shared secret.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Mail, Save, RotateCcw, Eye, Code, Loader2, Plus, FileText } from "lucide-react";
@@ -186,7 +187,10 @@ function TemplateEditor({ templateId }: { templateId: string }) {
               {html ? (
                 <div
                   className="prose prose-sm max-w-none [&_img]:max-w-full [&_a]:text-primary [&_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml, {
+                    USE_PROFILES: { html: true },
+                    FORBID_TAGS: ["script", "iframe", "object", "embed", "form"],
+                  }) }}
                 />
               ) : (
                 <div className="space-y-3">

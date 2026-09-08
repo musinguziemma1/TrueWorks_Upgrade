@@ -45,28 +45,25 @@ export const listPublished = query({
     featured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const q = args.category
-      ? ctx.db.query("resources").withIndex("by_category", (q) => q.eq("category", sanitizeText(args.category!)))
-      : args.featured !== undefined
-      ? ctx.db.query("resources").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
-      : ctx.db.query("resources").withIndex("by_status", (q) => q.eq("status", "published"));
+    const results = await ctx.db
+      .query("resources")
+      .withIndex("by_status", (q) => q.eq("status", "published"))
+      .collect();
 
-    let results = await q.collect();
-
-    if (args.category && !args.featured) {
-      results = results.filter((r) => r.status === "published");
-    }
+    let filtered = results;
+    if (args.category) filtered = filtered.filter((r) => r.category === sanitizeText(args.category));
+    if (args.featured !== undefined) filtered = filtered.filter((r) => r.featured === args.featured);
 
     if (args.search) {
       const lower = sanitizeSearch(args.search).toLowerCase();
-      results = results.filter((r) =>
+      filtered = filtered.filter((r) =>
         r.title.toLowerCase().includes(lower) ||
         r.description.toLowerCase().includes(lower) ||
         r.category.toLowerCase().includes(lower)
       );
     }
 
-    return results.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    return filtered.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
   },
 });
 

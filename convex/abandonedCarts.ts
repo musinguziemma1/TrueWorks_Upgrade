@@ -55,7 +55,7 @@ export const track = mutation({
   },
 });
 
-export const markRecovered = mutation({
+export const markRecovered = internalMutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     const email = args.email.toLowerCase().trim();

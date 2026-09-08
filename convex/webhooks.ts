@@ -1,8 +1,8 @@
-import { mutation, query, internalQuery, internalMutation, action } from "./_generated/server";
+import { mutation, query, internalQuery, internalMutation, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { auditLog } from "./lib/audit";
-import { internal, api } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 /**
  * Reseller API keys + outbound webhooks.
@@ -157,7 +157,7 @@ export const listWebhooks = query({
 });
 
 /** Internal: also enabled endpoints for the dispatch action. */
-export const listWebhookEndpointsForDispatch = query({
+export const listWebhookEndpointsForDispatch = internalQuery({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
@@ -206,7 +206,7 @@ export const listWebhookDeliveries = query({
   },
 });
 
-export const signDelivery = query({
+export const signDelivery = internalQuery({
   args: { payload: v.string() },
   handler: async (ctx, args) => {
     return await sha256Hex(`${process.env.RESELLER_SIGNING_SECRET ?? ""}:${args.payload}`);
@@ -239,13 +239,13 @@ export const recordDelivery = internalMutation({
 });
 
 /** Fire outbound webhook events to reseller endpoints (called after purchase). */
-export const dispatchEvent = action({
+export const dispatchEvent = internalAction({
   args: {
     event: v.string(),
     payload: v.any(),
   },
   handler: async (ctx, args) => {
-    const endpoints = await ctx.runQuery(api.webhooks.listWebhookEndpointsForDispatch);
+    const endpoints = await ctx.runQuery(internal.webhooks.listWebhookEndpointsForDispatch);
     const matching = endpoints.filter(
       (e) => e.events.includes(args.event) || e.events.includes("*")
     );
@@ -254,7 +254,7 @@ export const dispatchEvent = action({
       const bodyObj = { event: args.event, data: args.payload, timestamp: now };
       const endpointId = ep._id;
       try {
-        const signature = await ctx.runQuery(api.webhooks.signDelivery, {
+        const signature = await ctx.runQuery(internal.webhooks.signDelivery, {
           payload: JSON.stringify(bodyObj),
         });
         const response = await fetch(ep.url, {

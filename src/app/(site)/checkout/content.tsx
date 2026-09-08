@@ -383,10 +383,6 @@ export default function CheckoutContent() {
               value: finalTotal,
               email: email.trim() || undefined,
             });
-            // Mark abandoned cart as recovered
-            if (convexClient) {
-              convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
-            }
             // Open the Pesapal payment page in a popup dialog instead of a full-page redirect
             setPesapalRedirectUrl(pesapalResult.redirectUrl);
             setPesapalDialogOpen(true);
@@ -412,10 +408,6 @@ export default function CheckoutContent() {
       value: finalTotal,
       email: email.trim() || undefined,
     });
-    // Mark abandoned cart as recovered
-    if (convexClient) {
-      convexClient.mutation(api.abandonedCarts.markRecovered, { email }).catch(() => {});
-    }
     router.push(`/order-confirmation?order=${orderId}&total=${finalTotal}`);
   };
 

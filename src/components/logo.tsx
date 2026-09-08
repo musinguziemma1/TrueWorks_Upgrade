@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { useSettings } from "@/lib/settings-context";
 import { api } from "@convex/_generated/api";
-import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -37,14 +36,6 @@ export function Logo({
     api.storage.resolveFileUrl,
     isStorageId ? { storageId: siteLogo } : "skip"
   );
-  const backfill = useMutation(api.storage.backfillFileUrl);
-
-  useEffect(() => {
-    if (isStorageId && resolvedUrl) {
-      backfill({ storageId: siteLogo, url: resolvedUrl }).catch(() => {});
-    }
-  }, [isStorageId, resolvedUrl, siteLogo, backfill]);
-
   let src = config.src;
   if (hasUploadedLogo) {
     if (isStorageId && resolvedUrl) {

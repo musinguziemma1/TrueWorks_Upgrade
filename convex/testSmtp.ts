@@ -1,4 +1,5 @@
 import { action } from "./_generated/server";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { CONTACT_EMAIL } from "./emailBranding";
 
@@ -15,7 +16,15 @@ export const testSmtp = action({
     host: v.string(),
     port: v.number(),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(api.users.current, {});
+    if (!user || !["superadmin", "owner", "admin"].includes(user.role)) {
+      throw new Error("Forbidden");
+    }
+    if (!Number.isInteger(args.port) || args.port < 1 || args.port > 65535 ||
+      !/^(?=.{1,253}$)(?!localhost$)(?!.*\.\.)[a-z0-9.-]+$/i.test(args.host)) {
+      return { success: false, message: "Enter a valid public SMTP hostname and port." };
+    }
     try {
       const timeout = 10_000;
       const controller = new AbortController();
@@ -45,7 +54,11 @@ export const sendTestEmail = action({
   args: {
     to: v.string(),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(api.users.current, {});
+    if (!user || !["superadmin", "owner", "admin"].includes(user.role)) {
+      throw new Error("Forbidden");
+    }
     if (!RESEND_API_KEY || RESEND_API_KEY === "re_your_api_key_here") {
       return { success: false, message: "Resend is not configured. Set RESEND_API_KEY in environment variables." };
     }

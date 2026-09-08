@@ -48,14 +48,14 @@ export const get = query({
   },
 });
 
-export const getInternal = query({
+export const getInternal = internalQuery({
   args: { id: v.id("campaigns") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },
 });
 
-export const markSentInternal = mutation({
+export const markSentInternal = internalMutation({
   args: { id: v.id("campaigns"), sentCount: v.number() },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {

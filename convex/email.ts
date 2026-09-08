@@ -377,7 +377,11 @@ export const sendSupportReplyAction = action({
     replyBody: v.string(),
     agentName: v.optional(v.string()),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(api.users.current, {});
+    if (!user || !["superadmin", "owner", "admin"].includes(user.role)) {
+      throw new Error("Forbidden");
+    }
     const email = String(args.customerEmail).trim();
     if (!email) {
       return { sent: false, error: "Recipient email is required" };
@@ -777,12 +781,12 @@ export const sendCampaignEmails = internalAction({
     campaignId: v.id("campaigns"),
   },
   handler: async (ctx, args) => {
-    const campaign = await ctx.runQuery(api.campaigns.getInternal, { id: args.campaignId });
+    const campaign = await ctx.runQuery(internal.campaigns.getInternal, { id: args.campaignId });
     if (!campaign) return { sent: 0, failed: 0 };
 
     const active = await ctx.runQuery(api.subscribers.listActive);
     if (active.length === 0) {
-      await ctx.runMutation(api.campaigns.markSentInternal, {
+      await ctx.runMutation(internal.campaigns.markSentInternal, {
         id: args.campaignId,
         sentCount: 0,
       });
@@ -818,7 +822,7 @@ export const sendCampaignEmails = internalAction({
     }
 
     // Update campaign record
-    await ctx.runMutation(api.campaigns.markSentInternal, {
+    await ctx.runMutation(internal.campaigns.markSentInternal, {
       id: args.campaignId,
       sentCount: sent,
     });

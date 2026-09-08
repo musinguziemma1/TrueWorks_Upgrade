@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import DOMPurify from "dompurify";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -673,7 +674,12 @@ export default function ProductDetail() {
 
                   <div
                     className="prose prose-sm mt-6 max-w-none leading-relaxed text-muted [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-primary [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-primary [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-primary [&_p]:mb-3 [&_img]:my-6 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_strong]:text-foreground"
-                    dangerouslySetInnerHTML={{ __html: p.description }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(p.description, {
+                        USE_PROFILES: { html: true },
+                        FORBID_TAGS: ["style", "script", "iframe", "object", "embed", "form"],
+                      }),
+                    }}
                   />
 
                   {p.changelog && (
