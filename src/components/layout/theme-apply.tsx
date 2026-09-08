@@ -2,13 +2,7 @@
 
 import { useSettings } from "@/lib/settings-context"
 
-const fontMap: Record<string, string> = {
-  georgia: "Georgia, 'Times New Roman', serif",
-  inter: "Inter, ui-sans-serif, system-ui, sans-serif",
-  playfair: "'Playfair Display', Georgia, serif",
-  calibri: "Calibri, Source Sans 3, ui-sans-serif, system-ui, sans-serif",
-  opensans: "'Open Sans', ui-sans-serif, system-ui, sans-serif",
-}
+const brandFont = '"Segoe UI", "Segoe UI Variable", "Noto Sans", Arial, sans-serif'
 
 // Defense in depth: strip anything that could break out of the <style>
 // element or execute script, even though the server also sanitizes.
@@ -28,8 +22,8 @@ function sanitizeCss(css: string): string {
 export function ThemeApply() {
   const s = useSettings()
 
-  const headingFont = fontMap[s.headingFont] || fontMap.georgia
-  const bodyFont = fontMap[s.bodyFont] || fontMap.calibri
+  const headingFont = brandFont
+  const bodyFont = brandFont
   const customCss = s.customCss ? sanitizeCss(s.customCss) : ""
 
   return (

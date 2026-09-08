@@ -12,7 +12,7 @@ export default function GlobalError({
         style={{
           margin: 0,
           fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            '"Segoe UI", "Segoe UI Variable", "Noto Sans", Arial, sans-serif',
           background: "#F4F6FA",
           color: "#1F2937",
           display: "flex",

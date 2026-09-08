@@ -59,7 +59,7 @@ export const sendOrderStatusEmail = internalAction({
 
     const html = `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F4F6FA; padding: 32px; color: #2A3548;">
+<body style="font-family: 'Segoe UI', 'Segoe UI Variable', 'Noto Sans', Arial, sans-serif; background: #F4F6FA; padding: 32px; color: #2A3548;">
   <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px;">
     <h2 style="color: #0B2545; margin: 0 0 16px;">Order Update</h2>
     <p style="margin: 0 0 12px;">Hi ${escapeHtml(order.customerName)},</p>

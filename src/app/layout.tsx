@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -7,18 +6,6 @@ import { Providers } from "@/components/layout/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SkipNav } from "@/components/layout/skip-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://trueworksgroup.com"),
@@ -98,7 +85,7 @@ const organizationJsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} h-full`}>
+    <html lang="en" className="h-full">
       <head>
         <link
           rel="preconnect"

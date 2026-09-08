@@ -16,6 +16,7 @@ export default function OgImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
+          fontFamily: '"Segoe UI", "Segoe UI Variable", "Noto Sans", Arial, sans-serif',
           background: "linear-gradient(135deg, #0B2545 0%, #123663 60%, #3E6990 100%)",
           color: "white",
         }}

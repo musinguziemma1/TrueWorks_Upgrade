@@ -37,7 +37,7 @@ function buildPreviewDoc(content: string): string {
 <head>
 <meta charset="utf-8" />
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; color: #2A3548; }
+  body { font-family: 'Segoe UI', 'Segoe UI Variable', 'Noto Sans', Arial, sans-serif; margin: 0; padding: 0; background: #F4F6FA; color: #2A3548; }
   .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
   .header { background: #0b2545; padding: 32px; text-align: center; }
   .header h1 { color: #ffffff; font-size: 24px; margin: 0; }

@@ -112,7 +112,7 @@ function baseTemplate(content: string): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
+    body { font-family: 'Segoe UI', 'Segoe UI Variable', 'Noto Sans', Arial, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .header { background: #0b2545; padding: 32px; text-align: center; }
     .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
@@ -592,7 +592,7 @@ export const sendSubscriberWelcome = internalAction({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
+    body { font-family: 'Segoe UI', 'Segoe UI Variable', 'Noto Sans', Arial, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 40px 32px; text-align: center; position: relative; overflow: hidden; }
     .banner::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 60%); }

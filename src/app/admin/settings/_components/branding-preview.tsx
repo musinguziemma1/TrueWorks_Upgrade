@@ -4,13 +4,7 @@ import { useMemo } from "react"
 import { ShoppingCart, Menu } from "lucide-react"
 import type { SettingsValues } from "../use-settings-form"
 
-const fontMap: Record<string, string> = {
-  georgia: "Georgia, 'Times New Roman', serif",
-  inter: "Inter, ui-sans-serif, system-ui, sans-serif",
-  playfair: "'Playfair Display', Georgia, serif",
-  calibri: "Calibri, Source Sans 3, ui-sans-serif, system-ui, sans-serif",
-  opensans: "'Open Sans', ui-sans-serif, system-ui, sans-serif",
-}
+const brandFont = '"Segoe UI", "Segoe UI Variable", "Noto Sans", Arial, sans-serif'
 
 export function BrandingPreview({ values }: { values: SettingsValues }) {
   const { primary, secondary, accent, background, surface, foreground, heading, body } = useMemo(() => {
@@ -20,8 +14,8 @@ export function BrandingPreview({ values }: { values: SettingsValues }) {
     const background = String(values.backgroundColor ?? "#FFFFFF")
     const surface = String(values.surfaceColor ?? "#FAFBFC")
     const foreground = String(values.foregroundColor ?? "#1E293B")
-    const heading = fontMap[String(values.headingFont ?? "georgia")] ?? fontMap.georgia
-    const body = fontMap[String(values.bodyFont ?? "calibri")] ?? fontMap.calibri
+    const heading = brandFont
+    const body = brandFont
     return { primary, secondary, accent, background, surface, foreground, heading, body }
   }, [values])
 

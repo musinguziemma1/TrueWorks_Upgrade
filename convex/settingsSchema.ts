@@ -61,15 +61,11 @@ export const SETTING_FIELDS: SettingField[] = [
   { key: "backgroundColor", tab: "branding", type: "color", label: "Background Color", default: "#FFFFFF", status: "live" },
   { key: "surfaceColor", tab: "branding", type: "color", label: "Surface Color", default: "#FAFBFC", status: "live" },
   { key: "foregroundColor", tab: "branding", type: "color", label: "Foreground Color", default: "#1E293B", status: "live" },
-  { key: "headingFont", tab: "branding", type: "select", label: "Heading Font", default: "georgia", options: [
-    { value: "georgia", label: "Georgia, Times New Roman, serif" },
-    { value: "inter", label: "Inter, sans-serif" },
-    { value: "playfair", label: "Playfair Display, serif" },
+  { key: "headingFont", tab: "branding", type: "select", label: "Heading Font", default: "segoe-ui", options: [
+    { value: "segoe-ui", label: "Segoe UI, sans-serif" },
   ], status: "live" },
-  { key: "bodyFont", tab: "branding", type: "select", label: "Body Font", default: "calibri", options: [
-    { value: "calibri", label: "Calibri, Source Sans 3, system-ui, sans-serif" },
-    { value: "inter", label: "Inter, sans-serif" },
-    { value: "opensans", label: "Open Sans, sans-serif" },
+  { key: "bodyFont", tab: "branding", type: "select", label: "Body Font", default: "segoe-ui", options: [
+    { value: "segoe-ui", label: "Segoe UI, sans-serif" },
   ], status: "live" },
   { key: "customCss", tab: "branding", type: "css", label: "Custom CSS", default: "", status: "live" },
 

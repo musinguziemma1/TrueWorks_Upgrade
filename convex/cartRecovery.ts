@@ -43,7 +43,7 @@ export const sendRecoveryEmails = internalAction({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
+    body { font-family: 'Segoe UI', 'Segoe UI Variable', 'Noto Sans', Arial, sans-serif; margin: 0; padding: 0; background: #F4F6FA; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
     .banner { background: linear-gradient(135deg, #0b2545 0%, #13315c 50%, #0b2545 100%); padding: 36px 32px; text-align: center; }
     .banner h1 { color: #ffffff; font-size: 24px; margin: 0; }
