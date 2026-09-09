@@ -10,14 +10,14 @@ import { FooterNewsletter } from "@/components/layout/footer-newsletter";
 import { FooterCopyright } from "@/components/layout/footer-copyright";
 
 const fallbackCategories = [
-  "Healthcare",
-  "Business",
-  "Finance",
-  "NGO",
-  "HR",
-  "Schools",
-  "Churches",
-  "Agriculture",
+  "Executive Management Systems",
+  "Finance and Treasury Systems",
+  "Sales and Customer Management Systems",
+  "Human Resources and Workforce Systems",
+  "Hospital and Healthcare Systems",
+  "NGO and Grant Management Systems",
+  "Education Management Systems",
+  "Small Business Operating Systems",
 ];
 
 const companyLinks = [

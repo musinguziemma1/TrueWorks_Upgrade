@@ -61,12 +61,18 @@ interface StoreSidebarProps {
 const allCategoriesBase = ["All"]
 
 const allIndustries = [
-  "Healthcare",
+  "Business",
   "Finance",
-  "Nonprofit",
-  "Education",
   "Operations",
-  "Sales",
+  "Governance",
+  "Healthcare",
+  "Financial Services",
+  "Nonprofit",
+  "Agriculture",
+  "Education",
+  "Property",
+  "Personal Finance",
+  "Small Business",
 ]
 
 const allFileTypes = [

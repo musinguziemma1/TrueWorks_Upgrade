@@ -39,7 +39,7 @@ export const heroSlides: SlideData[] = [
       { label: 'EBITDA', value: '32.1%', change: '+8.9%', trend: 'up', color: '#8B5CF6' }
     ],
     modules: [
-      { name: 'Finance & Accounting', icon: 'DollarSign', status: 'success', value: '99.8%' },
+      { name: 'Finance and Treasury', icon: 'DollarSign', status: 'success', value: '99.8%' },
       { name: 'Executive Reporting', icon: 'BarChart3', status: 'active', value: 'Live' },
       { name: 'Business Intelligence', icon: 'Brain', status: 'success', value: 'AI Active' },
       { name: 'Performance Analytics', icon: 'TrendingUp', status: 'success', value: 'Real-time' }
@@ -60,7 +60,7 @@ export const heroSlides: SlideData[] = [
     ],
     modules: [
       { name: 'CRM & Sales', icon: 'Users', status: 'success', value: '2.4K Leads' },
-      { name: 'Project Management', icon: 'Briefcase', status: 'active', value: '45 Projects' },
+      { name: 'Project and Programme', icon: 'Briefcase', status: 'active', value: '45 Projects' },
       { name: 'Procurement', icon: 'ShoppingCart', status: 'success', value: '$1.2M Savings' },
       { name: 'Asset Management', icon: 'Package', status: 'success', value: '15K Assets' }
     ]
