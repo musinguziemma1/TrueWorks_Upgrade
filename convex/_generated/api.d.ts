@@ -53,6 +53,7 @@ import type * as pages from "../pages.js";
 import type * as payments from "../payments.js";
 import type * as paymentsExport from "../paymentsExport.js";
 import type * as pesapal from "../pesapal.js";
+import type * as productCatalog from "../productCatalog.js";
 import type * as products from "../products.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as refunds from "../refunds.js";
@@ -123,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   paymentsExport: typeof paymentsExport;
   pesapal: typeof pesapal;
+  productCatalog: typeof productCatalog;
   products: typeof products;
   rateLimit: typeof rateLimit;
   refunds: typeof refunds;
