@@ -8,6 +8,7 @@ import HeroContent from './HeroContent';
 import HeroSlide from './HeroImageSlide';
 import HeroProgress from './HeroProgress';
 import HeroNavigation from './HeroNavigation';
+import HeroIndicators from './HeroIndicators';
 
 interface HeroSliderProps {
   onExploreClick?: () => void;
@@ -177,6 +178,15 @@ export default function HeroSlider({
       {/* Controls overlay */}
       <div className="absolute bottom-8 left-8 right-8 z-20">
         <div className="flex items-center justify-between">
+          <div className="hidden max-w-[52%] lg:block">
+            <HeroIndicators
+              currentSlide={currentSlide}
+              totalSlides={heroSlides.length}
+              onSlideChange={setCurrentSlide}
+              slideLabels={heroSlides.map(slide => slide.theme)}
+            />
+          </div>
+
           {/* Center: Progress bar (mobile) */}
           <div className="lg:hidden flex-1 mx-8">
             <HeroProgress

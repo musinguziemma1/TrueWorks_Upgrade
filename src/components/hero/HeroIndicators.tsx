@@ -16,12 +16,12 @@ export default function HeroIndicators({
   slideLabels
 }: HeroIndicatorsProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-wrap gap-2">
       {Array.from({ length: totalSlides }, (_, index) => (
         <motion.button
           key={index}
           className={`
-            group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-300
+            group relative flex items-center gap-2 rounded-lg px-2.5 py-2 transition-all duration-300
             ${index === currentSlide 
               ? 'bg-white/10 backdrop-blur-xl border border-white/20' 
               : 'hover:bg-white/5 backdrop-blur-sm border border-transparent hover:border-white/10'
@@ -47,7 +47,7 @@ export default function HeroIndicators({
           {/* Label */}
           <span 
             className={`
-              font-body text-sm font-medium transition-all duration-300
+              font-body text-xs font-medium capitalize transition-all duration-300
               ${index === currentSlide 
                 ? 'text-white' 
                 : 'text-white/85 group-hover:text-white/80'

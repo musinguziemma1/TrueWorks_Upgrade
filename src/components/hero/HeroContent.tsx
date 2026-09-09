@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { Activity, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import { heroSlides, SlideData } from './data';
+import { heroSlides, featureIcons, SlideData } from './data';
 import { textSlideUp, textFadeIn, staggerChildren } from './animations';
 import HeroButtons from './HeroButtons';
+import { BarChart3, Brain, Target, Zap } from 'lucide-react';
 
 interface HeroContentProps {
   slide: SlideData;
@@ -14,6 +15,7 @@ interface HeroContentProps {
 
 export default function HeroContent({ slide, onExploreClick, onDemoClick }: HeroContentProps) {
   const slideNumber = heroSlides.findIndex(({ id }) => id === slide.id) + 1;
+  const iconComponents = { Target, BarChart3, Brain, Zap } as const;
 
   return (
     <motion.div
@@ -87,6 +89,27 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
               <ArrowUpRight className="h-3.5 w-3.5" />
             </span>
           </div>
+        </motion.div>
+
+        <motion.div
+          className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4"
+          variants={staggerChildren}
+        >
+          {featureIcons.map((feature) => {
+            const IconComponent = iconComponents[feature.icon as keyof typeof iconComponents];
+
+            return (
+              <motion.div
+                key={feature.name}
+                className="group rounded-xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-white/[0.08]"
+                variants={textFadeIn}
+              >
+                <IconComponent className="mb-2 h-4 w-4 text-[#DAA520]" />
+                <h2 className="mb-1 text-xs font-semibold text-white">{feature.name}</h2>
+                <p className="hidden text-[10px] leading-4 text-white/55 sm:block">{feature.description}</p>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </motion.div>
