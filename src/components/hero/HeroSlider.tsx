@@ -8,7 +8,6 @@ import HeroContent from './HeroContent';
 import HeroSlide from './HeroImageSlide';
 import HeroProgress from './HeroProgress';
 import HeroNavigation from './HeroNavigation';
-import HeroIndicators from './HeroIndicators';
 
 interface HeroSliderProps {
   onExploreClick?: () => void;
@@ -40,11 +39,6 @@ export default function HeroSlider({
   const prevSlide = useCallback(() => {
     if (!canNavigate) return;
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
-  }, [canNavigate]);
-
-  const goToSlide = useCallback((index: number) => {
-    if (!canNavigate) return;
-    setCurrentSlide(index);
   }, [canNavigate]);
 
   // Auto play functionality
@@ -183,16 +177,6 @@ export default function HeroSlider({
       {/* Controls overlay */}
       <div className="absolute bottom-8 left-8 right-8 z-20">
         <div className="flex items-center justify-between">
-          {/* Left: Slide indicators */}
-          <div className="hidden lg:block">
-            <HeroIndicators
-              currentSlide={currentSlide}
-              totalSlides={heroSlides.length}
-              onSlideChange={goToSlide}
-              slideLabels={heroSlides.map(slide => slide.theme)}
-            />
-          </div>
-
           {/* Center: Progress bar (mobile) */}
           <div className="lg:hidden flex-1 mx-8">
             <HeroProgress
