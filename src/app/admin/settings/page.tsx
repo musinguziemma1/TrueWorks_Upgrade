@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
-  Settings, Palette, Mail, CreditCard, Download, Shield,
+  Settings, Palette, Mail, CreditCard, Shield,
   Loader2, CheckCircle2, RotateCcw, ChevronRight, Save, X as XIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -19,11 +19,10 @@ import { GeneralTab } from "./_components/general-tab"
 import { BrandingTab } from "./_components/branding-tab"
 import { EmailTab } from "./_components/email-tab"
 import { PaymentTab } from "./_components/payment-tab"
-import { DownloadsTab } from "./_components/downloads-tab"
 import { SecurityTab } from "./_components/security-tab"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type TabId = "general" | "branding" | "email" | "payment" | "downloads" | "security"
+type TabId = "general" | "branding" | "email" | "payment" | "security"
 
 const tabs: {
   id: TabId
@@ -35,7 +34,6 @@ const tabs: {
   { id: "branding",  label: "Branding",  icon: Palette,    description: "Colors, theme and visual identity" },
   { id: "email",     label: "Email",     icon: Mail,       description: "Templates, sender and reply-to" },
   { id: "payment",   label: "Payment",   icon: CreditCard, description: "Providers, currencies and tax rules" },
-  { id: "downloads", label: "Downloads", icon: Download,   description: "Limits, expiration and file delivery" },
   { id: "security",  label: "Security",  icon: Shield,     description: "Auth, sessions and access policy" },
 ]
 
@@ -44,7 +42,7 @@ export default function SettingsPage() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get("tab")
   const isValidTab = (v: string | null): v is TabId =>
-    v === "general" || v === "branding" || v === "email" || v === "payment" || v === "downloads" || v === "security"
+    v === "general" || v === "branding" || v === "email" || v === "payment" || v === "security"
   const form = useSettingsForm()
   const uploadFile = useAction(api.storage.uploadFile)
   const [activeTab, setActiveTab] = useState<TabId>(() => (isValidTab(initialTab) ? initialTab : "general"))
@@ -294,13 +292,12 @@ export default function SettingsPage() {
             <BrandingTab form={form} />
           </TabsContent>
           <TabsContent value="email">
-            <EmailTab form={form} />
+            <EmailTab />
           </TabsContent>
           <TabsContent value="payment">
             <PaymentTab form={form} />
           </TabsContent>
           <TabsContent value="downloads">
-            <DownloadsTab form={form} />
           </TabsContent>
           <TabsContent value="security">
             <SecurityTab form={form} />

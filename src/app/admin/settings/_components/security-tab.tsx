@@ -16,7 +16,7 @@ import type { SettingsForm } from "../use-settings-form";
 
 const authKeys = ["require2fa", "passwordExpiryDays", "sessionTimeoutMinutes", "maxLoginAttempts"];
 const verificationKeys = ["requireVerificationCode", "verificationCodeExpiry", "signOutVerification"];
-const apiKeys = ["apiRateLimiting", "ipWhitelist"];
+const apiKeys = ["apiRateLimiting"];
 
 export function SecurityTab({ form }: { form: SettingsForm }) {
   const generateApiKey = useMutation(api.settings.generateApiKey);

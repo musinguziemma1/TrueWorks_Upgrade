@@ -128,7 +128,7 @@ export const SETTING_FIELDS: SettingField[] = [
   { key: "signOutVerification", tab: "security", type: "boolean", label: "Verification at Sign-Out", description: "Require verification code to sign out of admin sessions", default: false, status: "live" },
   { key: "apiRateLimiting", tab: "security", type: "boolean", label: "API Rate Limiting", description: "Throttle requests to prevent abuse", default: true, status: "live" },
   { key: "ipWhitelist", tab: "security", type: "boolean", label: "IP Whitelist", description: "Restrict admin access to specific IPs", default: false, status: "planned" },
-  { key: "apiKey", tab: "security", type: "text", label: "API Key", default: "", secret: true, status: "planned" },
+  { key: "apiKey", tab: "security", type: "text", label: "API Key", default: "", secret: true, status: "live" },
 ];
 
 export const SETTING_BY_KEY: Record<string, SettingField> = Object.fromEntries(

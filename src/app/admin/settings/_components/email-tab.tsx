@@ -8,25 +8,17 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { SettingsField } from "./settings-field"
 import { useAction } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
-import { SETTING_BY_KEY } from "@convex/settingsSchema"
-import type { SettingsForm } from "../use-settings-form"
 
-const smtpFields = ["smtpHost", "smtpPort", "smtpUsername", "smtpPassword", "smtpFrom"]
-
-export function EmailTab({ form }: { form: SettingsForm }) {
+export function EmailTab() {
   const sendTestEmail = useAction(api.testSmtp.sendTestEmail)
-  const testSmtp = useAction(api.testSmtp.testSmtp)
 
   const [testRecipient, setTestRecipient] = useState("")
   const [sending, setSending] = useState(false)
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle")
   const [testMessage, setTestMessage] = useState("")
-  const [smtpTesting, setSmtpTesting] = useState(false)
-  const [smtpStatus, setSmtpStatus] = useState<"idle" | "success" | "error">("idle")
 
   const handleSendTest = async () => {
     if (!testRecipient.trim()) {
@@ -47,28 +39,6 @@ export function EmailTab({ form }: { form: SettingsForm }) {
       toast.error("Failed to send test email")
     } finally {
       setSending(false)
-    }
-  }
-
-  const handleTestSmtp = async () => {
-    const host = String(form.values.smtpHost ?? "")
-    const port = Number(form.values.smtpPort ?? 587)
-    if (!host) {
-      toast.error("Please configure an SMTP host first")
-      return
-    }
-    setSmtpTesting(true)
-    setSmtpStatus("idle")
-    try {
-      const result = await testSmtp({ host, port })
-      setSmtpStatus(result.success ? "success" : "error")
-      if (result.success) toast.success(result.message)
-      else toast.error(result.message)
-    } catch {
-      setSmtpStatus("error")
-      toast.error("SMTP test failed")
-    } finally {
-      setSmtpTesting(false)
     }
   }
 
@@ -129,46 +99,6 @@ export function EmailTab({ form }: { form: SettingsForm }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>SMTP Configuration</CardTitle>
-          <CardDescription>
-            Optional direct SMTP settings. These are stored for future use — current delivery routes through Resend.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {smtpFields.map((key) => {
-              const field = SETTING_BY_KEY[key]
-              return (
-                <SettingsField
-                  key={key}
-                  field={field}
-                  value={form.values[key] ?? field.default}
-                  error={form.errors[key]}
-                  onChange={(v) => form.setValue(key, v)}
-                />
-              )
-            })}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={smtpTesting}
-            onClick={handleTestSmtp}
-          >
-            {smtpTesting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Testing...</>
-            ) : smtpStatus === "success" ? (
-              <><CheckCircle className="h-4 w-4 mr-2 text-green-600" /> Reachable</>
-            ) : smtpStatus === "error" ? (
-              <><XCircle className="h-4 w-4 mr-2 text-destructive" /> Unreachable</>
-            ) : (
-              "Test SMTP Reachability"
-            )}
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { SettingsForm } from "../use-settings-form";
 
-const gatewayKeys = ["pesapalEnabled", "stripeEnabled", "mtnMomoEnabled", "airtelMoneyEnabled", "paypalEnabled"]
+const gatewayKeys = ["pesapalEnabled", "stripeEnabled"]
 const gatewayEmailKeys: Record<string, string> = {
   pesapalEnabled: "pesapalEmail",
   stripeEnabled: "stripeEmail",

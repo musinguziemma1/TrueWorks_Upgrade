@@ -54,7 +54,7 @@ export function BrandingTab({ form }: { form: SettingsForm }) {
       <Card>
         <CardHeader>
           <CardTitle>Typography</CardTitle>
-          <CardDescription>Segoe UI is the required TrueWorks typeface across every interface and deliverable.</CardDescription>
+          <CardDescription>Choose the font family used throughout the storefront.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {fontKeys.map((key) => {

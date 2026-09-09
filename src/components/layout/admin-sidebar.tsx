@@ -24,9 +24,6 @@ import {
   Settings,
   Bell,
   LifeBuoy,
-  GraduationCap,
-  Briefcase,
-  UserCheck,
   X,
   ChevronRight,
   BookOpen,
@@ -37,7 +34,6 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { Logo } from "@/components/logo"
 import { useAdminSidebar } from "./admin-sidebar-context"
 import { hasPermission, type Permission } from "@/lib/permissions"
@@ -54,8 +50,6 @@ interface NavItem {
   label: string
   href: string
   icon: React.ReactNode
-  badge?: string
-  adminOnly?: boolean
   perm?: Permission
 }
 
@@ -109,14 +103,6 @@ const navSections: NavSection[] = [
       { label: "Support", href: "/admin/support", icon: <LifeBuoy className="h-4 w-4" /> },
     ],
   },
-  {
-    title: "Future",
-    items: [
-      { label: "Academy", href: "/admin/academy", icon: <GraduationCap className="h-4 w-4" />, badge: "Coming Soon" },
-      { label: "Consulting", href: "/admin/consulting", icon: <Briefcase className="h-4 w-4" />, badge: "Coming Soon" },
-      { label: "Memberships", href: "/admin/memberships", icon: <UserCheck className="h-4 w-4" />, badge: "Coming Soon" },
-    ],
-  },
 ]
 
 export default function AdminSidebar() {
@@ -127,7 +113,6 @@ export default function AdminSidebar() {
 
   const canAccess = (item: NavItem) => {
     if (item.perm) return hasPermission(me?.role, item.perm)
-    if (item.adminOnly) return me && ["superadmin", "admin", "owner"].includes(me.role)
     return true
   }
 
@@ -187,21 +172,17 @@ export default function AdminSidebar() {
                   <ul className="space-y-0.5">
                     {visibleItems.map((item) => {
                     const active = isActive(item.href)
-                    const comingSoon = item.badge === "Coming Soon"
 
                     return (
                       <li key={item.href}>
                         <Link
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
-                          aria-disabled={comingSoon}
-                          tabIndex={comingSoon ? -1 : undefined}
                           className={cn(
                             "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-all duration-200",
                             active
                               ? "bg-white/10 text-white"
-                              : "text-white/85 hover:bg-white/[0.04] hover:text-white",
-                            comingSoon && "pointer-events-none opacity-80"
+                              : "text-white/85 hover:bg-white/[0.04] hover:text-white"
                           )}
                         >
                           {active && (
@@ -219,19 +200,6 @@ export default function AdminSidebar() {
                             {item.icon}
                           </span>
                           <span className="flex-1 truncate">{item.label}</span>
-                          {item.badge && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "h-auto shrink-0 border px-1.5 py-0 text-[10px] font-medium",
-                                comingSoon
-                                  ? "border-[#B8860B]/40 text-[#B8860B] bg-[#B8860B]/10"
-                                  : "border-white/20 text-white/80 bg-white/5"
-                              )}
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
                           {active && (
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/70" />
                           )}
