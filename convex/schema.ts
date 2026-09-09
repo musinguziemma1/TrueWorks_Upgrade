@@ -180,6 +180,8 @@ export default defineSchema({
     thumbnail: v.string(),
     downloadableFile: v.optional(v.string()),
     downloadableFileStorageId: v.optional(v.id("_storage")),
+    documentationFile: v.optional(v.string()),
+    documentationFileStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),

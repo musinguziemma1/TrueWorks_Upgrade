@@ -32,6 +32,7 @@ import {
   ClipboardList,
   KeyRound,
   RotateCcw,
+  FileUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
@@ -64,6 +65,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Dashboard", href: "/admin", icon: <LayoutDashboard className="h-4 w-4" /> },
       { label: "Products", href: "/admin/products", icon: <Package className="h-4 w-4" /> },
+      { label: "Product Import", href: "/admin/products/import", icon: <FileUp className="h-4 w-4" /> },
       { label: "Orders", href: "/admin/orders", icon: <ShoppingCart className="h-4 w-4" /> },
       { label: "Customers", href: "/admin/customers", icon: <Users className="h-4 w-4" /> },
       { label: "Downloads", href: "/admin/downloads", icon: <Download className="h-4 w-4" /> },

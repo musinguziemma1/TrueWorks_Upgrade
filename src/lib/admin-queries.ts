@@ -22,6 +22,8 @@ export interface ProductInput {
   thumbnail: string;
   downloadableFile?: string;
   downloadableFileStorageId?: Id<"_storage">;
+  documentationFile?: string;
+  documentationFileStorageId?: Id<"_storage">;
   fileSize?: string;
   version?: string;
   changelog?: string;
