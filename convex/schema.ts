@@ -369,6 +369,7 @@ export default defineSchema({
   categories: defineTable({
     name: v.string(),
     slug: v.string(),
+    code: v.optional(v.string()),
     description: v.optional(v.string()),
     industry: v.optional(v.string()),
     icon: v.optional(v.string()),

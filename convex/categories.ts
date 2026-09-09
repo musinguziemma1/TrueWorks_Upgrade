@@ -29,6 +29,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     slug: v.string(),
+    code: v.optional(v.string()),
     description: v.optional(v.string()),
     industry: v.optional(v.string()),
     icon: v.optional(v.string()),
@@ -62,6 +63,7 @@ export const update = mutation({
     id: v.id("categories"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
+    code: v.optional(v.string()),
     description: v.optional(v.string()),
     industry: v.optional(v.string()),
     icon: v.optional(v.string()),

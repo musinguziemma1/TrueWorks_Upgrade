@@ -17,48 +17,151 @@ function orderNumber(index: number): string {
 
 const categories = [
   {
-    name: "Hospital & Healthcare",
-    slug: "hospital-healthcare",
-    description: "Dashboards and trackers for hospitals, clinics, and healthcare NGOs.",
-    industry: "Healthcare",
-    icon: "Hospital",
+    code: "TW-EXE",
+    name: "Executive Management Systems",
+    slug: "executive-management-systems",
+    description: "Management dashboards, operating plans, board packs, scorecards, and decision systems.",
+    industry: "Business",
+    icon: "BriefcaseBusiness",
   },
   {
-    name: "Finance & Accounting",
-    slug: "finance-accounting",
-    description: "Financial models, budgeting templates, and accounting dashboards.",
+    code: "TW-FIN",
+    name: "Finance and Treasury Systems",
+    slug: "finance-treasury-systems",
+    description: "Budgeting, cash flow, accounting, profitability, consolidation, and finance control systems.",
     industry: "Finance",
     icon: "BarChart3",
   },
   {
-    name: "NGO & Grants",
-    slug: "ngo-grants",
-    description: "Grant tracking, donor management, and program reporting tools.",
-    industry: "Nonprofit",
-    icon: "HeartHand",
+    code: "TW-SAL",
+    name: "Sales and Customer Management Systems",
+    slug: "sales-customer-management-systems",
+    description: "Sales pipelines, customer management, retention, service, commissions, and forecasting.",
+    industry: "Business",
+    icon: "Users",
   },
   {
-    name: "Education & E-Learning",
-    slug: "education-elearning",
-    description: "Course trackers, student dashboards, and learning management tools.",
-    industry: "Education",
-    icon: "GraduationCap",
+    code: "TW-HRM",
+    name: "Human Resources and Workforce Systems",
+    slug: "human-resources-workforce-systems",
+    description: "Employee information, attendance, leave, payroll, performance, workforce planning, and HR compliance.",
+    industry: "Business",
+    icon: "UsersRound",
   },
   {
-    name: "Project Management",
-    slug: "project-management",
-    description: "Project trackers, task managers, and team collaboration dashboards.",
+    code: "TW-PRC",
+    name: "Procurement and Supplier Systems",
+    slug: "procurement-supplier-systems",
+    description: "Procurement planning, requisitions, purchasing, supplier evaluation, contracts, and savings control.",
+    industry: "Operations",
+    icon: "ShoppingCart",
+  },
+  {
+    code: "TW-INV",
+    name: "Inventory, Assets and Logistics Systems",
+    slug: "inventory-assets-logistics-systems",
+    description: "Inventory, warehouse, assets, maintenance, fleet, fuel, equipment, and logistics management.",
+    industry: "Operations",
+    icon: "Package",
+  },
+  {
+    code: "TW-PRJ",
+    name: "Project and Programme Management Systems",
+    slug: "project-programme-management-systems",
+    description: "Project planning, budgets, risks, resources, milestones, governance, and portfolio oversight.",
     industry: "Operations",
     icon: "Kanban",
   },
   {
-    name: "Sales & CRM",
-    slug: "sales-crm",
-    description: "Sales pipelines, CRM dashboards, and lead tracking templates.",
-    industry: "Sales",
-    icon: "Users",
+    code: "TW-RSK",
+    name: "Risk, Compliance and Governance Systems",
+    slug: "risk-compliance-governance-systems",
+    description: "Enterprise risk, internal controls, audits, compliance obligations, incidents, and governance actions.",
+    industry: "Governance",
+    icon: "ShieldCheck",
+  },
+  {
+    code: "TW-OPS",
+    name: "General Operations and Quality Systems",
+    slug: "operations-quality-systems",
+    description: "Standard operating procedures, service delivery, quality, capacity, incidents, and continuous improvement.",
+    industry: "Operations",
+    icon: "Settings2",
+  },
+  {
+    code: "TW-HSP",
+    name: "Hospital and Healthcare Systems",
+    slug: "hospital-healthcare-systems",
+    description: "Hospital, clinical, patient flow, revenue cycle, workforce, quality, and healthcare command systems.",
+    industry: "Healthcare",
+    icon: "Hospital",
+  },
+  {
+    code: "TW-SAC",
+    name: "SACCO, Credit and Member Systems",
+    slug: "sacco-credit-member-systems",
+    description: "Member management, savings, loans, credit risk, collections, liquidity, and SACCO governance.",
+    industry: "Financial Services",
+    icon: "Landmark",
+  },
+  {
+    code: "TW-NGO",
+    name: "NGO and Grant Management Systems",
+    slug: "ngo-grant-management-systems",
+    description: "Grant budgets, donor reporting, restricted funds, beneficiaries, programme delivery, and impact.",
+    industry: "Nonprofit",
+    icon: "HeartHandshake",
+  },
+  {
+    code: "TW-AGR",
+    name: "Agriculture and Agribusiness Systems",
+    slug: "agriculture-agribusiness-systems",
+    description: "Farm budgets, production, livestock, inputs, harvests, profitability, and agribusiness operations.",
+    industry: "Agriculture",
+    icon: "Sprout",
+  },
+  {
+    code: "TW-EDU",
+    name: "Education Management Systems",
+    slug: "education-management-systems",
+    description: "Student information, school fees, attendance, academics, teachers, budgets, and education reporting.",
+    industry: "Education",
+    icon: "GraduationCap",
+  },
+  {
+    code: "TW-PRO",
+    name: "Property and Facilities Systems",
+    slug: "property-facilities-systems",
+    description: "Rental property, tenants, rent collection, maintenance, leases, inspections, and portfolios.",
+    industry: "Property",
+    icon: "Building2",
+  },
+  {
+    code: "TW-PER",
+    name: "Personal Financial Systems",
+    slug: "personal-financial-systems",
+    description: "Personal and household budgeting, debt, savings, school fees, assets, and net worth planning.",
+    industry: "Personal Finance",
+    icon: "WalletCards",
+  },
+  {
+    code: "TW-SME",
+    name: "Small Business Operating Systems",
+    slug: "small-business-operating-systems",
+    description: "Practical operating, sales, finance, inventory, and management systems for small businesses.",
+    industry: "Small Business",
+    icon: "Store",
   },
 ];
+
+const legacyCategorySlugs: Record<string, string> = {
+  "finance-treasury-systems": "finance-accounting",
+  "hospital-healthcare-systems": "hospital-healthcare",
+  "ngo-grant-management-systems": "ngo-grants",
+  "education-management-systems": "education-elearning",
+  "project-programme-management-systems": "project-management",
+  "sales-customer-management-systems": "sales-crm",
+};
 
 const productsSeed = [
   {
@@ -69,7 +172,7 @@ const productsSeed = [
       "Track patient admissions, bed occupancy, surgery schedules, staff utilization, and financial performance in one interactive dashboard. Built for hospital administrators and department heads.",
     price: 49.99,
     salePrice: 39.99,
-    category: "Hospital & Healthcare",
+    category: "Hospital and Healthcare Systems",
     industry: "Healthcare",
     fileType: "Excel / Google Sheets",
     tags: ["dashboard", "healthcare", "kpi", "hospital"],
@@ -105,7 +208,7 @@ const productsSeed = [
       "Includes 3-statement financial models, valuation templates, cap tables, and scenario planning tools. Perfect for founders, CFOs, and financial analysts.",
     price: 79.99,
     salePrice: 59.99,
-    category: "Finance & Accounting",
+    category: "Finance and Treasury Systems",
     industry: "Finance",
     fileType: "Excel",
     tags: ["finance", "model", "startup", "valuation"],
@@ -141,7 +244,7 @@ const productsSeed = [
       "Manage your grant pipeline from application to closeout. Track deadlines, deliverables, budgets, and donor communications in a single dashboard.",
     price: 39.99,
     salePrice: undefined,
-    category: "NGO & Grants",
+    category: "NGO and Grant Management Systems",
     industry: "Nonprofit",
     fileType: "Google Sheets",
     tags: ["ngo", "grants", "donor", "reporting"],
@@ -177,7 +280,7 @@ const productsSeed = [
       "Designed for teachers and school administrators. Track attendance, assignment scores, grade trends, and parent communication logs.",
     price: 29.99,
     salePrice: 24.99,
-    category: "Education & E-Learning",
+    category: "Education Management Systems",
     industry: "Education",
     fileType: "Google Sheets",
     tags: ["education", "students", "dashboard", "grades"],
@@ -213,7 +316,7 @@ const productsSeed = [
       "A portfolio-level project tracker with Gantt-style timelines, budget vs actuals, risk registers, and resource allocation.",
     price: 44.99,
     salePrice: undefined,
-    category: "Project Management",
+    category: "Project and Programme Management Systems",
     industry: "Operations",
     fileType: "Excel",
     tags: ["project", "portfolio", "timeline", "budget"],
@@ -249,7 +352,7 @@ const productsSeed = [
       "A lightweight CRM for small sales teams. Track leads through your pipeline, forecast revenue, and log activities and follow-ups.",
     price: 34.99,
     salePrice: 29.99,
-    category: "Sales & CRM",
+    category: "Sales and Customer Management Systems",
     industry: "Sales",
     fileType: "Google Sheets",
     tags: ["sales", "crm", "pipeline", "leads"],
@@ -285,7 +388,7 @@ const productsSeed = [
       "A simple appointment scheduling template for clinics and private practices. Track appointments, patient details, and provider availability.",
     price: 24.99,
     salePrice: undefined,
-    category: "Hospital & Healthcare",
+    category: "Hospital and Healthcare Systems",
     industry: "Healthcare",
     fileType: "Google Sheets",
     tags: ["healthcare", "appointments", "clinic", "scheduler"],
@@ -321,7 +424,7 @@ const productsSeed = [
       "A monthly budget tracker with variance analysis, category breakdowns, and visual summaries. Suitable for personal and department budgets.",
     price: 19.99,
     salePrice: 14.99,
-    category: "Finance & Accounting",
+    category: "Finance and Treasury Systems",
     industry: "Finance",
     fileType: "Excel",
     tags: ["budget", "finance", "tracker", "variance"],
@@ -357,7 +460,7 @@ const productsSeed = [
       "Designed for nonprofits to manage volunteer recruitment, schedules, hours logged, and event assignments.",
     price: 29.99,
     salePrice: undefined,
-    category: "NGO & Grants",
+    category: "NGO and Grant Management Systems",
     industry: "Nonprofit",
     fileType: "Google Sheets",
     tags: ["volunteer", "ngo", "hours", "events"],
@@ -393,7 +496,7 @@ const productsSeed = [
       "An enrollment tracker for training providers and educators. Monitor student enrollments, completion rates, and certificate issuance.",
     price: 27.99,
     salePrice: 22.99,
-    category: "Education & E-Learning",
+    category: "Education Management Systems",
     industry: "Education",
     fileType: "Excel",
     tags: ["course", "enrollment", "certificates", "education"],
@@ -702,11 +805,19 @@ export const run = internalMutation({
     // Seed categories
     const categoryIds = new Map<string, Id<"categories">>();
     for (const c of categories) {
-      const existing = await ctx.db
+      let existing = await ctx.db
         .query("categories")
         .withIndex("by_slug", (q) => q.eq("slug", c.slug))
         .collect();
+      const legacySlug = legacyCategorySlugs[c.slug];
+      if (existing.length === 0 && legacySlug) {
+        existing = await ctx.db
+          .query("categories")
+          .withIndex("by_slug", (q) => q.eq("slug", legacySlug))
+          .collect();
+      }
       if (existing.length > 0) {
+        await ctx.db.patch(existing[0]._id, { ...c });
         categoryIds.set(c.slug, existing[0]._id);
       } else {
         const id = await ctx.db.insert("categories", {
@@ -719,18 +830,6 @@ export const run = internalMutation({
     }
     results.categories = categoryIds.size;
 
-    // Map category names to slugs so productCount stays accurate (e.g. "Education & E-Learning")
-    const categoryNameToSlug = new Map(categories.map((c) => [c.name, c.slug]));
-
-    // Update productCount on categories based on products we are about to insert
-    const categoryProductCounts = new Map<string, number>();
-    for (const p of productsSeed) {
-      const slug = categoryNameToSlug.get(p.category);
-      if (slug) {
-        categoryProductCounts.set(slug, (categoryProductCounts.get(slug) ?? 0) + 1);
-      }
-    }
-
     // Seed products
     const productIds = new Map<string, Id<"products">>();
     for (const p of productsSeed) {
@@ -739,6 +838,11 @@ export const run = internalMutation({
         .withIndex("by_slug", (q) => q.eq("slug", slugify(p.name)))
         .collect();
       if (existing.length > 0) {
+        await ctx.db.patch(existing[0]._id, {
+          category: p.category,
+          industry: p.industry,
+          updatedAt: now,
+        });
         productIds.set(slugify(p.name), existing[0]._id);
       } else {
         const id = await ctx.db.insert("products", {
@@ -752,12 +856,15 @@ export const run = internalMutation({
     }
     results.products = productIds.size;
 
-    // Sync category product counts
-    for (const [slug, count] of categoryProductCounts) {
-      const id = categoryIds.get(slug);
-      if (id) {
-        await ctx.db.patch(id, { productCount: count });
-      }
+    // Recalculate counts from all products, including products already in the database.
+    for (const c of categories) {
+      const id = categoryIds.get(c.slug);
+      if (!id) continue;
+      const products = await ctx.db
+        .query("products")
+        .withIndex("by_category", (q) => q.eq("category", c.name))
+        .collect();
+      await ctx.db.patch(id, { productCount: products.length });
     }
 
     // Seed customers

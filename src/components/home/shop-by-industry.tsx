@@ -14,6 +14,17 @@ import {
   TrendingUp,
   Church,
   Sprout,
+  BriefcaseBusiness,
+  UsersRound,
+  ShoppingCart,
+  Package,
+  ShieldCheck,
+  Settings2,
+  Landmark,
+  HeartHandshake,
+  Building2,
+  WalletCards,
+  Store,
   Folder,
   type LucideIcon,
 } from "lucide-react";
@@ -34,6 +45,17 @@ const iconMap: Record<string, LucideIcon> = {
   TrendingUp,
   Church,
   Sprout,
+  BriefcaseBusiness,
+  UsersRound,
+  ShoppingCart,
+  Package,
+  ShieldCheck,
+  Settings2,
+  Landmark,
+  HeartHandshake,
+  Building2,
+  WalletCards,
+  Store,
 };
 
 function getIcon(name: string): LucideIcon {
@@ -118,6 +140,11 @@ function ShopByIndustryInner() {
                     <ArrowUpRight className="h-4 w-4 text-white/30 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-[#DAA520]" />
                   </div>
                   <div>
+                    {cat.code && (
+                      <p className="mb-1 font-mono text-[10px] font-semibold tracking-[0.14em] text-[#DAA520]/80">
+                        {cat.code}
+                      </p>
+                    )}
                     <p className="font-heading text-base font-semibold text-white">
                       {cat.name}
                     </p>

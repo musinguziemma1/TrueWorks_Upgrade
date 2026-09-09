@@ -37,6 +37,7 @@ export default function CategoriesPage() {
   const [deleting, setDeleting] = useState(false)
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
+  const [code, setCode] = useState("")
   const [description, setDescription] = useState("")
   const [industry, setIndustry] = useState("")
 
@@ -55,6 +56,7 @@ export default function CategoriesPage() {
   const handleExportCsv = () => {
     const csv = toCsv(
       filtered.map((c) => ({
+        code: c.code ?? "",
         name: c.name,
         slug: c.slug,
         industry: c.industry ?? "",
@@ -76,6 +78,7 @@ export default function CategoriesPage() {
     setEditCategory(null)
     setName("")
     setSlug("")
+    setCode("")
     setDescription("")
     setIndustry("")
     setDialogOpen(true)
@@ -85,6 +88,7 @@ export default function CategoriesPage() {
     setEditCategory(cat)
     setName(cat.name)
     setSlug(cat.slug)
+    setCode(cat.code ?? "")
     setDescription(cat.description ?? "")
     setIndustry(cat.industry ?? "")
     setDialogOpen(true)
@@ -92,7 +96,7 @@ export default function CategoriesPage() {
 
   const handleSave = async () => {
     if (!name || !slug) { toast.error("Name and slug are required"); return }
-    const payload: CategoryInput = { name, slug, description: description || undefined, industry: industry || undefined }
+    const payload: CategoryInput = { name, slug, code: code || undefined, description: description || undefined, industry: industry || undefined }
     try {
       if (editCategory) {
         await update({ id: editCategory._id as never, ...payload } as never)
@@ -154,6 +158,7 @@ export default function CategoriesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Industry</TableHead>
@@ -164,6 +169,7 @@ export default function CategoriesPage() {
               <TableBody>
                 {paginated.map((cat) => (
                   <TableRow key={cat._id}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{cat.code ?? "—"}</TableCell>
                     <TableCell className="font-medium">{cat.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{cat.slug}</TableCell>
                     <TableCell><Badge variant="outline">{cat.industry ?? "—"}</Badge></TableCell>
@@ -213,6 +219,10 @@ export default function CategoriesPage() {
               <Label>Name *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Category name" />
             </div>
+              <div className="space-y-2">
+                <Label>Family code</Label>
+                <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="TW-EXE" />
+              </div>
             <div className="space-y-2">
               <Label>Slug *</Label>
               <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="category-slug" />

@@ -44,6 +44,7 @@ export interface CategoryInput {
   description?: string;
   industry?: string;
   icon?: string;
+  code?: string;
 }
 
 export interface CouponInput {
