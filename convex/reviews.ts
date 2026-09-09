@@ -9,6 +9,9 @@ import { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 
 async function recalculateProductRating(ctx: MutationCtx, productId: Id<"products">) {
+  const product = await ctx.db.get(productId);
+  if (!product) return;
+
   const approved = await ctx.db
     .query("reviews")
     .withIndex("by_productId", (q) => q.eq("productId", productId))
