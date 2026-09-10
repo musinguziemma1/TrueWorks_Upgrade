@@ -123,7 +123,7 @@ export default function LicensesPage() {
       label: "Total Keys",
       value: licenseStats?.total ?? 0,
       icon: KeyRound,
-      tint: "text-primary bg-primary/10",
+      tint: "text-primary bg-primary/5",
       footnote: "All issued licenses",
     },
     {
@@ -246,7 +246,7 @@ export default function LicensesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/5 text-primary">
               <Lock className="h-4 w-4" />
             </span>
             <CardTitle>License Records</CardTitle>
@@ -292,7 +292,7 @@ export default function LicensesPage() {
                       <TableRow key={l._id} className="group transition-colors hover:bg-muted/40">
                         <TableCell className="pl-4">
                           <div className="flex items-center gap-1.5">
-                            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">{l.key}</code>
+                            <code className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground">{l.key}</code>
                             <button
                               title="Copy key"
                               onClick={() => copyKey(l.key)}

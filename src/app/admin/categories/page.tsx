@@ -59,19 +59,19 @@ const INDUSTRIES = [
 ]
 
 const INDUSTRY_COLORS: Record<string, string> = {
-  Business: "bg-blue-50 text-blue-700 border-blue-200",
-  Technology: "bg-violet-50 text-violet-700 border-violet-200",
-  "E-commerce": "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Design: "bg-pink-50 text-pink-700 border-pink-200",
-  Marketing: "bg-orange-50 text-orange-700 border-orange-200",
-  Analytics: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  SaaS: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  Finance: "bg-amber-50 text-amber-700 border-amber-200",
-  Creative: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
-  CRM: "bg-teal-50 text-teal-700 border-teal-200",
-  "Social Media": "bg-rose-50 text-rose-700 border-rose-200",
-  HR: "bg-lime-50 text-lime-700 border-lime-200",
-  Education: "bg-sky-50 text-sky-700 border-sky-200",
+  Business: "bg-blue-50/80 text-blue-600 border-blue-100",
+  Technology: "bg-violet-50/80 text-violet-600 border-violet-100",
+  "E-commerce": "bg-emerald-50/80 text-emerald-600 border-emerald-100",
+  Design: "bg-pink-50/80 text-pink-600 border-pink-100",
+  Marketing: "bg-orange-50/80 text-orange-600 border-orange-100",
+  Analytics: "bg-cyan-50/80 text-cyan-600 border-cyan-100",
+  SaaS: "bg-indigo-50/80 text-indigo-600 border-indigo-100",
+  Finance: "bg-amber-50/80 text-amber-600 border-amber-100",
+  Creative: "bg-fuchsia-50/80 text-fuchsia-600 border-fuchsia-100",
+  CRM: "bg-teal-50/80 text-teal-600 border-teal-100",
+  "Social Media": "bg-rose-50/80 text-rose-600 border-rose-100",
+  HR: "bg-lime-50/80 text-lime-600 border-lime-100",
+  Education: "bg-sky-50/80 text-sky-600 border-sky-100",
 }
 
 export default function CategoriesPage() {
@@ -207,28 +207,28 @@ export default function CategoriesPage() {
       label: "Total Categories",
       value: stats.total,
       icon: FolderOpen,
-      tint: "text-primary bg-primary/10",
+      tint: "text-primary bg-primary/5",
       footnote: "All product categories",
     },
     {
       label: "Products Assigned",
       value: stats.totalProducts,
       icon: Package,
-      tint: "text-emerald-700 bg-emerald-50",
+      tint: "text-emerald-700 bg-emerald-50/80",
       footnote: "Across all categories",
     },
     {
       label: "Industries",
       value: stats.industries,
       icon: Globe,
-      tint: "text-secondary bg-secondary/10",
+      tint: "text-secondary bg-secondary/5",
       footnote: "Industry segments",
     },
     {
       label: "Active Categories",
       value: stats.withProducts,
       icon: Layers,
-      tint: "text-amber-700 bg-amber-50",
+      tint: "text-amber-700 bg-amber-50/80",
       footnote: "Categories with products",
     },
   ]
@@ -357,7 +357,7 @@ export default function CategoriesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/5 text-primary">
               <Tags className="h-4 w-4" />
             </span>
             <CardTitle>Categories</CardTitle>
@@ -406,7 +406,7 @@ export default function CategoriesPage() {
                     return (
                       <TableRow key={cat._id} className="group transition-colors hover:bg-muted/40">
                         <TableCell className="pl-4">
-                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+                          <code className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground">
                             {cat.code ?? "—"}
                           </code>
                         </TableCell>
@@ -442,8 +442,8 @@ export default function CategoriesPage() {
                             className={cn(
                               "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
                               productCount > 0
-                                ? "bg-primary/10 text-primary"
-                                : "bg-muted text-muted-foreground"
+                                ? "bg-primary/5 text-primary"
+                                : "bg-muted/50 text-muted-foreground"
                             )}
                           >
                             {productCount}
