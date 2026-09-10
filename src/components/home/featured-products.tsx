@@ -28,10 +28,10 @@ function FeaturedProductsInner() {
 
   if (products === undefined) {
     return (
-      <section className="relative overflow-hidden bg-surface py-20 lg:py-24">
+      <section className="relative overflow-hidden bg-surface py-12 lg:py-16">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.08),transparent)]" />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </div>
@@ -40,7 +40,7 @@ function FeaturedProductsInner() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-surface py-20 lg:py-24">
+    <section className="relative overflow-hidden bg-surface py-12 lg:py-16">
       {/* Subtle background decoration */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.08),transparent)]" />
       <div className="absolute -right-32 top-0 h-64 w-64 rounded-full bg-accent/5 blur-3xl" />
@@ -80,7 +80,7 @@ function FeaturedProductsInner() {
         </motion.div>
 
         {/* Product Grid - max 2 rows (6 cards on 3-col, 4 on 2-col) */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: "1fr" }}>
           {featured.map((product, i) => (
             <motion.div
               key={product._id}
@@ -89,11 +89,9 @@ function FeaturedProductsInner() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
-              className="flex"
+              className="h-full"
             >
-              <div className="flex w-full">
-                <ProductCard product={product} />
-              </div>
+              <ProductCard product={product} className="h-full" />
             </motion.div>
           ))}
         </div>
