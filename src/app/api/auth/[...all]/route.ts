@@ -120,7 +120,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (pathname === "/google") {
-    const redirect = url.searchParams.get("redirect") ?? "/account";
+    const redirectPath = url.searchParams.get("redirect") ?? "/account";
+    // Convert relative redirect to absolute so the IAM redirects back to the
+    // correct domain after Google auth (not to the Convex site).
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || url.origin;
+    const redirect = redirectPath.startsWith("http")
+      ? redirectPath
+      : new URL(redirectPath, siteUrl).toString();
     const res = await fetch(`${getIamBase()}/oauth/google?redirect=${encodeURIComponent(redirect)}`, {
       method: "GET",
       redirect: "manual",
