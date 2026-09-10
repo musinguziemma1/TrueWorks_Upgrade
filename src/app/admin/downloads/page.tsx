@@ -12,7 +12,6 @@ import {
   Loader2,
   FileSpreadsheet,
   CheckCircle2,
-  XCircle,
   Activity,
   X,
   ArrowRight,
@@ -27,7 +26,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { downloadCsv, toCsv } from "@/lib/csv"
 import { useDebouncedValue } from "@/lib/use-debounced-value"

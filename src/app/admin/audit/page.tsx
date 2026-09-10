@@ -8,7 +8,6 @@ import {
   Radio,
   Zap,
   ArrowRight,
-  Shield,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useQuery } from "convex/react"

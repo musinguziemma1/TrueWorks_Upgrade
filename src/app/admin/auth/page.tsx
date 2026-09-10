@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   RefreshCw,
   ArrowRight,
-  BarChart3,
   Ban,
 } from "lucide-react"
 import {

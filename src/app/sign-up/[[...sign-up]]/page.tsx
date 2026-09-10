@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { GoogleIcon } from "@/components/brand/google-icon";
 import { AuthLayout } from "@/components/auth/auth-layout";
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +29,7 @@ export default function SignUpPage() {
     const data = await res.json();
 
     if (res.ok) {
-      window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } else {
       setError(data.error || "Registration failed");
     }
