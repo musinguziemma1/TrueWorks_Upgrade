@@ -1,14 +1,14 @@
 "use client"
 
-import { MailPlus, Trash2 } from "lucide-react"
+import { MailPlus, Trash2, Users, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDate, formatTimeAgo } from "../lib/format"
 import type { Subscriber } from "../types"
+import { cn } from "@/lib/utils"
 
 function initials(email: string, name?: string): string {
   const source = name?.trim() || email.trim()
@@ -44,9 +44,17 @@ export function SubscribersTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscribers</CardTitle>
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/5 text-primary">
+            <Users className="h-4 w-4" />
+          </span>
+          <CardTitle>Subscribers</CardTitle>
+        </div>
         <CardAction>
-          <span className="text-sm text-muted-foreground">{total.toLocaleString()} total</span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <BarChart3 className="h-3.5 w-3.5" />
+            {total.toLocaleString()} total
+          </span>
         </CardAction>
       </CardHeader>
       <CardContent className="p-0">
@@ -63,60 +71,79 @@ export function SubscribersTable({
             description="Subscribers appear here when people join your newsletter."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Subscriber</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Subscribed</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {subscribers.map((s) => (
-                <TableRow key={s._id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                        {initials(s.email, s.name)}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{s.name || s.email}</p>
-                        {s.name && <p className="truncate text-xs text-muted-foreground">{s.email}</p>}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{s.source || "—"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        s.active
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : "border-border bg-secondary text-secondary-foreground"
-                      }
-                    >
-                      {s.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="whitespace-nowrap text-xs text-muted-foreground"
-                    title={formatDate(s.createdAt)}
-                  >
-                    {formatTimeAgo(s.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <Button variant="ghost" size="icon-sm" className="text-destructive" title="Remove" onClick={() => onRemove(s)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-4 text-primary">Subscriber</TableHead>
+                  <TableHead className="text-primary">Source</TableHead>
+                  <TableHead className="text-primary">Status</TableHead>
+                  <TableHead className="text-primary">Subscribed</TableHead>
+                  <TableHead className="w-16 text-right text-primary">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {subscribers.map((s) => (
+                  <TableRow
+                    key={s._id}
+                    className="group transition-colors hover:bg-muted/40"
+                  >
+                    <TableCell className="pl-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/5 text-[11px] font-semibold text-primary">
+                          {initials(s.email, s.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">
+                            {s.name || s.email}
+                          </p>
+                          {s.name && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {s.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {s.source || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                          s.active
+                            ? "bg-emerald-50/80 text-emerald-600"
+                            : "bg-muted/50 text-muted-foreground"
+                        )}
+                      >
+                        {s.active ? "Active" : "Inactive"}
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      className="whitespace-nowrap text-xs text-muted-foreground"
+                      title={formatDate(s.createdAt)}
+                    >
+                      {formatTimeAgo(s.createdAt)}
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          title="Remove"
+                          onClick={() => onRemove(s)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
 
@@ -138,7 +165,12 @@ export function SubscribersTable({
               ))}
             </select>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+              >
                 Previous
               </Button>
               <Button

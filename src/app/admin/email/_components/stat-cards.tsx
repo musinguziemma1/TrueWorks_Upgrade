@@ -6,6 +6,7 @@ import { CountUp } from "@/components/ui/count-up"
 import { Skeleton } from "@/components/ui/skeleton"
 import { rateColor } from "../lib/format"
 import type { CampaignsStats } from "../types"
+import { cn } from "@/lib/utils"
 
 export function StatCards({ stats, loading }: { stats?: CampaignsStats; loading: boolean }) {
   if (loading) {
@@ -37,25 +38,25 @@ export function StatCards({ stats, loading }: { stats?: CampaignsStats; loading:
       label: "Subscribers",
       value: stats?.subscribers ?? 0,
       sub: "all-time signups",
-      icon: <Users className="h-5 w-5 text-primary" />,
-      iconBg: "bg-primary/10",
-      valueClass: "text-primary",
+      icon: <Users className="h-4 w-4" />,
+      iconBg: "text-primary bg-primary/5",
+      valueClass: "text-foreground",
     },
     {
       label: "Active",
       value: stats?.activeSubscribers ?? 0,
       sub: `${stats?.subscribers && stats.subscribers > 0 ? Math.round((stats.activeSubscribers / stats.subscribers) * 100) : 0}% of list`,
-      icon: <MailCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
-      iconBg: "bg-emerald-500/10",
-      valueClass: "text-emerald-600 dark:text-emerald-400",
+      icon: <MailCheck className="h-4 w-4" />,
+      iconBg: "text-emerald-600 bg-emerald-50/80",
+      valueClass: "text-foreground",
     },
     {
       label: "Campaigns Sent",
       value: stats?.sent ?? 0,
       sub: `${(stats?.totalSent ?? 0).toLocaleString()} total recipients`,
-      icon: <Send className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
-      iconBg: "bg-blue-500/10",
-      valueClass: "text-blue-600 dark:text-blue-400",
+      icon: <Send className="h-4 w-4" />,
+      iconBg: "text-blue-600 bg-blue-50/80",
+      valueClass: "text-foreground",
     },
     {
       label: "Open Rate",
@@ -63,8 +64,8 @@ export function StatCards({ stats, loading }: { stats?: CampaignsStats; loading:
       suffix: "%",
       decimals: 1,
       sub: `${(stats?.totalOpened ?? 0).toLocaleString()} opens`,
-      icon: <MailCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
-      iconBg: "bg-amber-500/10",
+      icon: <MailCheck className="h-4 w-4" />,
+      iconBg: "text-amber-600 bg-amber-50/80",
       valueClass: rateColor(openRate),
     },
     {
@@ -73,17 +74,17 @@ export function StatCards({ stats, loading }: { stats?: CampaignsStats; loading:
       suffix: "%",
       decimals: 1,
       sub: `${(stats?.totalClicked ?? 0).toLocaleString()} clicks`,
-      icon: <MousePointerClick className="h-5 w-5 text-violet-600 dark:text-violet-400" />,
-      iconBg: "bg-violet-500/10",
+      icon: <MousePointerClick className="h-4 w-4" />,
+      iconBg: "text-violet-600 bg-violet-50/80",
       valueClass: rateColor(clickRate),
     },
     {
       label: "Scheduled",
       value: stats?.scheduled ?? 0,
       sub: `${(stats?.draft ?? 0).toLocaleString()} drafts · ${(stats?.sending ?? 0).toLocaleString()} sending`,
-      icon: <CalendarClock className="h-5 w-5 text-muted-foreground" />,
-      iconBg: "bg-muted",
-      valueClass: "text-muted-foreground",
+      icon: <CalendarClock className="h-4 w-4" />,
+      iconBg: "text-muted-foreground bg-muted/50",
+      valueClass: "text-foreground",
     },
   ]
 
@@ -91,22 +92,31 @@ export function StatCards({ stats, loading }: { stats?: CampaignsStats; loading:
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
       {items.map((item) => (
         <Card key={item.label}>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted">{item.label}</p>
-                <p className={`mt-1 font-heading text-xl font-bold ${item.valueClass}`}>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className={cn("mt-1.5 font-heading text-xl font-bold tabular-nums", item.valueClass)}>
                   <CountUp
                     end={item.value}
                     suffix={item.suffix ?? ""}
                     decimals={item.decimals ?? 0}
                   />
                 </p>
-                {item.sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{item.sub}</p>}
+                {item.sub && (
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">{item.sub}</p>
+                )}
               </div>
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.iconBg}`}>
+              <span
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                  item.iconBg
+                )}
+              >
                 {item.icon}
-              </div>
+              </span>
             </div>
           </CardContent>
         </Card>
