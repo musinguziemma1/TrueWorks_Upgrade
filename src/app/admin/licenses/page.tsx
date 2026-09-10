@@ -8,14 +8,19 @@ import {
   KeyRound,
   Copy,
   Check,
-  FileSpreadsheet,
   ShieldAlert,
   RotateCcw,
   Activity,
   Loader2,
   Plus,
+  Search,
+  X,
+  BarChart3,
+  FileSpreadsheet,
+  Zap,
+  Lock,
+  ArrowRight,
 } from "lucide-react"
-import { AdminPageHeader } from "@/components/layout/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -25,7 +30,6 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { StatCard } from "@/components/admin/stat-card"
 import { downloadCsv, toCsv } from "@/lib/csv"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 import { cn } from "@/lib/utils"
@@ -39,10 +43,17 @@ const FILTERS = [
 
 type Filter = (typeof FILTERS)[number]["key"]
 
-function activationTone(pct: number) {
-  if (pct >= 100) return "bg-red-500"
-  if (pct >= 80) return "bg-amber-500"
-  return "bg-emerald-500"
+function activationColor(pct: number) {
+  if (pct >= 100) return { bar: "bg-red-500", text: "text-red-700", bg: "bg-red-50" }
+  if (pct >= 80) return { bar: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-50" }
+  return { bar: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-50" }
+}
+
+function activationLabel(pct: number) {
+  if (pct >= 100) return "Full"
+  if (pct >= 80) return "High"
+  if (pct > 0) return "Normal"
+  return "Unused"
 }
 
 export default function LicensesPage() {
@@ -107,35 +118,107 @@ export default function LicensesPage() {
 
   const isLoading = licenses === undefined
 
+  const stats = [
+    {
+      label: "Total Keys",
+      value: licenseStats?.total ?? 0,
+      icon: KeyRound,
+      tint: "text-primary bg-primary/10",
+      footnote: "All issued licenses",
+    },
+    {
+      label: "Active",
+      value: licenseStats?.active ?? 0,
+      icon: Zap,
+      tint: "text-emerald-700 bg-emerald-50",
+      footnote: "Currently valid keys",
+    },
+    {
+      label: "Revoked",
+      value: licenseStats?.revoked ?? 0,
+      icon: ShieldAlert,
+      tint: "text-red-700 bg-red-50",
+      footnote: "Invalidated keys",
+    },
+    {
+      label: "Activations",
+      value: `${licenseStats?.activations ?? 0}/${licenseStats?.capacity ?? 0}`,
+      icon: Activity,
+      tint: "text-secondary bg-secondary/10",
+      footnote: "Seats used across all keys",
+    },
+  ]
+
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Licenses"
-        description="Manage issued license keys across your digital products"
-        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Licenses" }]}
-        action={
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071A33] via-[#0B2545] to-[#0F3058] px-6 py-8 lg:px-8 lg:py-10">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-rule='evenodd'%3E%3Ccircle cx='1' cy='1' r='1'/%3E%3C/g%3E%3C/svg%3E\")" }} />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <nav className="mb-2 flex items-center gap-1.5 text-xs text-white/50">
+              <a href="/admin" className="transition-colors hover:text-white/80">Dashboard</a>
+              <ArrowRight className="h-3 w-3" />
+              <span className="text-white/70">Licenses</span>
+            </nav>
+            <h1 className="font-heading text-2xl font-bold text-white sm:text-3xl">License Keys</h1>
+            <p className="mt-1 text-sm text-white/60">Manage issued license keys across your digital products</p>
+          </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={licenses?.length === 0}>
+            <Button variant="outline" size="sm" className="border-white/20 bg-white/5 text-white hover:bg-white/10" onClick={handleExportCsv} disabled={licenses?.length === 0}>
               <FileSpreadsheet className="h-4 w-4" /> Export CSV
             </Button>
-            <Button size="sm" onClick={() => setIssueDialogOpen(true)}>
+            <Button size="sm" className="bg-accent text-primary-dark hover:bg-accent/90" onClick={() => setIssueDialogOpen(true)}>
               <Plus className="h-4 w-4" /> Issue License
             </Button>
           </div>
-        }
-      />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Total Keys" value={licenseStats?.total ?? 0} icon={KeyRound} tint="text-primary bg-primary/10" loading={isLoading} />
-        <StatCard label="Active" value={licenseStats?.active ?? 0} icon={Activity} tint="text-emerald-700 bg-emerald-50" loading={isLoading} />
-        <StatCard label="Revoked" value={licenseStats?.revoked ?? 0} icon={ShieldAlert} tint="text-red-700 bg-red-50" loading={isLoading} />
-        <StatCard label="Activations" value={`${licenseStats?.activations ?? 0}/${licenseStats?.capacity ?? 0}`} icon={RotateCcw} tint="text-secondary bg-secondary/10" footnote="Seats used / capacity" loading={isLoading} />
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium text-muted-foreground">{s.label}</p>
+                <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", s.tint)}>
+                  <s.icon className="h-4 w-4" />
+                </span>
+              </div>
+              <p className="mt-3 text-2xl font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
+                {isLoading ? (
+                  <span className="inline-block h-8 w-20 animate-pulse rounded bg-muted" />
+                ) : (
+                  s.value
+                )}
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">{s.footnote}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-white p-3 shadow-card sm:flex-row sm:items-center sm:flex-wrap lg:flex-nowrap">
         <div className="relative flex-1 min-w-[200px]">
-          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by key, product or email..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pl-10" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by key, product or email..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-10 pl-10 pr-9"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-0.5">
           {FILTERS.map((f) => (
@@ -149,15 +232,28 @@ export default function LicensesPage() {
               )}
             >
               {f.label}
+              {f.key !== "all" && licenseStats && (
+                <span className="ml-1.5 text-[10px] opacity-70">
+                  {f.key === "active" ? licenseStats.active : licenseStats.revoked}
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
-<Card>
+
+      {/* Table */}
+      <Card>
         <CardHeader>
-          <CardTitle>License Records</CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Lock className="h-4 w-4" />
+            </span>
+            <CardTitle>License Records</CardTitle>
+          </div>
           <CardAction>
-            <span className="text-sm text-muted-foreground hidden sm:inline-block">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <BarChart3 className="h-3.5 w-3.5" />
               {filtered.length} {filter === "all" ? "records" : `${filter} keys`}
             </span>
           </CardAction>
@@ -178,48 +274,76 @@ export default function LicensesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-primary">Key</TableHead>
+                    <TableHead className="pl-4 text-primary">Key</TableHead>
                     <TableHead className="text-primary">Product</TableHead>
                     <TableHead className="text-primary">Customer</TableHead>
                     <TableHead className="text-primary">Activations</TableHead>
                     <TableHead className="text-primary">Issued</TableHead>
                     <TableHead className="text-center text-primary">Status</TableHead>
-                    <TableHead className="text-right text-primary">Actions</TableHead>
+                    <TableHead className="w-10 pr-4 text-right text-primary">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((l) => {
                     const pct = l.maxActivations ? Math.round((l.activations / l.maxActivations) * 100) : 0
+                    const color = activationColor(pct)
+                    const label = activationLabel(pct)
                     return (
-                      <TableRow key={l._id} className="transition-colors hover:bg-muted/40">
-                        <TableCell className="font-mono text-xs">
-                          <span className="inline-flex items-center gap-1">
-                            {l.key}
-                            <Button variant="ghost" size="icon-xs" title="Copy key" onClick={() => copyKey(l.key)}>
-                              {copiedKey === l.key ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                            </Button>
-                          </span>
+                      <TableRow key={l._id} className="group transition-colors hover:bg-muted/40">
+                        <TableCell className="pl-4">
+                          <div className="flex items-center gap-1.5">
+                            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">{l.key}</code>
+                            <button
+                              title="Copy key"
+                              onClick={() => copyKey(l.key)}
+                              className="rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:text-foreground group-hover:opacity-100"
+                            >
+                              {copiedKey === l.key ? (
+                                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
                         </TableCell>
-                        <TableCell className="font-medium">{l.productName}</TableCell>
-                        <TableCell>{l.email}</TableCell>
+                        <TableCell>
+                          <span className="font-medium text-foreground">{l.productName}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{l.email}</span>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
                               <div
-                                className={cn("h-full rounded-full transition-all", activationTone(pct))}
+                                className={cn("h-full rounded-full transition-all", color.bar)}
                                 style={{ width: `${Math.min(100, pct)}%` }}
                               />
                             </div>
-                            <span className="text-xs text-muted-foreground tabular-nums">{l.activations}/{l.maxActivations}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                {l.activations}/{l.maxActivations}
+                              </span>
+                              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-medium", color.bg, color.text)}>
+                                {label}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{new Date(l.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-center"><StatusBadge status={l.status} /></TableCell>
                         <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(l.createdAt).toLocaleDateString()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <StatusBadge status={l.status} />
+                        </TableCell>
+                        <TableCell className="pr-4">
                           <div className="flex items-center justify-end">
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
                               title={l.status === "revoked" ? "Restore license" : "Revoke license"}
                               onClick={() => setConfirmId(l._id)}
                               disabled={toggling === l._id}
@@ -244,6 +368,7 @@ export default function LicensesPage() {
         </CardContent>
       </Card>
 
+      {/* Confirm Dialog */}
       <ConfirmDialog
         open={!!confirmId}
         onOpenChange={(open) => { if (!open) setConfirmId(null) }}
@@ -256,6 +381,7 @@ export default function LicensesPage() {
         onConfirm={handleRevokeToggle}
       />
 
+      {/* Issue License Dialog */}
       <IssueLicenseDialog
         open={issueDialogOpen}
         onOpenChange={setIssueDialogOpen}
