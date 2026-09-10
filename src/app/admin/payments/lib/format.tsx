@@ -188,16 +188,16 @@ export function statTone(
 ): string {
   switch (intent) {
     case "revenue":
-      return "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10"
+      return "text-emerald-600 bg-emerald-50/80"
     case "success":
-      return "text-primary bg-primary/10"
+      return "text-primary bg-primary/5"
     case "pending":
-      return "text-amber-700 dark:text-amber-400 bg-amber-500/10"
+      return "text-amber-600 bg-amber-50/80"
     case "failed":
-      return "text-red-700 dark:text-red-400 bg-red-500/10"
+      return "text-red-600 bg-red-50/80"
     case "refund":
-      return "text-muted-foreground bg-muted"
+      return "text-muted-foreground bg-muted/50"
     default:
-      return "text-primary bg-primary/10"
+      return "text-primary bg-primary/5"
   }
 }
