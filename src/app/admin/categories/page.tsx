@@ -59,19 +59,19 @@ const INDUSTRIES = [
 ]
 
 const INDUSTRY_COLORS: Record<string, string> = {
-  Business: "bg-blue-50/80 text-blue-600 border-blue-100",
-  Technology: "bg-violet-50/80 text-violet-600 border-violet-100",
-  "E-commerce": "bg-emerald-50/80 text-emerald-600 border-emerald-100",
-  Design: "bg-pink-50/80 text-pink-600 border-pink-100",
-  Marketing: "bg-orange-50/80 text-orange-600 border-orange-100",
-  Analytics: "bg-cyan-50/80 text-cyan-600 border-cyan-100",
-  SaaS: "bg-indigo-50/80 text-indigo-600 border-indigo-100",
-  Finance: "bg-amber-50/80 text-amber-600 border-amber-100",
-  Creative: "bg-fuchsia-50/80 text-fuchsia-600 border-fuchsia-100",
-  CRM: "bg-teal-50/80 text-teal-600 border-teal-100",
-  "Social Media": "bg-rose-50/80 text-rose-600 border-rose-100",
-  HR: "bg-lime-50/80 text-lime-600 border-lime-100",
-  Education: "bg-sky-50/80 text-sky-600 border-sky-100",
+  Business: "text-blue-600",
+  Technology: "text-violet-600",
+  "E-commerce": "text-emerald-600",
+  Design: "text-pink-600",
+  Marketing: "text-orange-600",
+  Analytics: "text-cyan-600",
+  SaaS: "text-indigo-600",
+  Finance: "text-amber-600",
+  Creative: "text-fuchsia-600",
+  CRM: "text-teal-600",
+  "Social Media": "text-rose-600",
+  HR: "text-lime-600",
+  Education: "text-sky-600",
 }
 
 export default function CategoriesPage() {
@@ -401,7 +401,7 @@ export default function CategoriesPage() {
                   {paginated.map((cat) => {
                     const productCount = cat.productCount ?? 0
                     const industryColor = cat.industry
-                      ? INDUSTRY_COLORS[cat.industry] ?? "bg-muted text-muted-foreground border-border"
+                      ? INDUSTRY_COLORS[cat.industry] ?? "text-muted-foreground"
                       : null
                     return (
                       <TableRow key={cat._id} className="group transition-colors hover:bg-muted/40">
@@ -427,12 +427,9 @@ export default function CategoriesPage() {
                         </TableCell>
                         <TableCell>
                           {cat.industry ? (
-                            <Badge
-                              variant="outline"
-                              className={cn("font-medium", industryColor)}
-                            >
+                            <span className={cn("text-sm font-medium", industryColor)}>
                               {cat.industry}
-                            </Badge>
+                            </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
