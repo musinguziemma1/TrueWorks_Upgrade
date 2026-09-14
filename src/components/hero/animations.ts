@@ -1,33 +1,6 @@
 import { Variants } from 'framer-motion';
-import type { SlideData } from './data';
 
-export const heroThemes: SlideData['theme'][] = [
-  'healthcare',
-  'nonprofit',
-  'education',
-  'business',
-  'faith',
-];
-
-// Per-slide cinematic grade: deep base -> theme glow -> vignette.
-// All themes are rendered stacked and crossfaded so the mood shifts
-// smoothly instead of snapping (CSS cannot animate background-image).
-export const themeGrade: Record<SlideData['theme'], string> = {
-  healthcare: 'from-[#041824] via-[#06283A] to-[#04101F]',
-  nonprofit: 'from-[#06182E] via-[#0A2A4A] to-[#04101F]',
-  education: 'from-[#1A1405] via-[#2A2110] to-[#04101F]',
-  business: 'from-[#120D2B] via-[#1C1440] to-[#04101F]',
-  faith: 'from-[#2A0F1E] via-[#3F1526] to-[#04101F]',
-};
-
-export const themeGlowHex: Record<SlideData['theme'], string> = {
-  healthcare: '#10B981',
-  nonprofit: '#38BDF8',
-  education: '#DAA520',
-  business: '#A78BFA',
-  faith: '#FB7185',
-};
-
+// Smooth easing functions for premium feel
 export const easeInOutQuart: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
 export const easeOutExpo: [number, number, number, number] = [0.16, 1, 0.3, 1];
 export const easeInOutExpo: [number, number, number, number] = [0.87, 0, 0.13, 1];
@@ -130,45 +103,42 @@ export const featureIconHover: Variants = {
   }
 };
 
-// Slide animations — quick crossfade with a gentle rise (no zoom loop,
-// so the product frame feels stable and premium).
+// Slide animations
 export const slideTransition: Variants = {
-  hidden: {
+  hidden: { 
     opacity: 0,
-    y: 24,
+    scale: 1.1
   },
-  visible: {
+  visible: { 
     opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.9,
-      ease: easeInOutExpo,
-    },
+    scale: 1,
+    transition: { 
+      duration: 1.2, 
+      ease: easeInOutExpo
+    }
   },
-  exit: {
+  exit: { 
     opacity: 0,
-    y: -16,
-    transition: {
-      duration: 0.5,
-      ease: easeInOutQuart,
-    },
-  },
+    scale: 0.95,
+    transition: { 
+      duration: 0.8, 
+      ease: easeInOutQuart
+    }
+  }
 };
 
-// Gentle settle for the product frame (replaces the aggressive Ken Burns zoom)
+// Ken Burns effect for images
 export const kenBurnsEffect: Variants = {
-  initial: {
-    scale: 1.02,
-    y: 12,
+  initial: { 
+    scale: 1 
   },
-  animate: {
-    scale: 1,
-    y: 0,
-    transition: {
-      duration: 1.1,
-      ease: easeOutExpo,
-    },
-  },
+  animate: { 
+    scale: 1.1,
+    transition: { 
+      duration: 20, 
+      ease: 'linear'
+    }
+  }
 };
 
 // Floating KPI cards
@@ -212,19 +182,19 @@ export const floatingParticle = (delay: number, duration: number) => ({
   }
 });
 
-// Progress bar animation — duration is driven by the slider autoplay interval.
-export const progressFill = (duration = 8): Variants => ({
-  hidden: {
-    width: '0%'
+// Progress bar animation
+export const progressFill: Variants = {
+  hidden: { 
+    width: '0%' 
   },
-  visible: {
+  visible: { 
     width: '100%',
-    transition: {
-      duration,
+    transition: { 
+      duration: 8, 
       ease: 'linear'
     }
   }
-});
+};
 
 // Dashboard module animations
 export const moduleSlideIn = (index: number): Variants => ({

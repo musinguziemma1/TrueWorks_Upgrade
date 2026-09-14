@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Activity, ArrowUpRight, CheckCircle2, Minus, TrendingUp } from 'lucide-react';
+import { Activity, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { heroSlides, featureIcons, SlideData } from './data';
 import { textSlideUp, textFadeIn, staggerChildren } from './animations';
 import HeroButtons from './HeroButtons';
@@ -13,15 +13,8 @@ interface HeroContentProps {
   onDemoClick?: () => void;
 }
 
-function TrendGlyph({ trend }: { trend: SlideData['kpis'][number]['trend'] }) {
-  if (trend === 'neutral') return <Minus className="h-3 w-3" aria-hidden="true" />;
-  return <TrendingUp className="h-3 w-3" aria-hidden="true" />;
-}
-
 export default function HeroContent({ slide, onExploreClick, onDemoClick }: HeroContentProps) {
-  const slideIndex = heroSlides.findIndex(({ id }) => id === slide.id) + 1;
-  const slideNumber = String(slideIndex).padStart(2, '0');
-  const totalSlides = String(heroSlides.length).padStart(2, '0');
+  const slideNumber = heroSlides.findIndex(({ id }) => id === slide.id) + 1;
   const iconComponents = { Target, BarChart3, Brain, Zap } as const;
 
   return (
@@ -34,22 +27,22 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
       <div className="max-w-2xl">
         <motion.div className="mb-7 flex items-center justify-between gap-4" variants={textFadeIn}>
           <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#DAA520]">
-            <span className="h-px w-8 bg-[#DAA520]" aria-hidden="true" />
-            <span>TrueWorks / {slide.eyebrow}</span>
+            <span className="h-px w-8 bg-[#DAA520]" />
+            <span>TrueWorks / {slide.theme}</span>
           </div>
           <span className="font-mono text-xs tracking-[0.2em] text-white/40">
-            {slideNumber} / {totalSlides}
+            0{slideNumber} / 0{heroSlides.length}
           </span>
         </motion.div>
 
         <motion.div className="mb-6 max-w-xl" variants={textSlideUp}>
           <p className="mb-4 flex items-center gap-2 text-sm font-medium text-white/55">
-            <Activity className="h-4 w-4 text-[#DAA520]" aria-hidden="true" />
-            Premium Excel templates &amp; dashboards
+            <Activity className="h-4 w-4 text-[#DAA520]" />
+            Premium Excel templates & dashboards
           </p>
           <h1 className="font-heading text-5xl font-bold leading-[0.98] tracking-tight text-white sm:text-6xl xl:text-7xl">
             <span className="block">{slide.title}</span>
-            <span className="text-gradient-gold block">{slide.subtitle}</span>
+            <span className="block text-[#DAA520]">{slide.subtitle}</span>
           </h1>
         </motion.div>
 
@@ -67,11 +60,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
           />
         </motion.div>
 
-        <motion.div
-          className="border-y border-white/10 transition-colors duration-700"
-          variants={textFadeIn}
-          style={{ borderTopColor: `${slide.accent}33` }}
-        >
+        <motion.div className="border-y border-white/10" variants={textFadeIn}>
           <div className="grid grid-cols-2 divide-x divide-white/10">
             {slide.kpis.slice(0, 2).map((kpi) => (
               <div key={kpi.label} className="py-4 pr-5 first:pl-0 last:pl-5">
@@ -80,11 +69,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                 </p>
                 <div className="flex items-end gap-2">
                   <span className="font-heading text-2xl font-semibold text-white">{kpi.value}</span>
-                  <span
-                    className="mb-1 flex items-center gap-1 text-xs font-semibold"
-                    style={{ color: kpi.color }}
-                  >
-                    <TrendGlyph trend={kpi.trend} />
+                  <span className="mb-1 text-xs font-semibold" style={{ color: kpi.color }}>
                     {kpi.change}
                   </span>
                 </div>
@@ -95,13 +80,13 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 py-3 text-xs text-white/55">
             {slide.modules.slice(0, 2).map((module) => (
               <span key={module.name} className="flex items-center gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[#DAA520]" aria-hidden="true" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-[#DAA520]" />
                 {module.name}
               </span>
             ))}
             <span className="ml-auto hidden items-center gap-1.5 text-white/35 sm:flex">
               View capability
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </span>
           </div>
         </motion.div>
@@ -116,10 +101,10 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
             return (
               <motion.div
                 key={feature.name}
-                className="group rounded-xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#DAA520]/45 hover:bg-white/[0.09] hover:shadow-[0_10px_30px_-10px_rgba(218,165,32,0.45)]"
+                className="group rounded-xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                 variants={textFadeIn}
               >
-                <IconComponent className="mb-2 h-4 w-4 text-[#DAA520]" aria-hidden="true" />
+                <IconComponent className="mb-2 h-4 w-4 text-[#DAA520]" />
                 <p className="mb-1 text-xs font-semibold text-white">{feature.name}</p>
                 <p className="hidden text-[10px] leading-4 text-white/55 sm:block">{feature.description}</p>
               </motion.div>
