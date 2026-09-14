@@ -28,36 +28,43 @@ interface TestimonialItem {
   title: string;
   organization: string;
   rating: number;
+  verified: boolean;
 }
 
+// Illustrative placeholders shown only when no approved, featured
+// customer reviews exist yet. Never marked as verified.
 const fallbackTestimonials: TestimonialItem[] = [
   {
-    quote: "TrueWorks transformed our financial reporting. The hospital dashboard gives us real-time visibility into KPIs we never had before.",
-    name: "Dr. Emmanuel Kato",
-    title: "Chief Administrator",
-    organization: "Kampala Medical Centre",
+    quote: "The hospital dashboard gives us visibility into KPIs we never had before — bed occupancy, revenue per bed and collections at a glance.",
+    name: "Hospital Administrator",
+    title: "Healthcare",
+    organization: "Example use-case",
     rating: 5,
+    verified: false,
   },
   {
-    quote: "As a growing NGO, the grant tracker was exactly what we needed. Donor reporting went from days to minutes. Exceptional quality.",
-    name: "Grace Akello",
-    title: "Finance Director",
-    organization: "Global NGO Alliance",
+    quote: "Donor reporting went from days to minutes once every grant, deliverable and deadline lived in one tracker.",
+    name: "Programme Manager",
+    title: "NGO",
+    organization: "Example use-case",
     rating: 5,
+    verified: false,
   },
   {
-    quote: "The school fee management system streamlined our entire billing process. We reduced arrears by 40% in the first term alone.",
-    name: "Peter Mwangi",
-    title: "School Bursar",
-    organization: "Nairobi Preparatory School",
+    quote: "Fee collection and arrears are finally in one workbook — balances are clear and follow-ups take minutes.",
+    name: "School Bursar",
+    title: "Education",
+    organization: "Example use-case",
     rating: 5,
+    verified: false,
   },
   {
-    quote: "We use the cash flow model across our entire SME portfolio. It's robust, flexible, and the investor-ready charts are a game-changer.",
-    name: "Sarah Nabatanzi",
-    title: "Business Consultant",
-    organization: "Uganda SME Hub",
-    rating: 4,
+    quote: "The 12-month cash-flow planner is robust and flexible — the investor-ready charts save us hours every month.",
+    name: "Business Owner",
+    title: "SME",
+    organization: "Example use-case",
+    rating: 5,
+    verified: false,
   },
 ];
 
@@ -82,6 +89,7 @@ export default function Testimonials() {
       title: r.title ?? "Customer",
       organization: "",
       rating: r.rating,
+      verified: true,
     }));
 
   const testimonials = dbTestimonials.length > 0 ? dbTestimonials : fallbackTestimonials;
@@ -122,6 +130,8 @@ export default function Testimonials() {
             className="relative overflow-hidden rounded-2xl border border-border/70 bg-white shadow-card"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
+            onFocus={() => setPaused(true)}
+            onBlur={() => setPaused(false)}
           >
             {/* Glow accent */}
             <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl" aria-hidden />
@@ -159,21 +169,29 @@ export default function Testimonials() {
                       <div>
                         <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
                           {t.name}
-                          <BadgeCheck className="h-4 w-4 text-accent" aria-label="Verified buyer" />
+                          {t.verified && (
+                            <BadgeCheck className="h-4 w-4 text-accent" aria-label="Verified buyer" />
+                          )}
                         </p>
                         <p className="text-xs text-muted">
-                          {t.title} · {t.organization}
+                          {t.title}{t.organization ? ` · ${t.organization}` : ""}
                         </p>
                       </div>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent-dark">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+                    {t.verified ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent-dark">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+                        </span>
+                        Verified
                       </span>
-                      Verified
-                    </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                        Example
+                      </span>
+                    )}
                   </figcaption>
                 </motion.div>
               </AnimatePresence>

@@ -23,7 +23,7 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 const assurances = [
   { icon: ShieldCheck, label: "Secure payment" },
   { icon: Download, label: "Instant download" },
-  { icon: RefreshCw, label: "14-day guarantee" },
+  { icon: RefreshCw, label: "4-day guarantee" },
   { icon: MessageCircle, label: "Real human support" },
 ];
 
@@ -44,8 +44,8 @@ export default function FinalCTA() {
           <span className="text-gradient-gold">better organization?</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
-          Join more than a thousand Global organizations running on TrueWorks
-          systems. Pick a template, download in minutes, deploy the same day.
+          Join Global organizations running on TrueWorks systems. Pick a
+          template, download in minutes, deploy the same day.
         </p>
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
           <Link href="/store">
@@ -82,12 +82,12 @@ export default function FinalCTA() {
               <Star key={i} className="h-3.5 w-3.5 fill-accent text-accent" />
             ))}
             <span className="ml-1.5 font-semibold text-white/80">4.9 / 5</span>
-            <span>· from 1,200+ customers</span>
+            <span>· rated by verified customers</span>
           </div>
           <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:inline-block" />
           <span className="inline-flex items-center gap-1.5">
             <Check className="h-3.5 w-3.5 text-emerald-400" />
-            30-day money-back guarantee
+            4-day money-back guarantee
           </span>
         </div>
       </FadeIn>

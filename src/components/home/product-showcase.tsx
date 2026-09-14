@@ -9,14 +9,37 @@ import { ArrowUpRight, Download } from "lucide-react";
 import { convexClient } from "@/lib/convex";
 
 export default function ProductShowcase() {
-  if (!convexClient) return null;
+  if (!convexClient) {
+    return (
+      <section className="bg-white py-20 lg:py-24 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center">
+            <p className="font-heading text-base font-semibold text-primary">
+              Previews unavailable right now
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Please check your connection and{" "}
+              <Link href="/store" className="font-semibold text-primary underline">
+                browse the store
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return <ProductShowcaseInner />;
 }
 
 function ProductShowcaseInner() {
-  const products = useQuery(api.products.list, { featured: true });
-  const items = (products?.items ?? []).filter((p) => p.status === "published");
-  const doubled = [...items, ...items];
+  // Show best-selling published templates here so this section complements
+  // (rather than duplicates) the featured-products grid above.
+  const products = useQuery(api.products.list, { status: "published" });
+  const items = [...(products?.items ?? [])]
+    .sort((a, b) => (b.totalSales ?? 0) - (a.totalSales ?? 0))
+    .slice(0, 8);
+  const doubled = items.length > 1 ? [...items, ...items] : items;
 
   if (products === undefined) {
     return (
@@ -58,14 +81,14 @@ function ProductShowcaseInner() {
         >
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-dark">
-              Preview
+              Bestsellers
             </p>
             <h2 className="mt-3 font-heading text-3xl font-semibold text-primary md:text-4xl">
-              See what you&apos;re getting
+              Loved by teams like yours
             </h2>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
-              A look inside the dashboards and systems our customers use every
-              day.
+              Our most-downloaded Excel dashboards and systems — preview what
+              you&apos;ll get before you buy.
             </p>
           </div>
           <Link
@@ -84,7 +107,7 @@ function ProductShowcaseInner() {
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white to-transparent sm:w-40" />
 
         {items.length > 0 ? (
-          <div className="marquee-container flex w-max gap-6 px-6 group-hover/marquee:[animation-play-state:paused] lg:px-8">
+          <div className="marquee-container flex w-max gap-6 px-6 group-hover/marquee:[animation-play-state:paused] group-focus-within/marquee:[animation-play-state:paused] lg:px-8">
             {doubled.map((item, i) => (
               <Link
                 key={`${item._id}-${i}`}
@@ -142,10 +165,10 @@ function ProductShowcaseInner() {
         ) : (
           <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center">
             <p className="font-heading text-base font-semibold text-primary">
-              No featured products yet
+              No bestsellers yet
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Featured products will appear here as they&apos;re published.
+              Bestsellers will appear here as templates are published.
             </p>
           </div>
         )}
@@ -161,6 +184,11 @@ function ProductShowcaseInner() {
           }
           100% {
             transform: translateX(-50%);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .marquee-container {
+            animation: none;
           }
         }
       `}</style>

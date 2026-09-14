@@ -49,8 +49,8 @@ export default function TrustedBy() {
             Built for the organizations that keep the world running
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-            From hospitals to schools, NGOs to SMEs - TrueWorks is the
-            operating system behind thousands of daily decisions.
+            From hospitals to schools, NGOs to SMEs - TrueWorks systems support
+            everyday decisions across growing organizations.
           </p>
         </motion.div>
       </div>
@@ -60,7 +60,7 @@ export default function TrustedBy() {
         <div className="absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white to-transparent sm:w-40" />
 
         <div className="group/marquee relative overflow-hidden py-3">
-          <div className="trusted-marquee flex w-max group-hover/marquee:[animation-play-state:paused]">
+          <div className="trusted-marquee flex w-max group-hover/marquee:[animation-play-state:paused] group-focus-within/marquee:[animation-play-state:paused]">
             {duplicated.map((sector, i) => (
               <MarqueeItem key={`${sector.name}-${i}`} name={sector.name} icon={sector.icon} />
             ))}
@@ -75,6 +75,11 @@ export default function TrustedBy() {
               }
               100% {
                 transform: translateX(-50%);
+              }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .trusted-marquee {
+                animation: none;
               }
             }
           `}</style>

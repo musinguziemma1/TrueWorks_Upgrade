@@ -24,6 +24,7 @@ const steps = [
     title: "Browse the library",
     description:
       "Filter by sector, role or workflow. Every template is described in plain English - no jargon.",
+    chip: "No jargon",
     accent: {
       tint: "from-blue-500/12 to-blue-500/0",
       iconText: "text-blue-600 dark:text-blue-400",
@@ -36,6 +37,7 @@ const steps = [
     title: "Download instantly",
     description:
       "Pay once with Mobile Money, Airtel Money, Visa or Mastercard. The file is yours forever - no subscription.",
+    chip: "Pay once",
     accent: {
       tint: "from-amber-500/12 to-amber-500/0",
       iconText: "text-amber-600 dark:text-amber-400",
@@ -48,6 +50,7 @@ const steps = [
     title: "Deploy the same day",
     description:
       "Open in Excel or Google Sheets, follow the included quick-start guide, and your team is live by close of business.",
+    chip: "Live today",
     accent: {
       tint: "from-emerald-500/12 to-emerald-500/0",
       iconText: "text-emerald-600 dark:text-emerald-400",
@@ -106,7 +109,7 @@ export default function HowItWorks() {
                   </p>
                   <div className="relative mt-5 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-2.5 py-1 text-[11px] font-semibold text-accent-dark">
                     <Check className="h-3 w-3" />
-                    No subscription
+                    {step.chip}
                   </div>
                 </div>
               </FadeIn>

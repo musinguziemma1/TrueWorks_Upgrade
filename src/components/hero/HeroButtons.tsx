@@ -12,7 +12,7 @@ interface HeroButtonsProps {
 export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtonsProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start">
-      {/* Primary CTA - Explore Solutions */}
+      {/* Primary CTA - Browse Templates */}
       <motion.button
         className="group relative px-7 py-3.5 bg-gradient-to-r from-[#DAA520] to-[#B8860B] text-[#04101F] font-body font-bold text-base rounded-xl overflow-hidden transition-all duration-300"
         variants={buttonHover}
@@ -31,7 +31,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
         
         {/* Button content */}
         <div className="relative flex items-center gap-3">
-          <span>Explore Solutions</span>
+          <span>Browse Templates</span>
           <motion.div
             className="overflow-hidden"
             whileHover={{ x: 4 }}
@@ -50,7 +50,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
         />
       </motion.button>
 
-      {/* Secondary CTA - Watch Demo */}
+      {/* Secondary CTA - Get Free Template */}
       <motion.button
         className="group relative px-7 py-3.5 bg-transparent border-2 border-white/20 text-white font-body font-semibold text-base rounded-xl overflow-hidden backdrop-blur-sm"
         variants={outlineButtonHover}
@@ -67,7 +67,7 @@ export default function HeroButtons({ onExploreClick, onDemoClick }: HeroButtons
           >
             <Play className="w-3 h-3 fill-current" />
           </motion.div>
-          <span>Watch Demo</span>
+          <span>Get Free Template</span>
         </div>
         
         {/* Border glow on hover */}

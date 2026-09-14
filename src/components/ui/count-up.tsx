@@ -15,10 +15,15 @@ interface CountUpProps {
 export function CountUp({ end, prefix = "", suffix = "", decimals = 0, duration = 1800, className }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
-  const [value, setValue] = useState(0);
+  // Users who prefer reduced motion skip the animation entirely.
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [value, setValue] = useState(() => (reduceMotion ? end : 0));
 
   useEffect(() => {
-    if (!inView) return;
+    if (!inView || reduceMotion) return;
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
@@ -29,7 +34,7 @@ export function CountUp({ end, prefix = "", suffix = "", decimals = 0, duration 
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, end, duration]);
+  }, [inView, end, duration, reduceMotion]);
 
   const format = value.toLocaleString("en-US", {
     minimumFractionDigits: decimals,

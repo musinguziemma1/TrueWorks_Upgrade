@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     description:
       "TrueWorks Limited helping organizations streamline operations and grow with expertly crafted templates and digital tools.",
     url: "https://trueworksgroup.com/about",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "About TrueWorks Limited" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "About TrueWorks Limited" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "About Us - TrueWorks Limited",
     description: "Helping organizations streamline operations with expertly crafted templates.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com/about",

@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     description:
       "Professional-grade Excel templates, financial models and dashboards for healthcare, NGOs, schools, churches and growing businesses.",
     url: "https://trueworksgroup.com/store",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TrueWorks Store" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks Store" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Store - Premium Templates & Business Systems | TrueWorks",
     description: "Professional-grade Excel templates, financial models and dashboards.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com/store",

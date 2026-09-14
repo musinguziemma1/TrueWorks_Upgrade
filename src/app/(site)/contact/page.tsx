@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     title: "Contact Us - TrueWorks Limited",
     description: "Get in touch with the TrueWorks team for templates, custom solutions or partnerships.",
     url: "https://trueworksgroup.com/contact",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Contact TrueWorks" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Contact TrueWorks" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Contact Us - TrueWorks Limited",
     description: "Get in touch with the TrueWorks team.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com/contact",

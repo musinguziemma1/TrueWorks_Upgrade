@@ -38,7 +38,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
         <motion.div className="mb-6 max-w-xl" variants={textSlideUp}>
           <p className="mb-4 flex items-center gap-2 text-sm font-medium text-white/55">
             <Activity className="h-4 w-4 text-[#DAA520]" />
-            Enterprise business operating systems
+            Premium Excel templates & dashboards
           </p>
           <h1 className="font-heading text-5xl font-bold leading-[0.98] tracking-tight text-white sm:text-6xl xl:text-7xl">
             <span className="block">{slide.title}</span>
@@ -105,7 +105,7 @@ export default function HeroContent({ slide, onExploreClick, onDemoClick }: Hero
                 variants={textFadeIn}
               >
                 <IconComponent className="mb-2 h-4 w-4 text-[#DAA520]" />
-                <h2 className="mb-1 text-xs font-semibold text-white">{feature.name}</h2>
+                <p className="mb-1 text-xs font-semibold text-white">{feature.name}</p>
                 <p className="hidden text-[10px] leading-4 text-white/55 sm:block">{feature.description}</p>
               </motion.div>
             );

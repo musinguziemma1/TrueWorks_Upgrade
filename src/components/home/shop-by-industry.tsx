@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowUpRight,
   ChevronLeft,
@@ -67,24 +67,59 @@ function getIcon(name: string): LucideIcon {
   return iconMap[name] ?? Folder;
 }
 
-const CARDS_PER_VIEW = 4;
+function useCardsPerView() {
+  const [perView, setPerView] = useState(4);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setPerView(w < 640 ? 1 : w < 1024 ? 2 : 4);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return perView;
+}
+
 const AUTO_PLAY_INTERVAL = 4000;
 
 export default function ShopByIndustry() {
-  if (!convexClient) return null;
+  if (!convexClient) {
+    return (
+      <section className="relative overflow-hidden py-20 lg:py-24">
+        <NavyBackground />
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-md rounded-2xl border border-white/15 bg-white/5 px-6 py-10 text-center backdrop-blur">
+            <p className="font-heading text-base font-semibold text-white">
+              Industries unavailable right now
+            </p>
+            <p className="mt-1 text-sm text-white/70">
+              Please check your connection and{" "}
+              <Link href="/store" className="font-semibold text-[#DAA520] underline">
+                browse the store
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return <ShopByIndustryInner />;
 }
 
 function ShopByIndustryInner() {
   const categories = useQuery(api.categories.list, {});
+  const cardsPerView = useCardsPerView();
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const items = categories ?? [];
   const total = items.length;
-  const maxIndex = Math.max(0, total - CARDS_PER_VIEW);
+  const maxIndex = Math.max(0, total - cardsPerView);
 
   const next = useCallback(() => {
     setCurrent((prev) => (prev >= maxIndex ? 0 : prev + 1));
@@ -94,14 +129,15 @@ function ShopByIndustryInner() {
     setCurrent((prev) => (prev <= 0 ? maxIndex : prev - 1));
   }, [maxIndex]);
 
-  // Auto-play
+  // Auto-play — pauses on hover, focus, manual pause, or reduced motion.
   useEffect(() => {
-    if (isPaused || isHovered || total <= CARDS_PER_VIEW) return;
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (isPaused || isHovered || isFocused || total <= cardsPerView) return;
     intervalRef.current = setInterval(next, AUTO_PLAY_INTERVAL);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPaused, isHovered, next, total]);
+  }, [isPaused, isHovered, isFocused, next, total, cardsPerView]);
 
   if (categories === undefined) {
     return (
@@ -162,13 +198,15 @@ function ShopByIndustryInner() {
           className="relative"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         >
           {/* Cards Container */}
           <div className="overflow-hidden rounded-2xl">
             <motion.div
               className="flex gap-4"
               animate={{
-                x: `-${current * (100 / CARDS_PER_VIEW + (4 * 4) / (CARDS_PER_VIEW * 16))}%`,
+                x: `-${current * (100 / cardsPerView + (4 * 4) / (cardsPerView * 16))}%`,
               }}
               transition={{
                 type: "spring",
@@ -177,12 +215,18 @@ function ShopByIndustryInner() {
                 mass: 0.8,
               }}
             >
-              {items.map((cat, i) => {
+              {items.map((cat) => {
                 const Icon = getIcon(cat.icon ?? "");
                 return (
                   <div
                     key={cat._id}
-                    className="w-[calc(25%-12px)] shrink-0"
+                    className={
+                      cardsPerView === 1
+                        ? "w-full shrink-0"
+                        : cardsPerView === 2
+                          ? "w-[calc(50%-8px)] shrink-0"
+                          : "w-[calc(25%-12px)] shrink-0"
+                    }
                   >
                     <Link
                       href={`/store?category=${encodeURIComponent(cat.name)}`}
@@ -221,7 +265,7 @@ function ShopByIndustryInner() {
           </div>
 
           {/* Navigation Arrows */}
-          {total > CARDS_PER_VIEW && (
+          {total > cardsPerView && (
             <>
               <button
                 onClick={prev}
@@ -241,7 +285,7 @@ function ShopByIndustryInner() {
           )}
 
           {/* Controls */}
-          {total > CARDS_PER_VIEW && (
+          {total > cardsPerView && (
             <div className="mt-6 flex items-center justify-center gap-4">
               {/* Dots */}
               <div className="flex items-center gap-1.5">

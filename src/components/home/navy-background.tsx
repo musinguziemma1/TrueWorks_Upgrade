@@ -202,7 +202,7 @@ export default function NavyBackground({
       />
 
       {/* Radial vignette for depth */}
-      <div className="absolute inset-0 bg-radial from-transparent via-transparent to-[#04101F]/80" />
+      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#04101F]/80" />
     </div>
   );
 }

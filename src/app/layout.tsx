@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     url: "https://trueworksgroup.com",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "TrueWorks Limited - Business Operating Systems",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description:
       "Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,

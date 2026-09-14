@@ -11,19 +11,17 @@ interface HeroImageSlideProps {
 }
 
 const heroImages: Record<SlideData['id'], string> = {
-  'executive-finance': '/images/hero/hero-1.png',
-  'corporate-operations': '/images/hero/hero-2.png',
-  'healthcare-analytics': '/images/hero/hero-3.png',
-  'manufacturing-ops': '/images/hero/hero-4.png',
-  'government-monitoring': '/images/hero/hero-4.png',
+  'hospital-kpi': '/images/hero/hero-1.png',
+  'ngo-grant-tracker': '/images/hero/hero-2.png',
+  'school-fee-manager': '/images/hero/hero-3.png',
+  'sme-cashflow': '/images/hero/hero-4.png',
 };
 
 const themeGlow: Record<SlideData['theme'], string> = {
-  finance: 'from-[#DAA520]/20 via-[#0b2545]/10',
-  operations: 'from-[#3E6990]/25 via-[#0b2545]/10',
   healthcare: 'from-emerald-400/15 via-[#0b2545]/10',
-  manufacturing: 'from-orange-400/15 via-[#0b2545]/10',
-  government: 'from-violet-400/15 via-[#0b2545]/10',
+  nonprofit: 'from-[#3E6990]/25 via-[#0b2545]/10',
+  education: 'from-[#DAA520]/20 via-[#0b2545]/10',
+  business: 'from-violet-400/15 via-[#0b2545]/10',
 };
 
 export default function HeroImageSlide({ slide, isActive }: HeroImageSlideProps) {
@@ -54,7 +52,7 @@ export default function HeroImageSlide({ slide, isActive }: HeroImageSlideProps)
                   src={heroImages[slide.id]}
                   alt={`${slide.title} TrueWorks dashboard workspace`}
                   fill
-                  priority={slide.id === 'executive-finance'}
+                  priority={slide.id === 'hospital-kpi'}
                   sizes="(max-width: 1024px) 90vw, 48vw"
                   className="object-contain drop-shadow-[0_24px_28px_rgba(0,0,0,0.28)]"
                 />

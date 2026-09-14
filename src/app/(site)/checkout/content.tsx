@@ -1107,7 +1107,7 @@ export default function CheckoutContent() {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent-dark">
                         <RotateCcw className="h-3.5 w-3.5" />
                       </span>
-                      30-day money-back guarantee
+                      4-day money-back guarantee
                     </li>
                     <li className="flex items-center gap-2.5 text-xs text-muted">
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent-dark">

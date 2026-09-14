@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     title: "FAQ - TrueWorks Limited",
     description: "Frequently asked questions about TrueWorks templates, payment, delivery and refunds.",
     url: "https://trueworksgroup.com/faq",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TrueWorks FAQ" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks FAQ" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "FAQ - TrueWorks Limited",
     description: "Frequently asked questions about TrueWorks templates and services.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com/faq",

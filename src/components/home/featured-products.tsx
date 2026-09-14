@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
@@ -18,7 +18,26 @@ const cardVariants = {
 };
 
 export default function FeaturedProducts() {
-  if (!convexClient) return null;
+  if (!convexClient) {
+    return (
+      <section className="relative overflow-hidden bg-surface py-12 lg:py-16">
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-white px-6 py-10 text-center">
+            <p className="font-heading text-base font-semibold text-primary">
+              Templates unavailable right now
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Please check your connection and visit{" "}
+              <Link href="/store" className="font-semibold text-primary underline">
+                the store
+              </Link>{" "}
+              to browse all templates.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return <FeaturedProductsInner />;
 }
 
@@ -80,21 +99,36 @@ function FeaturedProductsInner() {
         </motion.div>
 
         {/* Product Grid - max 2 rows (6 cards on 3-col, 4 on 2-col) */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: "1fr" }}>
-          {featured.map((product, i) => (
-            <motion.div
-              key={product._id}
-              custom={i}
-              variants={cardVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-60px" }}
-              className="h-full"
-            >
-              <ProductCard product={product} className="h-full" />
-            </motion.div>
-          ))}
-        </div>
+        {featured.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: "1fr" }}>
+            {featured.map((product, i) => (
+              <motion.div
+                key={product._id}
+                custom={i}
+                variants={cardVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-60px" }}
+                className="h-full"
+              >
+                <ProductCard product={product} className="h-full" />
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-white px-6 py-10 text-center">
+            <p className="font-heading text-base font-semibold text-primary">
+              No featured templates yet
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Featured templates will appear here as they&apos;re published.{" "}
+              <Link href="/store" className="font-semibold text-primary underline">
+                Browse the store
+              </Link>
+              .
+            </p>
+          </div>
+        )}
 
         {/* Bottom decoration */}
         <motion.div

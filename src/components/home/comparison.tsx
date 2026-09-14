@@ -68,45 +68,56 @@ export default function Comparison() {
         </FadeIn>
 
         <FadeIn>
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-white shadow-card">
-            {/* Header */}
-            <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr]">
-              <div className="hidden border-b border-border bg-surface p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:block" />
-              <div className="flex items-center justify-center gap-2 border-b border-border bg-surface p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:border-l">
-                <X className="h-3.5 w-3.5 text-red-500" />
-                DIY spreadsheet
-              </div>
-              <div className="flex items-center justify-center gap-2 border-b border-border bg-gradient-to-br from-accent/10 to-accent/0 p-4 text-xs font-semibold uppercase tracking-wider text-accent-dark sm:border-l">
-                <Sparkles className="h-3.5 w-3.5" />
-                TrueWorks system
-              </div>
-            </div>
-
-            {/* Rows */}
-            {rows.map((row, i) => (
-              <div
-                key={row.feature}
-                className={`grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] ${
-                  i !== rows.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <div className="flex items-center px-4 py-4 text-sm font-semibold text-foreground sm:bg-surface sm:px-5">
-                  {row.feature}
-                </div>
-                <div className="flex items-start gap-2.5 border-t border-border px-4 py-4 text-sm text-muted-foreground sm:items-center sm:border-l sm:border-t-0">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-600 dark:text-red-400 sm:mt-0">
-                    <X className="h-3 w-3" />
-                  </span>
-                  {row.diy}
-                </div>
-                <div className="flex items-start gap-2.5 border-t border-border bg-gradient-to-br from-accent/[0.04] to-accent/0 px-4 py-4 text-sm font-medium text-foreground sm:items-center sm:border-l sm:border-t-0">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 sm:mt-0">
-                    <Check className="h-3 w-3" />
-                  </span>
-                  {row.us}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-2xl border border-border/70 bg-white shadow-card">
+            <table className="w-full min-w-[640px] border-collapse text-left">
+              <caption className="sr-only">
+                Comparison of building spreadsheets yourself versus buying a TrueWorks system
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="border-b border-border bg-surface p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="sr-only">Feature</span>
+                  </th>
+                  <th scope="col" className="border-b border-border border-l bg-surface p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="flex items-center justify-center gap-2">
+                      <X className="h-3.5 w-3.5 text-red-500" aria-hidden />
+                      DIY spreadsheet
+                    </span>
+                  </th>
+                  <th scope="col" className="border-b border-border border-l bg-gradient-to-br from-accent/10 to-accent/0 p-4 text-xs font-semibold uppercase tracking-wider text-accent-dark">
+                    <span className="flex items-center justify-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                      TrueWorks system
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.feature} className="border-b border-border last:border-b-0">
+                    <th scope="row" className="bg-surface px-4 py-4 text-sm font-semibold text-foreground sm:px-5">
+                      {row.feature}
+                    </th>
+                    <td className="border-l border-border px-4 py-4 text-sm text-muted-foreground">
+                      <span className="flex items-start gap-2.5 sm:items-center">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-600 dark:text-red-400 sm:mt-0">
+                          <X className="h-3 w-3" aria-hidden />
+                        </span>
+                        {row.diy}
+                      </span>
+                    </td>
+                    <td className="border-l border-border bg-gradient-to-br from-accent/[0.04] to-accent/0 px-4 py-4 text-sm font-medium text-foreground">
+                      <span className="flex items-start gap-2.5 sm:items-center">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 sm:mt-0">
+                          <Check className="h-3 w-3" aria-hidden />
+                        </span>
+                        {row.us}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </FadeIn>
       </div>

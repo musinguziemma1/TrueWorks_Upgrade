@@ -20,13 +20,12 @@ export default function Hero() {
   };
 
   const handleDemoClick = () => {
-    // Scroll to demo section or open modal
-    const demoSection = document.getElementById('demo');
-    if (demoSection) {
-      demoSection.scrollIntoView({ behavior: 'smooth' });
+    // Scroll to the free-template lead magnet section on the homepage
+    const freeSection = document.getElementById('free-template');
+    if (freeSection) {
+      freeSection.scrollIntoView({ behavior: 'smooth' });
     } else {
-      // Fallback: navigate to about page or open video modal
-      router.push('/about');
+      router.push('/#free-template');
     }
   };
 

@@ -24,6 +24,7 @@ const features = [
     title: "Instant download",
     description:
       "Access your templates immediately after purchase - no waiting, no shipping, no subscriptions.",
+    chip: "Instant",
     accent: {
       tint: "from-blue-500/15 to-blue-500/0",
       iconText: "text-blue-300",
@@ -37,6 +38,7 @@ const features = [
     title: "Built by professionals",
     description:
       "Every template is crafted by finance professionals, data analysts and business consultants.",
+    chip: "Expert-built",
     accent: {
       tint: "from-amber-500/15 to-amber-500/0",
       iconText: "text-accent-light",
@@ -50,6 +52,7 @@ const features = [
     title: "Secure payments",
     description:
       "Pay safely with MTN Mobile Money, Airtel Money, Visa or Mastercard through encrypted checkout.",
+    chip: "Secure",
     accent: {
       tint: "from-emerald-500/15 to-emerald-500/0",
       iconText: "text-emerald-300",
@@ -60,9 +63,10 @@ const features = [
   },
   {
     icon: RefreshCw,
-    title: "14-day guarantee",
+    title: "4-day guarantee",
     description:
-      "If a template doesn't fit your needs, we'll make it right or refund you - no questions asked.",
+      "Request a return from your order within 4 days of purchase and we'll make it right or refund you.",
+    chip: "4-day cover",
     accent: {
       tint: "from-purple-500/15 to-purple-500/0",
       iconText: "text-purple-300",
@@ -120,7 +124,7 @@ export default function WhyTrueWorks() {
                   className={`relative mt-4 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${feature.accent.chipBorder} ${feature.accent.chipBg} ${feature.accent.iconText}`}
                 >
                   <Sparkles className="h-2.5 w-2.5" />
-                  {feature.title.split(" ")[0]}
+                  {feature.chip}
                 </div>
               </div>
             </FadeIn>

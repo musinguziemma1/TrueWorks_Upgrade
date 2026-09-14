@@ -38,13 +38,13 @@ export const metadata: Metadata = {
     description:
       "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses across the Globe.",
     url: "https://trueworksgroup.com",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TrueWorks Limited" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks Limited" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TrueWorks Limited - Business Operating Systems for Global organizations",
     description: "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com",

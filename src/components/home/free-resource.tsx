@@ -136,15 +136,19 @@ export default function FreeResource() {
   const [status, setStatus] = useState<"idle" | "valid" | "error">("idle");
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [formFocused, setFormFocused] = useState(false);
 
   // Auto-rotate which sector's preview is shown so the section
   // surfaces all four use-cases without the user scrolling.
+  // Pauses while the user is interacting with the form so the
+  // `source` sent on submit matches what they saw.
   useEffect(() => {
+    if (formFocused || status === "valid") return;
     const t = setInterval(() => {
       setSectorIdx((i) => (i + 1) % sectors.length);
     }, 7000);
     return () => clearInterval(t);
-  }, []);
+  }, [formFocused, status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,14 +204,13 @@ export default function FreeResource() {
               </p>
 
               {/* Sector dots */}
-              <div className="mt-5 flex items-center gap-2" role="tablist" aria-label="Choose your sector">
+              <div className="mt-5 flex items-center gap-2" role="group" aria-label="Choose your sector">
                 {sectors.map((s, i) => (
                   <button
                     key={s.pill}
                     type="button"
                     onClick={() => setSectorIdx(i)}
-                    aria-selected={i === sectorIdx}
-                    role="tab"
+                    aria-pressed={i === sectorIdx}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
                       i === sectorIdx
                         ? "w-8 bg-accent"
@@ -218,7 +221,13 @@ export default function FreeResource() {
                 ))}
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-8 max-w-md" noValidate>
+              <form
+                onSubmit={handleSubmit}
+                className="mt-8 max-w-md"
+                noValidate
+                onFocus={() => setFormFocused(true)}
+                onBlur={() => setFormFocused(false)}
+              >
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="flex-1">
                     <label htmlFor="free-template-email" className="sr-only">
@@ -263,7 +272,7 @@ export default function FreeResource() {
                 {status === "valid" && (
                   <p className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-300">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Check your inbox - the {sector.pill.toLowerCase()} dashboard link is on its way.
+                    You&apos;re subscribed — watch your inbox for practical templates and guides.
                   </p>
                 )}
                 <p className="mt-3 text-xs text-white/70">

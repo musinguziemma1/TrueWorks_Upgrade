@@ -50,11 +50,19 @@ export default function HeroSlider({
     return () => clearInterval(interval);
   }, [isAutoPlaying, isHovered, nextSlide, autoPlayDuration]);
 
-  // Keyboard navigation
+  // Keyboard navigation — scoped to the slider so global keys
+  // (arrows/space) keep working for scroll and form fields elsewhere.
   useEffect(() => {
     if (!enableKeyboard) return;
 
     const handleKeyPress = (e: KeyboardEvent) => {
+      const el = containerRef.current;
+      if (!el) return;
+      const target = e.target as HTMLElement | null;
+      // Don't hijack typing in inputs or shortcuts outside the slider.
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (!el.contains(target) && document.activeElement && !el.contains(document.activeElement)) return;
+
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault();
@@ -71,8 +79,9 @@ export default function HeroSlider({
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    const el = containerRef.current;
+    el?.addEventListener('keydown', handleKeyPress);
+    return () => el?.removeEventListener('keydown', handleKeyPress);
   }, [enableKeyboard, nextSlide, prevSlide]);
 
   // Touch/swipe support
@@ -121,19 +130,26 @@ export default function HeroSlider({
     };
   }, [enableTouch, nextSlide, prevSlide]);
 
-  // Mouse parallax effect
+  // Mouse parallax effect — rAF-throttled, disabled for touch /
+  // reduced-motion users to save battery and avoid motion sickness.
+  const rafRef = useRef<number>(0);
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.innerWidth < 1024) return;
     const { clientX, clientY } = e;
     const { innerWidth, innerHeight } = window;
     const x = (clientX / innerWidth - 0.5) * 2;
     const y = (clientY / innerHeight - 0.5) * 2;
 
-    // Apply subtle parallax to visual elements
-    const visualElements = document.querySelectorAll('[data-parallax]');
-    visualElements.forEach((element) => {
-      const intensity = parseFloat(element.getAttribute('data-parallax') || '1');
-      const htmlElement = element as HTMLElement;
-      htmlElement.style.transform = `translate3d(${x * intensity * 10}px, ${y * intensity * 5}px, 0)`;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      // Apply subtle parallax to visual elements
+      const visualElements = containerRef.current?.querySelectorAll('[data-parallax]');
+      visualElements?.forEach((element) => {
+        const intensity = parseFloat(element.getAttribute('data-parallax') || '1');
+        const htmlElement = element as HTMLElement;
+        htmlElement.style.transform = `translate3d(${x * intensity * 10}px, ${y * intensity * 5}px, 0)`;
+      });
     });
   };
 
@@ -146,6 +162,10 @@ export default function HeroSlider({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseMove={handleMouseMove}
+      tabIndex={0}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Featured templates"
     >
       {/* Background */}
       <HeroBackground />

@@ -17,13 +17,13 @@ export const metadata: Metadata = {
     description:
       "Practical guides, insights and resources on financial modeling, KPI dashboards and business planning.",
     url: "https://trueworksgroup.com/resources",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TrueWorks Resources" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks Resources" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Resources - Business Insights & Guides | TrueWorks",
     description: "Practical guides and resources on business planning and operations.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://trueworksgroup.com/resources",
