@@ -158,7 +158,7 @@ export default function HeroSlider({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen overflow-hidden bg-[#04101F]"
+      className="relative w-full min-h-[100svh] overflow-hidden bg-[#04101F] lg:h-screen"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseMove={handleMouseMove}
@@ -167,11 +167,11 @@ export default function HeroSlider({
       aria-roledescription="carousel"
       aria-label="Featured templates"
     >
-      {/* Background */}
-      <HeroBackground />
+      {/* Background — cinematic grade shifts per slide */}
+      <HeroBackground theme={currentSlideData.theme} />
 
       {/* Main content grid */}
-      <div className="relative z-10 h-full grid lg:grid-cols-2">
+      <div className="relative z-10 mx-auto grid min-h-[100svh] w-full max-w-[1440px] items-center gap-6 px-0 pb-40 pt-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-4 lg:pb-28 lg:pt-20">
         {/* Left: Content */}
         <div className="relative flex items-center">
           <HeroContent
@@ -189,6 +189,21 @@ export default function HeroSlider({
                 key={slide.id}
                 slide={slide}
                 isActive={index === currentSlide}
+                priority
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Visual, condensed — the product frame is the strongest asset on the
+            page, so small screens get a scaled-down version instead of none. */}
+        <div className="relative -mt-8 h-[320px] px-6 sm:h-[400px] lg:hidden">
+          <div className="relative mx-auto h-full w-full max-w-[620px]">
+            {heroSlides.map((slide, index) => (
+              <HeroSlide
+                key={`mobile-${slide.id}`}
+                slide={slide}
+                isActive={index === currentSlide}
               />
             ))}
           </div>
@@ -203,7 +218,7 @@ export default function HeroSlider({
               currentSlide={currentSlide}
               totalSlides={heroSlides.length}
               onSlideChange={setCurrentSlide}
-              slideLabels={heroSlides.map(slide => slide.theme)}
+              slideLabels={heroSlides.map(slide => slide.eyebrow)}
             />
           </div>
 
@@ -213,6 +228,7 @@ export default function HeroSlider({
               currentSlide={currentSlide}
               totalSlides={heroSlides.length}
               autoPlay={isAutoPlaying && !isHovered}
+              duration={autoPlayDuration / 1000}
               onProgressComplete={nextSlide}
             />
           </div>
@@ -258,6 +274,7 @@ export default function HeroSlider({
             currentSlide={currentSlide}
             totalSlides={heroSlides.length}
             autoPlay={isAutoPlaying && !isHovered}
+            duration={autoPlayDuration / 1000}
             onProgressComplete={nextSlide}
           />
         </div>

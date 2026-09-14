@@ -3,8 +3,13 @@ export interface SlideData {
   title: string;
   subtitle: string;
   description: string;
-  theme: 'healthcare' | 'nonprofit' | 'education' | 'business';
-  visualType: 'healthcare' | 'nonprofit' | 'education' | 'business';
+  theme: 'healthcare' | 'nonprofit' | 'education' | 'business' | 'faith';
+  visualType: 'healthcare' | 'nonprofit' | 'education' | 'business' | 'faith';
+  eyebrow: string;
+  fileName: string;
+  accent: string;
+  /** Optional product screenshot. When absent a branded preview is composed from the slide data. */
+  image?: string;
   kpis: KPI[];
   modules: Module[];
 }
@@ -32,6 +37,10 @@ export const heroSlides: SlideData[] = [
     description: 'Bed occupancy, revenue per bed, wait times and collections — a plug-and-play Excel dashboard for hospitals and clinics. Download today, deploy the same day.',
     theme: 'healthcare',
     visualType: 'healthcare',
+    eyebrow: 'Hospitals & clinics',
+    fileName: 'hospital-kpi-dashboard.xlsx',
+    accent: '#10B981',
+    image: '/images/hero/hero-1.png',
     kpis: [
       { label: 'Bed Occupancy', value: '78%', change: 'Live tracking', trend: 'up', color: '#10B981' },
       { label: 'Revenue / Bed', value: '$2,400', change: 'Per month', trend: 'up', color: '#DAA520' },
@@ -52,6 +61,10 @@ export const heroSlides: SlideData[] = [
     description: 'Every grant, deliverable and donor report in one Excel system. Built for NGOs and non-profits — donor reporting goes from days to minutes.',
     theme: 'nonprofit',
     visualType: 'nonprofit',
+    eyebrow: 'NGOs & non-profits',
+    fileName: 'ngo-grant-tracker.xlsx',
+    accent: '#38BDF8',
+    image: '/images/hero/hero-2.png',
     kpis: [
       { label: 'Active Grants', value: '12', change: 'Tracked', trend: 'up', color: '#10B981' },
       { label: 'Funds Disbursed', value: '$184K', change: 'Auto summed', trend: 'up', color: '#DAA520' },
@@ -72,6 +85,10 @@ export const heroSlides: SlideData[] = [
     description: 'Fee collection, arrears and class enrolments in one workbook. Built for schools and colleges — cut arrears with instant parent balances.',
     theme: 'education',
     visualType: 'education',
+    eyebrow: 'Schools & colleges',
+    fileName: 'school-fee-manager.xlsx',
+    accent: '#DAA520',
+    image: '/images/hero/hero-3.png',
     kpis: [
       { label: 'Students', value: '847', change: 'Enrolled', trend: 'up', color: '#10B981' },
       { label: 'Collected', value: '$214K', change: 'This term', trend: 'up', color: '#DAA520' },
@@ -92,6 +109,10 @@ export const heroSlides: SlideData[] = [
     description: 'A 12-month cash-flow planner for founders and finance teams. Forecast runway, plan expenses and walk into investors with ready charts.',
     theme: 'business',
     visualType: 'business',
+    eyebrow: 'SMEs & finance teams',
+    fileName: 'sme-cashflow-planner.xlsx',
+    accent: '#A78BFA',
+    image: '/images/hero/hero-4.png',
     kpis: [
       { label: 'Monthly Revenue', value: '$48K', change: 'Forecast', trend: 'up', color: '#10B981' },
       { label: 'Burn Rate', value: '$31K', change: 'Tracked', trend: 'up', color: '#DAA520' },
@@ -103,6 +124,29 @@ export const heroSlides: SlideData[] = [
       { name: 'Expense Planner', icon: 'BarChart3', status: 'active', value: 'Live' },
       { name: 'Runway Chart', icon: 'Shield', status: 'success', value: 'Auto' },
       { name: 'Investor Summary', icon: 'FileText', status: 'success', value: 'Ready' }
+    ]
+  },
+  {
+    id: 'church-giving',
+    title: 'Church Giving.',
+    subtitle: 'In Full View.',
+    description: 'Tithes, offerings, pledges and project funds in one Excel workbook. Built for churches and ministries — hand your board a clean statement every month.',
+    theme: 'faith',
+    visualType: 'faith',
+    eyebrow: 'Churches & ministries',
+    fileName: 'church-giving-tracker.xlsx',
+    accent: '#FB7185',
+    kpis: [
+      { label: 'Tithes & Offerings', value: '$86K', change: 'This month', trend: 'up', color: '#10B981' },
+      { label: 'Pledge Fulfilment', value: '74%', change: 'Tracked', trend: 'up', color: '#DAA520' },
+      { label: 'Project Funds', value: '$240K', change: 'Restricted', trend: 'up', color: '#3B82F6' },
+      { label: 'Giving Members', value: '68%', change: 'Participation', trend: 'up', color: '#8B5CF6' }
+    ],
+    modules: [
+      { name: 'Giving Register', icon: 'Heart', status: 'success', value: 'Excel' },
+      { name: 'Pledge Tracker', icon: 'Users', status: 'active', value: 'Auto' },
+      { name: 'Fund Statements', icon: 'FileText', status: 'success', value: '1-click' },
+      { name: 'Budget vs Actual', icon: 'BarChart3', status: 'success', value: 'Built-in' }
     ]
   }
 ];
