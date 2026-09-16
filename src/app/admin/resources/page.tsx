@@ -23,7 +23,6 @@ import {
   LayoutGrid,
   FileText,
   CheckCircle2,
-  Archive,
 } from "lucide-react"
 import type { Doc } from "@convex/_generated/dataModel"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"

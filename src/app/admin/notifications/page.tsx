@@ -19,7 +19,6 @@ import {
   Info,
   Zap,
   ArrowRight,
-  BarChart3,
   Inbox,
   Eye,
 } from "lucide-react"

@@ -7,8 +7,6 @@ import {
   Radio,
   RefreshCw,
   ArrowRight,
-  TrendingUp,
-  FileSpreadsheet,
 } from "lucide-react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"

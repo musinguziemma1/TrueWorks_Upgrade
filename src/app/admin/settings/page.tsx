@@ -247,7 +247,6 @@ export default function SettingsPage() {
             {tabs.map((t) => {
               const Icon = t.icon
               const dirty = form.dirtyTabs.has(t.id)
-              const active = activeTab === t.id
               return (
                 <TabsTrigger
                   key={t.id}

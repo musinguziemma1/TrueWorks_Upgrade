@@ -44,14 +44,18 @@ export default function SignUpPage() {
           <p className="mt-2 text-sm text-muted-foreground">Join TrueWorks and get started.</p>
         </div>
         <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => (window.location.href = "/api/auth/google?redirect=/account")}
+          {/* A full document navigation is required: /api/auth/google is an API
+              route that responds with a 302 to Google, which the client router
+              cannot follow — and `<Link />` would also prefetch the OAuth
+              handshake. The no-html-link-for-pages rule does not apply here. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
+            href="/api/auth/google?redirect=/account"
             className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-white text-sm font-medium text-foreground transition-colors hover:bg-surface"
           >
             <GoogleIcon className="h-5 w-5" />
             Continue with Google
-          </button>
+          </a>
           <div className="my-4 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground">or</span>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import {
   Search,
   Star,
@@ -36,13 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { downloadCsv, toCsv } from "@/lib/csv"
 import { useDebouncedValue } from "@/lib/use-debounced-value"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { useAuth } from "@/lib/auth/provider";
 import { api } from "@convex/_generated/api";
@@ -127,6 +128,7 @@ export default function UsersPage() {
   const me = useQuery(api.users.current);
   const invitations = useQuery(api.invitations.listAll);
   const { logout } = useAuth();
+  const router = useRouter();
   const setRole = useMutation(api.users.setRole);
   const suspendUser = useMutation(api.users.suspendUser);
   const activateUser = useMutation(api.users.activateUser);
@@ -693,7 +695,7 @@ export default function UsersPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={async () => { await logout(); window.location.href = "/"; }}
+                            onClick={async () => { await logout(); router.push("/"); router.refresh(); }}
                             aria-label={`Sign out ${u.name ?? u.email}`}
                           >
                             <LogOut className="mr-1 h-3.5 w-3.5" />
@@ -841,7 +843,7 @@ export default function UsersPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={async () => { await logout(); window.location.href = "/" }}
+                            onClick={async () => { await logout(); router.push("/"); router.refresh(); }}
                             aria-label={`Sign out ${u.name ?? u.email}`}
                           >
                             <LogOut className="h-3.5 w-3.5" /> Sign out

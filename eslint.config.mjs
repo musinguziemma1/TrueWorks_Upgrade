@@ -31,6 +31,7 @@ const eslintConfig = defineConfig([
     ".agents/**",
     ".kiro/**",
     ".claude/**",
+    ".kilo/**",
   ]),
 ]);
 

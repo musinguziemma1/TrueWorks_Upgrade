@@ -262,7 +262,7 @@ export default function AdminHeader() {
                 <DropdownMenuItem
                   variant="destructive"
                   className="flex items-center gap-2"
-                  onClick={async () => { await logout(); window.location.href = "/"; }}
+                  onClick={async () => { await logout(); router.push("/"); router.refresh(); }}
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out
@@ -287,7 +287,7 @@ export default function AdminHeader() {
                 <CommandItem
                   key={link.href}
                   onSelect={() => {
-                    window.location.href = link.href
+                    router.push(link.href)
                     setSearchOpen(false)
                   }}
                   className="cursor-pointer"

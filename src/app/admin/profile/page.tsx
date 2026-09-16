@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/provider"
 import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -14,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
@@ -33,7 +33,6 @@ import {
   Clock,
   CheckCircle2,
   ArrowRight,
-  Settings,
   Activity,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -70,6 +69,7 @@ const TAB_ITEMS = [
 ] as const
 
 export default function AdminProfilePage() {
+  const router = useRouter()
   const { user, logout } = useAuth()
   const me = useQuery(api.users.current)
   const updateUser = useMutation(api.users.update)
@@ -137,7 +137,8 @@ export default function AdminProfilePage() {
 
   const handleSignOut = async () => {
     await logout()
-    window.location.href = "/"
+    router.push("/")
+    router.refresh()
   }
 
   return (

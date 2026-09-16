@@ -16,7 +16,6 @@ import {
   Eye,
   X,
   ArrowRight,
-  TrendingUp,
   PieChart,
 } from "lucide-react"
 import { useQuery } from "convex/react"

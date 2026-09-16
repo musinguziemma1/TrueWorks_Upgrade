@@ -129,14 +129,15 @@ export default function SignInPage() {
           <p className="mt-2 text-sm text-muted-foreground">Sign in to your TrueWorks account.</p>
         </div>
         <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => (window.location.href = `/api/auth/google?redirect=${encodeURIComponent(redirect)}`)}
+          {/* Google sign-in must be a full document navigation: /api/auth/google
+              responds with a 302 to Google, which the client router cannot follow. */}
+          <a
+            href={`/api/auth/google?redirect=${encodeURIComponent(redirect)}`}
             className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-white text-sm font-medium text-foreground transition-colors hover:bg-surface"
           >
             <GoogleIcon className="h-5 w-5" />
             Continue with Google
-          </button>
+          </a>
           <button
             type="button"
             onClick={handlePasskey}
