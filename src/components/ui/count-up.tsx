@@ -25,8 +25,10 @@ export function CountUp({ end, prefix = "", suffix = "", decimals = 0, duration 
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
-      setValue(end);
-      return;
+      // Defer out of the effect body so the lint rule against synchronous
+      // setState in effects stays satisfied.
+      const id = requestAnimationFrame(() => setValue(end));
+      return () => cancelAnimationFrame(id);
     }
     const start = performance.now();
     let raf = 0;
