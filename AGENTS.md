@@ -21,3 +21,15 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+## Git workflow
+
+- **Always push changes to GitHub.** When a task is complete, commit the verified
+  change on the current branch and run `git push origin <branch>`
+  (remote: `https://github.com/musinguziemma1/TrueWorks_Upgrade.git`).
+- Stage specific files rather than `git add -A`, so unrelated untracked tooling
+  directories are not swept into the commit.
+- Keep commits focused and use conventional prefixes (`feat(scope):`,
+  `fix(scope):`, `chore(scope):`, `docs:`), matching existing commit history.
+- Validate before pushing (`npx tsc --noEmit`, plus `npm test` / `npm run lint`
+  where relevant); do not push a failing build.
