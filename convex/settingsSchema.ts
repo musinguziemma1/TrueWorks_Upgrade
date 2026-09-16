@@ -7,7 +7,7 @@
  * Pure module: no Convex imports so it can run in both environments.
  */
 
-export type SettingTab = "general" | "branding" | "email" | "payment" | "downloads" | "security";
+export type SettingTab = "general" | "branding" | "email" | "payment" | "downloads" | "security" | "homepage";
 
 export type SettingType =
   | "text"
@@ -127,8 +127,16 @@ export const SETTING_FIELDS: SettingField[] = [
   { key: "verificationCodeExpiry", tab: "security", type: "number", label: "Verification Code Expiry (minutes)", default: 10, min: 1, max: 60, status: "live" },
   { key: "signOutVerification", tab: "security", type: "boolean", label: "Verification at Sign-Out", description: "Require verification code to sign out of admin sessions", default: false, status: "live" },
   { key: "apiRateLimiting", tab: "security", type: "boolean", label: "API Rate Limiting", description: "Throttle requests to prevent abuse", default: true, status: "live" },
-  { key: "ipWhitelist", tab: "security", type: "boolean", label: "IP Whitelist", description: "Restrict admin access to specific IPs", default: false, status: "planned" },
+    { key: "ipWhitelist", tab: "security", type: "boolean", label: "IP Whitelist", description: "Restrict admin access to specific IPs", default: false, status: "planned" },
   { key: "apiKey", tab: "security", type: "text", label: "API Key", default: "", secret: true, status: "live" },
+
+  // ─── Homepage ──────────────────────────────────────────────────────────
+  { key: "homepageVariant", tab: "homepage", type: "select", label: "Homepage Variant", default: "classic", options: [
+    { value: "classic", label: "Classic (current)" },
+    { value: "nextgen", label: "Next-Gen Redesign" },
+  ], status: "live", validate: (v) => (v === "classic" || v === "nextgen" ? null : "Select a valid homepage variant") },
+  { key: "homepageTaglinePrimary", tab: "homepage", type: "text", label: "Hero Primary Tagline", default: "The Business Systems Layer", status: "live" },
+  { key: "homepageTaglineSecondary", tab: "homepage", type: "textarea", label: "Hero Secondary Tagline", default: "Professional dashboards, financial models and operational systems that turn everyday business complexity into clarity.", status: "live" },
 ];
 
 export const SETTING_BY_KEY: Record<string, SettingField> = Object.fromEntries(
@@ -146,6 +154,7 @@ export const PUBLIC_SETTING_KEYS = [
   "primaryColor", "secondaryColor", "accentColor", "backgroundColor",
   "surfaceColor", "foregroundColor", "headingFont", "bodyFont", "customCss",
   "currency", "taxRate", "pesapalEnabled", "stripeEnabled",
+  "homepageVariant", "homepageTaglinePrimary", "homepageTaglineSecondary",
 ] as const;
 
 /** Sentinel used in getAll for secret values — never leaks the real secret. */

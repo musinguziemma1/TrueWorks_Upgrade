@@ -57,10 +57,15 @@ interface Settings {
   apiRateLimiting: boolean
   ipWhitelist: boolean
 
-  // Storage
+      // Storage
   storageProvider: string
   storageUsed: number
   storageMax: number
+
+  // Homepage
+  homepageVariant: string
+  homepageTaglinePrimary: string
+  homepageTaglineSecondary: string
 }
 
 const defaultSettings: Settings = {
@@ -82,7 +87,7 @@ const defaultSettings: Settings = {
   smtpHost: "",
   smtpPort: "587",
   smtpUsername: "",
-  smtpFrom: "",
+    smtpFrom: "",
   currency: "USD",
   taxRate: 18,
   pesapalEnabled: true,
@@ -107,6 +112,10 @@ const defaultSettings: Settings = {
   storageProvider: "local",
   storageUsed: 0,
   storageMax: 10,
+  homepageVariant: "classic",
+  homepageTaglinePrimary: "The Business Systems Layer",
+  homepageTaglineSecondary:
+    "Professional dashboards, financial models and operational systems that turn everyday business complexity into clarity.",
 }
 
 const SettingsContext = createContext<Settings>(defaultSettings)

@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
+import { HomepageSelector } from "@/components/admin/homepage-selector"
 import { toast } from "sonner"
 
 type ContentItem = Doc<"pages">
@@ -223,6 +224,8 @@ export default function ContentPage() {
         description="Manage pages, posts, and resources"
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Content" }]}
       />
+
+      <HomepageSelector />
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
