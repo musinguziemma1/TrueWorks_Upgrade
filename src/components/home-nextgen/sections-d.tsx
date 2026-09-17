@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { DashboardPlaceholder, MediaFrame } from "./media";
+import { useHomeMedia } from "./use-home-media";
 import { MaskReveal, Reveal } from "./motion";
 import { CREDIBILITY_SIGNALS, FREE_DASHBOARD } from "./data";
 
 export function FreeResourceSection() {
+  const { freeDashboard } = useHomeMedia();
   return (
     <section id="free-resource" className="ng-section" aria-labelledby="free-heading">
       <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
@@ -43,8 +45,8 @@ export function FreeResourceSection() {
         </Reveal>
         <MaskReveal>
           <MediaFrame
-            src={FREE_DASHBOARD.media.src}
-            alt={FREE_DASHBOARD.media.alt}
+            src={freeDashboard.src}
+            alt={freeDashboard.alt}
             label="free · hospital kpi dashboard"
             fallback={<DashboardPlaceholder variant="overview" />}
           />

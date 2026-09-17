@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 import { DashboardPlaceholder, MediaFrame } from "./media";
-import { HERO_MEDIA } from "./data";
+import { useHomeMedia } from "./use-home-media";
 import { EASE_OUT, MagneticLink, MaskReveal } from "./motion";
 import HeroComposition from "./hero-composition";
 
@@ -18,6 +18,7 @@ import HeroComposition from "./hero-composition";
 
 export default function NextGenHero() {
   const reduceMotion = useReducedMotion();
+  const { hero } = useHomeMedia();
   const fade = (delay: number, y = 18) => ({
     initial: { opacity: 0, y },
     animate: { opacity: 1, y: 0 },
@@ -127,12 +128,12 @@ export default function NextGenHero() {
         <HeroComposition />
       </div>
 
-      {/* Cinematic media band — drop the final artwork at HERO_MEDIA.src */}
+      {/* Cinematic media band — real artwork resolves from the CMS when available */}
       <div className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
         <MaskReveal delay={0.15}>
           <MediaFrame
-            src={HERO_MEDIA.src}
-            alt={HERO_MEDIA.alt}
+            src={hero.src}
+            alt={hero.alt}
             ratio="aspect-[16/10] sm:aspect-[16/9] lg:aspect-[21/9]"
             sizes="(min-width: 1280px) 1180px, 100vw"
             priority

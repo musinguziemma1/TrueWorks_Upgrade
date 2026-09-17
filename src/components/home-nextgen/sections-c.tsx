@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { DashboardPlaceholder, MediaFrame } from "./media";
+import { useHomeMedia } from "./use-home-media";
 import { Reveal } from "./motion";
 import { IMPACT_METRICS, INDUSTRIES } from "./data";
 
@@ -39,6 +40,7 @@ export function ImpactSection() {
 }
 
 export function IndustrySection() {
+  const { industries: industryMedia } = useHomeMedia();
   return (
     <section id="industries" className="ng-section" aria-labelledby="industries-heading">
       <Reveal>
@@ -52,8 +54,8 @@ export function IndustrySection() {
               className="group block h-full overflow-hidden rounded-2xl border border-black/10 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_80px_-50px_rgba(4,16,31,0.5)]"
             >
               <MediaFrame
-                src={industry.media.src}
-                alt={industry.media.alt}
+                src={industryMedia[index]?.src ?? industry.media.src}
+                alt={industryMedia[index]?.alt ?? industry.media.alt}
                 chrome={false}
                 ratio="aspect-[16/9]"
                 sizes="(min-width: 1024px) 560px, 100vw"

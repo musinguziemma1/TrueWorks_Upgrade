@@ -6,12 +6,15 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { PRODUCT_CATEGORIES } from "./data";
 import { DashboardPlaceholder, MediaFrame } from "./media";
+import { useHomeMedia } from "./use-home-media";
 import { Reveal } from "./motion";
 
 export default function ProductExplorer() {
   const [selected, setSelected] = useState(0);
   const reduced = useReducedMotion();
-  const product = PRODUCT_CATEGORIES[selected];
+  const { products: mediaList } = useHomeMedia();
+  const fallback = PRODUCT_CATEGORIES[selected];
+  const product = { ...fallback, media: mediaList[selected] ?? fallback.media };
   return (
     <section id="solutions" className="ng-section" aria-labelledby="systems-heading">
       <Reveal><p className="ng-eyebrow">Built around your workflow</p><h2 id="systems-heading" className="ng-heading">Systems built<br />around real work.</h2></Reveal>
