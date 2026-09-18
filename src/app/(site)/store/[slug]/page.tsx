@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { convexServer } from "@/lib/convex-server";
 import ProductDetail from "./content";
@@ -12,25 +13,61 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trueworksgroup.com
 
 type Props = { params: Promise<{ slug: string }> };
 
-// Dedupe the metadata + page reads into a single server-side Convex call per
-// request.
-const getProduct = cache(async (slug: string) => {
-  if (!convexServer) return null;
+/**
+ * Server-side load for the detail page.
+ *
+ * The three states are deliberately distinct:
+ *   - found       → render the real product into the HTML
+ *   - missing     → a genuine 404 (unknown slug, or unpublished to the public)
+ *   - unavailable → Convex could not be reached; render the shell and let the
+ *                   client query recover, so an outage can never delist the
+ *                   catalogue by mass-404ing it.
+ *
+ * `getBySlug` already hides non-published products from anonymous callers,
+ * which is what this reads as.
+ */
+const loadProduct = cache(async (slug: string) => {
+  if (!convexServer) return { status: "unavailable" as const };
   try {
-    return await convexServer.query(api.products.getBySlug, { slug });
-  } catch {
-    return null;
+    const product = await convexServer.query(api.products.getBySlug, { slug });
+    return product
+      ? { status: "found" as const, product }
+      : { status: "missing" as const };
+  } catch (error) {
+    console.error(`Could not load product "${slug}" for server render`, error);
+    return { status: "unavailable" as const };
   }
 });
 
+/**
+ * Prerender every published product at build time so the first crawl request
+ * already receives full HTML instead of an empty shell.
+ */
+export async function generateStaticParams() {
+  if (!convexServer) return [];
+  try {
+    const result = await convexServer.query(api.products.list, {
+      status: "published",
+      limit: 1000,
+    });
+    return (result?.items ?? []).map((product) => ({ slug: product.slug }));
+  } catch (error) {
+    console.error("Could not list published products for prerendering", error);
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const result = await loadProduct(slug);
 
-  if (!product) {
-    return { title: "Product Not Found" };
+  // Never noindex on an outage — only on a genuine miss.
+  if (result.status === "missing") {
+    return { title: "Product Not Found", robots: { index: false, follow: true } };
   }
+  if (result.status !== "found") return { title: "Product" };
 
+  const product = result.product;
   const price = product.salePrice ?? product.price;
 
   return {
@@ -57,7 +94,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const result = await loadProduct(slug);
+
+  // A real 404 rather than a 200 shell Google would file as a soft 404.
+  if (result.status === "missing") notFound();
+
+  // Only passed when the server actually resolved a product; otherwise the
+  // client query owns the loading/not-found states as before.
+  const product = result.status === "found" ? result.product : undefined;
 
   const jsonLd = product
     ? [
@@ -125,7 +169,7 @@ export default async function ProductDetailPage({ params }: Props) {
           }}
         />
       )}
-      <ProductDetail />
+      <ProductDetail initialProduct={product} />
     </>
   );
 }

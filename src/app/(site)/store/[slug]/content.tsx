@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import DOMPurify from "dompurify";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -53,11 +52,20 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { ExcelPreviewDialog } from "@/components/ui/excel-preview-dialog";
+import { SanitizedHtml } from "@/components/ui/sanitized-html";
 import { useSignedPreviewUrl } from "@/lib/use-signed-preview";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Id } from "@convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
+
+/**
+ * The payload `products.getBySlug` hands back to a public (non-admin) caller:
+ * the sellable file URL stripped, plus a `hasDownloadableFile` flag. Deriving it
+ * from the query keeps the server prop and the client query in lockstep.
+ */
+type ProductData = NonNullable<FunctionReturnType<typeof api.products.getBySlug>>;
 
 const TwitterIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -99,7 +107,15 @@ const trustBadges = [
   { icon: RefreshCw, label: "30-Day Guarantee" },
 ];
 
-export default function ProductDetail() {
+export default function ProductDetail({
+  initialProduct,
+}: {
+  /**
+   * Resolved on the server so the product's name, copy, price and images are in
+   * the HTML for crawlers. The live Convex query takes over on the client.
+   */
+  initialProduct?: ProductData;
+} = {}) {
   const formatPrice = useFormatPrice();
   const params = useParams<{ slug: string }>();
   const router = useRouter();
@@ -125,7 +141,10 @@ export default function ProductDetail() {
   const [submitting, setSubmitting] = useState(false);
   const createReview = useMutation(api.reviews.create);
 
-  const product = useQuery(api.products.getBySlug, { slug: params.slug });
+  const queriedProduct = useQuery(api.products.getBySlug, { slug: params.slug });
+  // While the query is still loading (`undefined`) fall back to the
+  // server-rendered product, so the first paint — and the crawl — is complete.
+  const product = queriedProduct === undefined ? initialProduct : queriedProduct;
   const reviews = useQuery(
     api.reviews.listApproved,
     product ? { productId: product._id } : "skip"
@@ -672,14 +691,9 @@ export default function ProductDetail() {
                     </p>
                   </div>
 
-                  <div
+                  <SanitizedHtml
+                    html={p.description}
                     className="prose prose-sm mt-6 max-w-none leading-relaxed text-muted [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-primary [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-primary [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-primary [&_p]:mb-3 [&_img]:my-6 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_strong]:text-foreground"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(p.description, {
-                        USE_PROFILES: { html: true },
-                        FORBID_TAGS: ["style", "script", "iframe", "object", "embed", "form"],
-                      }),
-                    }}
                   />
 
                   {p.changelog && (

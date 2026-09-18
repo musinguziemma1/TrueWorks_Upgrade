@@ -4,12 +4,28 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useParams } from "next/navigation";
+import type { FunctionReturnType } from "convex/server";
 import ResourceDetail from "./content";
 import { Loader2 } from "lucide-react";
 
-export default function ResourceLoader() {
+/** Shape returned by `resources.getBySlug` — a published resource or null. */
+export type ResourceData = NonNullable<
+  FunctionReturnType<typeof api.resources.getBySlug>
+>;
+
+export default function ResourceLoader({
+  initialResource,
+}: {
+  /**
+   * Resolved on the server so the article is in the HTML for crawlers. The live
+   * Convex query takes over once the client socket is up.
+   */
+  initialResource?: ResourceData;
+}) {
   const { slug } = useParams<{ slug: string }>();
-  const resource = useQuery(api.resources.getBySlug, { slug });
+  const queriedResource = useQuery(api.resources.getBySlug, { slug });
+  const resource =
+    queriedResource === undefined ? initialResource : queriedResource;
 
   if (resource === undefined) {
     return (

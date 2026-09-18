@@ -12,14 +12,22 @@ import { ProductCard, type StoreProduct } from "@/components/product/product-car
 import { Button } from "@/components/ui/button";
 import { StoreSidebar, type StoreFacets } from "@/components/store/store-sidebar";
 
-const ITEMS_PER_PAGE = 9;
+import { STORE_DEFAULT_SORT, STORE_ITEMS_PER_PAGE } from "@/lib/store-constants";
 
-export default function StoreContent() {
+export default function StoreContent({
+  initialProducts = [],
+}: {
+  /**
+   * The default first page, prefetched on the server so the catalogue renders
+   * real, crawlable product links before hydration.
+   */
+  initialProducts?: StoreProduct[];
+}) {
   if (!convexClient) return null;
-  return <StoreContentInner />;
+  return <StoreContentInner initialProducts={initialProducts} />;
 }
 
-function StoreContentInner() {
+function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[] }) {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const qParam = searchParams.get("q");
@@ -67,15 +75,35 @@ function StoreContentInner() {
       sort,
       status: "published",
     },
-    { initialNumItems: ITEMS_PER_PAGE }
+    { initialNumItems: STORE_ITEMS_PER_PAGE }
   );
 
   const facets = useQuery(api.products.getStoreFacets);
   const dbCategories = useQuery(api.categories.list, {});
   const categoryNames = (dbCategories ?? []).map((c) => c.name);
 
-  const products: StoreProduct[] = (results ?? []) as StoreProduct[];
-  const isLoading = status === "LoadingFirstPage";
+  // The server prefetch mirrors exactly one view: the unfiltered default
+  // listing. Any active filter or a different sort means we must wait for
+  // Convex rather than show stale, unfiltered products.
+  const filtersAreDefault =
+    search.trim() === "" &&
+    activeCategory === "All" &&
+    sort === STORE_DEFAULT_SORT &&
+    priceRange[0] === 0 &&
+    priceRange[1] === 999999 &&
+    minRating === 0 &&
+    fileTypes.length === 0 &&
+    onSaleOnly === false &&
+    featuredOnly === false &&
+    industries.length === 0;
+
+  const isLoadingFirstPage = status === "LoadingFirstPage";
+  const showServerProducts =
+    isLoadingFirstPage && filtersAreDefault && initialProducts.length > 0;
+  const products: StoreProduct[] = (
+    showServerProducts ? initialProducts : results ?? []
+  ) as StoreProduct[];
+  const isLoading = isLoadingFirstPage && !showServerProducts;
   const isLoadingMore = status === "LoadingMore";
   const canLoadMore = status === "CanLoadMore";
 
@@ -281,7 +309,7 @@ function StoreContentInner() {
                     key={product._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: (i % ITEMS_PER_PAGE) * 0.05 }}
+                    transition={{ duration: 0.4, delay: (i % STORE_ITEMS_PER_PAGE) * 0.05 }}
                   >
                     <ProductCard product={product} />
                   </motion.div>
@@ -310,7 +338,7 @@ function StoreContentInner() {
                 <Button
                   variant="outline"
                   className="rounded-xl px-8"
-                  onClick={() => loadMore(ITEMS_PER_PAGE)}
+                  onClick={() => loadMore(STORE_ITEMS_PER_PAGE)}
                   disabled={isLoadingMore}
                 >
                   {isLoadingMore ? (

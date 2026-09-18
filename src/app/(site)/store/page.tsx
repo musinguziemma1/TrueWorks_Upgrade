@@ -1,6 +1,40 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { cache } from "react";
+import { api } from "@convex/_generated/api";
+import { convexServer } from "@/lib/convex-server";
+import { STORE_DEFAULT_SORT, STORE_ITEMS_PER_PAGE } from "@/lib/store-constants";
+import type { StoreProduct } from "@/components/product/product-card";
 import StoreContent from "./content";
+
+// Refresh the prerendered first page periodically; the client query supplies
+// live data as soon as the page hydrates.
+export const revalidate = 300;
+
+/**
+ * Prefetch the default first page of the store on the server.
+ *
+ * Without this the prerendered HTML contained the store chrome but an empty
+ * product grid, so a crawler saw no product links or titles on the catalogue
+ * page at all. Cached so the metadata pass and the render share one call.
+ *
+ * Only the unfiltered default page is prefetched — the client discards it
+ * whenever a filter is active, so filtered views are unaffected.
+ */
+const loadStoreFirstPage = cache(async (): Promise<StoreProduct[]> => {
+  if (!convexServer) return [];
+  try {
+    const result = await convexServer.query(api.products.listPaginated, {
+      status: "published",
+      sort: STORE_DEFAULT_SORT,
+      paginationOpts: { numItems: STORE_ITEMS_PER_PAGE, cursor: null },
+    });
+    return (result?.page ?? []) as StoreProduct[];
+  } catch (error) {
+    console.error("Could not prefetch the store's first page", error);
+    return [];
+  }
+});
 
 export const metadata: Metadata = {
   title: "Store - Premium Templates & Business Systems",
@@ -55,7 +89,9 @@ function StoreSkeleton() {
   );
 }
 
-export default function StorePage() {
+export default async function StorePage() {
+  const initialProducts = await loadStoreFirstPage();
+
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -81,7 +117,7 @@ export default function StorePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <StoreContent />
+      <StoreContent initialProducts={initialProducts} />
     </Suspense>
   );
 }
