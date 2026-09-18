@@ -6,7 +6,6 @@ import { convexServer } from "@/lib/convex-server";
 import { STORE_DEFAULT_SORT, STORE_ITEMS_PER_PAGE } from "@/lib/store-constants";
 import type { StoreProduct } from "@/components/product/product-card";
 import StoreContent from "./content";
-
 // Refresh the prerendered first page periodically; the client query supplies
 // live data as soon as the page hydrates.
 export const revalidate = 300;
@@ -21,6 +20,44 @@ export const revalidate = 300;
  * Only the unfiltered default page is prefetched — the client discards it
  * whenever a filter is active, so filtered views are unaffected.
  */
+/**
+ * Reduce a product to the fields `ProductCard` actually renders.
+ *
+ * The prefetched products are serialized into the page's flight payload, and
+ * full catalog objects carry detail-page-only bulk — rich `description` HTML,
+ * `faqs` transcripts, `galleryImages`, `pricingTiers`, `changelog` — which the
+ * grid never touches. Stripping them keeps the crawlable, server-rendered
+ * first page lean (it previously pushed the catalogue to ~4 MB of HTML).
+ */
+function toCardProduct(p: StoreProduct): StoreProduct {
+  return {
+    _id: p._id,
+    name: p.name,
+    slug: p.slug,
+    shortDescription: p.shortDescription,
+    price: p.price,
+    salePrice: p.salePrice,
+    category: p.category,
+    thumbnail: p.thumbnail,
+    rating: p.rating,
+    reviewCount: p.reviewCount,
+    featured: p.featured,
+    fileType: p.fileType,
+    tags: p.tags,
+    status: p.status,
+    hasDownloadableFile: p.hasDownloadableFile,
+    totalSales: p.totalSales,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    // Fields the StoreProduct type requires but the card never reads.
+    description: "",
+    faqs: [],
+    galleryImages: [],
+    industry: "",
+    sku: "",
+  };
+}
+
 const loadStoreFirstPage = cache(async (): Promise<StoreProduct[]> => {
   if (!convexServer) return [];
   try {
@@ -29,7 +66,7 @@ const loadStoreFirstPage = cache(async (): Promise<StoreProduct[]> => {
       sort: STORE_DEFAULT_SORT,
       paginationOpts: { numItems: STORE_ITEMS_PER_PAGE, cursor: null },
     });
-    return (result?.page ?? []) as StoreProduct[];
+    return ((result?.page ?? []) as StoreProduct[]).map(toCardProduct);
   } catch (error) {
     console.error("Could not prefetch the store's first page", error);
     return [];
