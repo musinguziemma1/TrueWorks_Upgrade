@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "TrueWorks 4-day satisfaction guarantee. Read our refund policy and learn how to request a refund.",
   openGraph: {
-    title: "Refund Policy - TrueWorks Limited",
+    title: "Refund Policy - TrueWorks Ventures",
     description: "TrueWorks 4-day satisfaction guarantee and refund policy.",
     url: "https://trueworksgroup.com/refund-policy",
   },

@@ -5,7 +5,7 @@ import TermsContent from "./content";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Terms of Service - TrueWorks Limited",
+  title: "Terms of Service - TrueWorks Ventures",
   description:
     "Review the terms and conditions governing the use of TrueWorks templates, dashboards and digital products.",
 };

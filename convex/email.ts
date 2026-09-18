@@ -668,7 +668,7 @@ export const sendSubscriberWelcome = internalAction({
       ${brandContactLine()}
       <p>Premium Business Operating Systems</p>
       <p>Kampala, Uganda · <a href="${SITE_URL}">trueworksgroup.com</a></p>
-      <p>© ${new Date().getFullYear()} TrueWorks Limited. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} TrueWorks Ventures. All rights reserved.</p>
     </div>
   </div>
 </body>

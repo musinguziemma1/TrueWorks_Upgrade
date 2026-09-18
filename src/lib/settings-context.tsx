@@ -64,7 +64,7 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  siteName: "TrueWorks Limited",
+  siteName: "TrueWorks Ventures",
   siteTagline: "Digital Products Marketplace",
   siteDescription: "Your premier destination for high-quality digital products, templates, and tools.",
   siteUrl: "",

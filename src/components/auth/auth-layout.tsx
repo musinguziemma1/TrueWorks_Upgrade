@@ -76,7 +76,7 @@ export function AuthLayout({
         </div>
 
         <div className="relative z-10 text-sm text-white/70">
-          &copy; {new Date().getFullYear()} TrueWorks Limited. All rights reserved.
+          &copy; {new Date().getFullYear()} TrueWorks Ventures. All rights reserved.
         </div>
       </div>
 

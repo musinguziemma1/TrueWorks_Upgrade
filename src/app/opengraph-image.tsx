@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "TrueWorks Limited — Business Operating Systems for Global organizations";
+export const alt = "TrueWorks Ventures — Business Operating Systems for Global organizations";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,7 +46,7 @@ export default function OgImage() {
             TW
           </div>
           <span style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "0.02em" }}>
-            TrueWorks Limited
+            TrueWorks Ventures
           </span>
         </div>
         <div

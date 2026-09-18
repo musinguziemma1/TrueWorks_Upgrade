@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { SocialIcon } from "@/components/layout/social-icons";
 
 const milestones = [
-  { year: "2018", title: "Founded", description: "TrueWorks Limited was established in Kampala, Uganda with a vision to transform business operations through technology." },
+  { year: "2018", title: "Founded", description: "TrueWorks Ventures was established in Kampala, Uganda with a vision to transform business operations through technology." },
   { year: "2019", title: "First Templates", description: "Launched our first collection of business document templates, serving local enterprises with professional solutions." },
   { year: "2020", title: "Growth", description: "Expanded our team and customer base globally, adding financial modeling and KPI dashboard templates." },
   { year: "2021", title: "Enterprise", description: "Secured enterprise partnerships with major organizations, delivering custom template solutions at scale." },
@@ -126,7 +126,7 @@ export default function AboutContent() {
               </FadeIn>
               <FadeIn delay={0.16}>
                 <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/75 sm:text-lg">
-                  TrueWorks Limited is a Ugandan business technology company
+                  TrueWorks Ventures is a Ugandan business technology company
                   helping organizations streamline operations, improve
                   decision-making and achieve sustainable growth through
                   expertly crafted templates, dashboards and digital tools.

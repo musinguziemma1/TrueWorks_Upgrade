@@ -52,7 +52,7 @@ function buildPreviewDoc(content: string): string {
   <div class="container">
     <div class="header"><h1>TrueWorks</h1></div>
     <div class="content">${content}</div>
-    <div class="footer"><p>TrueWorks Limited | Kampala, Uganda</p></div>
+    <div class="footer"><p>TrueWorks Ventures | Kampala, Uganda</p></div>
   </div>
 </body>
 </html>`

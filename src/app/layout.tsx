@@ -10,8 +10,8 @@ import { DynamicFavicon } from "@/components/dynamic-favicon";
 export const metadata: Metadata = {
   metadataBase: new URL("https://trueworksgroup.com"),
   title: {
-    default: "TrueWorks Limited - Business Operating Systems for Global organizations",
-    template: "%s | TrueWorks Limited",
+    default: "TrueWorks Ventures - Business Operating Systems for Global organizations",
+    template: "%s | TrueWorks Ventures",
   },
   description:
     "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    siteName: "TrueWorks Limited",
-    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
+    siteName: "TrueWorks Ventures",
+    title: "TrueWorks Ventures - Business Operating Systems for Global organizations",
     description:
       "We build Business Operating Systems that help organizations operate better, decide faster, and grow stronger. Premium Excel templates, dashboards and business systems for Global organizations.",
     url: "https://trueworksgroup.com",
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "TrueWorks Limited - Business Operating Systems",
+        alt: "TrueWorks Ventures - Business Operating Systems",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
+    title: "TrueWorks Ventures - Business Operating Systems for Global organizations",
     description:
       "Premium Excel templates, financial models, and dashboards for hospitals, NGOs, churches, schools, and growing businesses across the Globe.",
     images: ["/opengraph-image"],
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "TrueWorks Limited",
+  name: "TrueWorks Ventures",
   url: "https://trueworksgroup.com",
   logo: "https://trueworksgroup.com/images/logo-horizontal.svg",
   description:

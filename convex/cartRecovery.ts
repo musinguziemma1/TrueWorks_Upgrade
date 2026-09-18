@@ -80,7 +80,7 @@ export const sendRecoveryEmails = internalAction({
       <div style="text-align: center; margin: 28px 0;"><a href="${SITE_URL}/cart" class="button">Complete Your Purchase →</a></div>
       <p style="font-size: 13px; color: #5D6B7E;">Need help? Reply to this email or contact us at <a href="mailto:info@trueworksgroup.com" style="color: #B8860B;">info@trueworksgroup.com</a>.</p>
     </div>
-    <div class="footer">${brandContactLine()}<p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Limited.</p></div>
+    <div class="footer">${brandContactLine()}<p>Premium Business Operating Systems</p><p>© ${new Date().getFullYear()} TrueWorks Ventures.</p></div>
   </div>
 </body></html>`;
 

@@ -18,7 +18,7 @@ const FreeResource = dynamic(() => import("@/components/home/free-resource"));
 const FinalCTA = dynamic(() => import("@/components/home/final-cta"));
 
 export const metadata: Metadata = {
-  title: "TrueWorks Limited - Business Operating Systems for Global organizations",
+  title: "TrueWorks Ventures - Business Operating Systems for Global organizations",
   description:
     "Premium Excel templates, financial models, dashboards and business systems - purpose-built for hospitals, NGOs, churches, schools and growing businesses across the Globe. Instant download, mobile money accepted.",
   keywords: [
@@ -34,15 +34,15 @@ export const metadata: Metadata = {
     "downloadable templates",
   ],
   openGraph: {
-    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
+    title: "TrueWorks Ventures - Business Operating Systems for Global organizations",
     description:
       "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses across the Globe.",
     url: "https://trueworksgroup.com",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks Limited" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TrueWorks Ventures" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrueWorks Limited - Business Operating Systems for Global organizations",
+    title: "TrueWorks Ventures - Business Operating Systems for Global organizations",
     description: "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",
     images: ["/opengraph-image"],
   },
@@ -55,7 +55,7 @@ export default function HomePage() {
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "TrueWorks Limited",
+    name: "TrueWorks Ventures",
     url: "https://trueworksgroup.com",
     description:
       "Premium Excel templates, financial models, dashboards and business systems for hospitals, NGOs, churches, schools and growing businesses.",

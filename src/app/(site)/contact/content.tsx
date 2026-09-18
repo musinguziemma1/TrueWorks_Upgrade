@@ -643,7 +643,7 @@ export default function ContactContent() {
                         Our office
                       </p>
                       <p className="mt-1 font-heading text-lg font-semibold text-white">
-                        TrueWorks Limited
+                        TrueWorks Ventures
                       </p>
                       <p className="mt-0.5 text-sm text-white/80">
                         Plot 42, Acacia Avenue
@@ -683,7 +683,7 @@ export default function ContactContent() {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="TrueWorks Limited — Plot 42, Acacia Avenue, Kampala"
+                title="TrueWorks Ventures — Plot 42, Acacia Avenue, Kampala"
                 className="w-full grayscale-[20%]"
               />
             </div>

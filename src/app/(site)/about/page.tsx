@@ -7,7 +7,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "About Us - Building Better Organizations",
   description:
-    "TrueWorks Limited is a Ugandan business technology company helping organizations streamline operations and grow with expertly crafted templates, dashboards and digital tools.",
+    "TrueWorks Ventures is a Ugandan business technology company helping organizations streamline operations and grow with expertly crafted templates, dashboards and digital tools.",
   keywords: [
     "About TrueWorks",
     "business technology company",
@@ -16,15 +16,15 @@ export const metadata: Metadata = {
     "business operating systems",
   ],
   openGraph: {
-    title: "About Us - TrueWorks Limited",
+    title: "About Us - TrueWorks Ventures",
     description:
-      "TrueWorks Limited helping organizations streamline operations and grow with expertly crafted templates and digital tools.",
+      "TrueWorks Ventures helping organizations streamline operations and grow with expertly crafted templates and digital tools.",
     url: "https://trueworksgroup.com/about",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "About TrueWorks Limited" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "About TrueWorks Ventures" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "About Us - TrueWorks Limited",
+    title: "About Us - TrueWorks Ventures",
     description: "Helping organizations streamline operations with expertly crafted templates.",
     images: ["/opengraph-image"],
   },

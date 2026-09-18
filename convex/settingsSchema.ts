@@ -47,7 +47,7 @@ export interface SettingField {
 
 export const SETTING_FIELDS: SettingField[] = [
   // ─── General ────────────────────────────────────────────────────────────
-  { key: "siteName", tab: "general", type: "text", label: "Site Name", default: "TrueWorks Limited", status: "live", validate: (v) => (String(v).trim().length === 0 ? "Site name is required" : null) },
+  { key: "siteName", tab: "general", type: "text", label: "Site Name", default: "TrueWorks Ventures", status: "live", validate: (v) => (String(v).trim().length === 0 ? "Site name is required" : null) },
   { key: "siteTagline", tab: "general", type: "text", label: "Tagline", default: "Digital Products Marketplace", status: "live" },
   { key: "siteDescription", tab: "general", type: "textarea", label: "Description", default: "Your premier destination for high-quality digital products, templates, and tools.", status: "live" },
   { key: "siteUrl", tab: "general", type: "url", label: "Site URL", default: "", placeholder: "https://trueworks.com", status: "live", validate: (v) => { const s = String(v).trim(); if (!s) return null; return /^https?:\/\/.+/i.test(s) ? null : "Enter a valid URL starting with http(s)://" } },

@@ -1,4 +1,4 @@
-# TrueWorks Limited — Business Operating Systems
+# TrueWorks Ventures — Business Operating Systems
 
 We build Business Operating Systems that help organizations operate better,
 decide faster, and grow stronger.
@@ -11,7 +11,7 @@ decide faster, and grow stronger.
 
 ## About
 
-TrueWorks Limited is a Ugandan professional systems company. We sell premium,
+TrueWorks Ventures is a Ugandan professional systems company. We sell premium,
 ready-to-use digital products: Excel financial models, dashboards, KPI trackers,
 budget systems, HR templates, SOP manuals, board presentation decks, and
 specialized template packs for hospitals, NGOs, churches, schools, and farms.
@@ -204,4 +204,4 @@ See `.env.local.example` for the full annotated list.
 
 ## License
 
-Private — TrueWorks Limited. All rights reserved.
+Private — TrueWorks Ventures. All rights reserved.

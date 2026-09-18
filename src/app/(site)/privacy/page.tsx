@@ -5,9 +5,9 @@ import PrivacyContent from "./content";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - TrueWorks Limited",
+  title: "Privacy Policy - TrueWorks Ventures",
   description:
-    "How TrueWorks Limited collects, uses, and protects your personal data when you use our website and purchase our products.",
+    "How TrueWorks Ventures collects, uses, and protects your personal data when you use our website and purchase our products.",
 };
 
 export default function PrivacyPage() {

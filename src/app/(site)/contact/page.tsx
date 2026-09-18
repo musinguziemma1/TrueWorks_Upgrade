@@ -13,14 +13,14 @@ export const metadata: Metadata = {
     "partnerships",
   ],
   openGraph: {
-    title: "Contact Us - TrueWorks Limited",
+    title: "Contact Us - TrueWorks Ventures",
     description: "Get in touch with the TrueWorks team for templates, custom solutions or partnerships.",
     url: "https://trueworksgroup.com/contact",
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Contact TrueWorks" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact Us - TrueWorks Limited",
+    title: "Contact Us - TrueWorks Ventures",
     description: "Get in touch with the TrueWorks team.",
     images: ["/opengraph-image"],
   },

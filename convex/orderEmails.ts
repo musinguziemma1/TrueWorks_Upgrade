@@ -70,7 +70,7 @@ export const sendOrderStatusEmail = internalAction({
       <p style="margin: 0;"><strong>Payment status:</strong> ${escapeHtml(statusLabel(order.paymentStatus))}</p>
     </div>
     <a href="${SITE_URL}/account/orders" style="display: inline-block; background: #B8860B; color: #0B2545; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Your Orders</a>
-    <p style="margin: 24px 0 0; font-size: 12px; color: #5D6B7E;">TrueWorks Limited — Kampala, Uganda</p>
+    <p style="margin: 24px 0 0; font-size: 12px; color: #5D6B7E;">TrueWorks Ventures — Kampala, Uganda</p>
   </div>
 </body></html>`;
 
