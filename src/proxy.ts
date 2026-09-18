@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const publicRoutes = [
   "/",
+  // Crawler surfaces must stay reachable without a session. They are also
+  // excluded from the matcher below; this list is the belt to that braces.
+  "/robots.txt",
+  "/sitemap.xml",
   "/store",
   "/resources",
   "/about",
@@ -95,7 +99,9 @@ export default async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // NOTE: `txt` and `xml` matter — without them the middleware intercepts
+    // /robots.txt and /sitemap.xml and redirects crawlers to /sign-in.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|txt|xml)).*)",
     "/(api|trpc)(.*)",
   ],
 };
