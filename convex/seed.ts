@@ -645,8 +645,6 @@ const settingsSeed = [
   { key: "siteName", value: "TrueWorks" },
   { key: "siteDescription", value: "Premium spreadsheet templates and dashboards for modern teams." },
   { key: "currency", value: "USD" },
-  { key: "supportEmail", value: "info@trueworksgroup.com" },
-  { key: "featuredProductSlugs", value: ["hospital-kpi-dashboard", "financial-model-bundle", "project-portfolio-tracker"] },
 ];
 
 const resourcesSeed = [
