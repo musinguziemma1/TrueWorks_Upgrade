@@ -78,7 +78,7 @@ export const funnel = query({
     }
 
     // Push the date window into the index — a post-scan `.filter()` would still
-    // read the whole table — and cap the scan.
+    // read the whole table — and cap the scan at the most recent events.
     const events = await ctx.db
       .query("analyticsEvents")
       .withIndex("by_createdAt", (range) =>
@@ -86,7 +86,7 @@ export const funnel = query({
           .gte("createdAt", args.startDate ?? 0)
           .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
       )
-      .order("asc")
+      .order("desc")
       .take(MAX_EVENTS_SCAN);
 
     const stepOrder = [
@@ -133,7 +133,7 @@ export const overview = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { total: 0, byEvent: {}, topProducts: [] };
 
-    // Index-range + capped scan (see MAX_EVENTS_SCAN).
+    // Index-range + capped scan (see MAX_EVENTS_SCAN); newest events first.
     const events = await ctx.db
       .query("analyticsEvents")
       .withIndex("by_createdAt", (range) =>
@@ -141,7 +141,7 @@ export const overview = query({
           .gte("createdAt", args.startDate ?? 0)
           .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
       )
-      .order("asc")
+      .order("desc")
       .take(MAX_EVENTS_SCAN);
 
     const byEvent = new Map<string, number>();
