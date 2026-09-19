@@ -4,6 +4,12 @@ import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 
+/**
+ * Ledger rows read per summary (one row per day, so this is a generous ceiling
+ * that still stops a pathological range from scanning without bound).
+ */
+const MAX_LEDGER_ROWS = 10000;
+
 export const get = query({
   args: { date: v.string() },
   handler: async (ctx, args) => {
@@ -159,9 +165,16 @@ export const summary = query({
     }
 
     // Merge with the analytics ledger (which tracks visitors + page views).
-    let ledger = await ctx.db.query("analytics").collect();
-    if (args.startDate) ledger = ledger.filter((a) => a.date >= args.startDate!);
-    if (args.endDate) ledger = ledger.filter((a) => a.date <= args.endDate!);
+    // The window goes into the `by_date` index instead of scanning the whole
+    // ledger and filtering in JS (one row per day, so the cap is generous).
+    const ledger = await ctx.db
+      .query("analytics")
+      .withIndex("by_date", (range) =>
+        range
+          .gte("date", args.startDate ?? "")
+          .lte("date", args.endDate ?? "9999-99-99")
+      )
+      .take(MAX_LEDGER_ROWS);
 
     const allDays = new Set([...Array.from(ordersByDay.keys()), ...Array.from(downloadsByDay.keys()), ...ledger.map((a) => a.date)]);
     const dailyData = Array.from(allDays)

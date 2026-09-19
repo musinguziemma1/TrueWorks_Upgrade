@@ -57,6 +57,7 @@ import type * as products from "../products.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as refunds from "../refunds.js";
 import type * as resources from "../resources.js";
+import type * as retention from "../retention.js";
 import type * as returns from "../returns.js";
 import type * as returnsInternal from "../returnsInternal.js";
 import type * as reviews from "../reviews.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   rateLimit: typeof rateLimit;
   refunds: typeof refunds;
   resources: typeof resources;
+  retention: typeof retention;
   returns: typeof returns;
   returnsInternal: typeof returnsInternal;
   reviews: typeof reviews;

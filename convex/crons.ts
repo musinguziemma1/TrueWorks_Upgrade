@@ -19,4 +19,14 @@ crons.interval(
   {}
 );
 
+// Nightly retention: prune old analytics events, audit logs, webhook delivery
+// logs, dead carts and guest carts so storage — and every read against those
+// tables — stays bounded instead of growing forever.
+crons.interval(
+  "daily-data-retention",
+  { hours: 24 },
+  internal.retention.runDailyRetention,
+  {}
+);
+
 export default crons;

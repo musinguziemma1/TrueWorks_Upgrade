@@ -678,12 +678,15 @@ export default defineSchema({
     })),
     totalValue: v.number(),
     recovered: v.boolean(),
+    /** True for synthetic `guest-*@trueworks.local` carts (pruned aggressively). */
+    isGuest: v.optional(v.boolean()),
     recoveryEmailSentAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_email", ["email"])
     .index("by_recovered", ["recovered"])
+    .index("by_isGuest_createdAt", ["isGuest", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 
   apiKeys: defineTable({

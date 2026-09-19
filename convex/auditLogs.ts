@@ -9,6 +9,19 @@ type AuditLogSource = "mutation" | "query" | "http" | "webhook" | "action" | "sc
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Sort-maximum sentinel so every index range is explicitly bounded. */
+const MAX_TIMESTAMP = 9007199254740991;
+
+/**
+ * Upper bound on how many audit rows a single read scans. Combined with an
+ * index-range date window this keeps reads flat as the table grows.
+ */
+const MAX_LOG_SCAN = 5000;
+/** Row cap for the filter-dropdown helpers (recent rows are representative). */
+const MAX_FILTER_SCAN = 2000;
+/** Rows pruned per cleanup transaction, so a prune never exceeds tx limits. */
+const CLEANUP_BATCH = 1000;
+
 /** Resolve a start cutoff from an explicit timestamp or a trailing-days window. */
 function resolveStartDate(startDate?: number, days?: number): number | undefined {
   if (days && days > 0) return Date.now() - days * DAY_MS;
@@ -111,16 +124,16 @@ export const list = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { logs: [], total: 0 };
 
-    let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
-
     const startDate = resolveStartDate(args.startDate, args.days);
 
-    if (startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), startDate));
-    }
-    if (args.endDate) {
-      q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
-    }
+    // The date window goes into the index and the row count is capped, so a
+    // wide window (or a large table) can't become an unbounded scan.
+    let q = ctx.db.query("auditLogs").withIndex("by_createdAt", (range) =>
+      range
+        .gte("createdAt", startDate ?? 0)
+        .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+    );
+
     if (args.entityType) {
       q = q.filter((q) => q.eq(q.field("entityType"), args.entityType!));
     }
@@ -139,7 +152,7 @@ export const list = query({
       q = q.filter((q) => q.eq(q.field("source"), args.source as AuditLogSource));
     }
 
-    const all = await q.order("desc").collect();
+    const all = await q.order("desc").take(MAX_LOG_SCAN);
 
     let filtered = all;
     if (args.levels?.length) {
@@ -186,18 +199,17 @@ export const stats = query({
       };
     }
 
-    let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
+    // Default to a trailing 30-day window so an unparameterized call can never
+    // scan the whole table; the row cap bounds larger windows.
+    const startDate = resolveStartDate(args.startDate, args.days) ?? Date.now() - 30 * DAY_MS;
 
-    const startDate = resolveStartDate(args.startDate, args.days);
-
-    if (startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), startDate));
-    }
-    if (args.endDate) {
-      q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
-    }
-
-    const logs = await q.order("desc").collect();
+    const logs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt", (range) =>
+        range.gte("createdAt", startDate).lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
+      .order("desc")
+      .take(MAX_LOG_SCAN);
 
     const byAction: Record<string, number> = {};
     const byEntity: Record<string, number> = {};
@@ -317,16 +329,16 @@ export const performance = query({
       return { slowOps: [], avgLatencyMs: 0, p50: 0, p95: 0, p99: 0, total: 0 };
     }
 
-    let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
+    // Bound the window (default 30 days) and cap rows.
+    const startDate = args.startDate ?? Date.now() - 30 * DAY_MS;
 
-    if (args.startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
-    }
-    if (args.endDate) {
-      q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
-    }
-
-    const logs = await q.order("desc").collect();
+    const logs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt", (range) =>
+        range.gte("createdAt", startDate).lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
+      .order("desc")
+      .take(MAX_LOG_SCAN);
     const withLatency = logs.filter((l) => l.latencyMs != null);
     const latencies = withLatency.map((l) => l.latencyMs!).sort((a, b) => a - b);
 
@@ -380,16 +392,16 @@ export const errors = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { errors: [], total: 0 };
 
-    let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
+    // Bound the window (default 30 days) and cap rows.
+    const startDate = args.startDate ?? Date.now() - 30 * DAY_MS;
 
-    if (args.startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
-    }
-    if (args.endDate) {
-      q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
-    }
-
-    const all = await q.order("desc").collect();
+    const all = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt", (range) =>
+        range.gte("createdAt", startDate).lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
+      .order("desc")
+      .take(MAX_LOG_SCAN);
 
     // Filter to errors and criticals only
     let filtered = all.filter((l) => l.level === "error" || l.level === "critical");
@@ -418,16 +430,15 @@ export const uniqueErrorActions = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
 
-    let q = ctx.db.query("auditLogs").withIndex("by_createdAt");
+    // Bound the window (default 30 days) and cap rows.
+    const startDate = args.startDate ?? Date.now() - 30 * DAY_MS;
 
-    if (args.startDate) {
-      q = q.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
-    }
-    if (args.endDate) {
-      q = q.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
-    }
-
-    const logs = await q.collect();
+    const logs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt", (range) =>
+        range.gte("createdAt", startDate).lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
+      .take(MAX_LOG_SCAN);
     const errorLogs = logs.filter((l) => l.level === "error" || l.level === "critical");
     const actions = [...new Set(errorLogs.map((l) => l.action))];
     return actions.sort();
@@ -453,10 +464,12 @@ export const cleanup = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const cutoff = Date.now() - args.olderThan;
+    // Batched prune: one transaction can't delete an unbounded number of rows,
+    // so remove the oldest batch and re-run the call to drain further.
     const old = await ctx.db
       .query("auditLogs")
       .withIndex("by_createdAt", (q) => q.lt("createdAt", cutoff))
-      .collect();
+      .take(CLEANUP_BATCH);
     for (const log of old) {
       await ctx.db.delete(log._id);
     }
@@ -470,7 +483,11 @@ export const cleanup = mutation({
 export const uniqueActors = query({
   handler: async (ctx) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    const logs = await ctx.db.query("auditLogs").collect();
+    const logs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(MAX_FILTER_SCAN);
     const emails = [...new Set(logs.map((l) => l.actorEmail))];
     return emails.sort();
   },
@@ -482,7 +499,11 @@ export const uniqueActors = query({
 export const uniqueEntityTypes = query({
   handler: async (ctx) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    const logs = await ctx.db.query("auditLogs").collect();
+    const logs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(MAX_FILTER_SCAN);
     const types = [...new Set(logs.map((l) => l.entityType))];
     return types.sort();
   },

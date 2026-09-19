@@ -3,6 +3,21 @@ import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 
+/** Unrecovered carts read per hourly recovery pass. */
+const RECOVERY_SCAN = 200;
+/** Carts summarized per stats read (most recent first). */
+const STATS_SCAN = 2000;
+
+/**
+ * Guest carts are tracked with a synthetic `guest-<session>@trueworks.local`
+ * address (see `cart-sync.tsx`) so anonymous carts still show up in analytics.
+ * Those addresses can't receive mail, so they must never enter the recovery
+ * pipeline — and the retention job prunes them.
+ */
+export function isGuestEmail(email: string): boolean {
+  return email.startsWith("guest-") && email.endsWith("@trueworks.local");
+}
+
 export const track = mutation({
   args: {
     email: v.string(),
@@ -19,6 +34,7 @@ export const track = mutation({
     if (args.items.length === 0) return;
 
     const email = args.email.toLowerCase().trim();
+    const guest = isGuestEmail(email);
     // Rate limit: max 10 abandoned-cart track calls per email per 10 minutes.
     // Prevents flooding the abandonedCarts table or triggering recovery emails
     // for arbitrary addresses.
@@ -48,6 +64,8 @@ export const track = mutation({
         items: args.items,
         totalValue,
         recovered: false,
+        // Flagged so retention can prune these with an exact index range.
+        isGuest: guest || undefined,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -95,7 +113,17 @@ export const list = query({
 export const listInternal = internalQuery({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("abandonedCarts").order("desc").collect();
+    // Hourly cron read: only unrecovered carts are candidates, so query the
+    // index and cap the batch instead of scanning every cart ever recorded.
+    const carts = await ctx.db
+      .query("abandonedCarts")
+      .withIndex("by_recovered", (q) => q.eq("recovered", false))
+      .order("desc")
+      .take(RECOVERY_SCAN);
+
+    // Guest carts carry a synthetic `guest-*@trueworks.local` address that can
+    // never receive mail, so they are never recovery candidates.
+    return carts.filter((cart) => !isGuestEmail(cart.email));
   },
 });
 
@@ -105,7 +133,13 @@ export const stats = query({
     if (!(await requireAdminSilent(ctx))) return {
       total: 0, recovered: 0, pending: 0, totalValue: 0, recoveredValue: 0, recoveryRate: 0, emailsSent: 0,
     };
-    const all = await ctx.db.query("abandonedCarts").collect();
+    // Bounded read: the dashboard widget summarizes the most recent carts
+    // instead of scanning the whole table on every page load.
+    const all = await ctx.db
+      .query("abandonedCarts")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(STATS_SCAN);
     const recovered = all.filter((c) => c.recovered);
     const totalValue = all.reduce((sum, c) => sum + c.totalValue, 0);
     const recoveredValue = recovered.reduce((sum, c) => sum + c.totalValue, 0);

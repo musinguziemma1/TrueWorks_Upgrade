@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState, useRef, useCallback } from "react"
+import { useMemo, useState, useRef, useCallback, useEffect } from "react"
 import Link from "next/link"
-import { useQuery } from "convex/react"
+import { useQuery, useConvex } from "convex/react"
 import { api } from "@convex/_generated/api"
 import {
   BarChart3, Download, Globe, ShoppingCart, CreditCard,
@@ -30,6 +30,11 @@ const MapChart = dynamic(() => import("@/components/admin/map-chart").then(m => 
 })
 
 const COLORS = ["#0B2545", "#3E6990", "#B8860B", "#60A5FA", "#34D399", "#94A3B8", "#F59E0B", "#EF4444"]
+
+type FunnelData = {
+  funnel: { name: string; count: number }[]
+  rates: { from: string; to: string; rate: number }[]
+}
 const chartConfig = {
   revenue: { label: "Revenue", color: "#0B2545" },
   orders: { label: "Orders", color: "#0B2545" },
@@ -86,14 +91,36 @@ export default function AnalyticsPage() {
     startDate: filter.startTimestamp || undefined,
     endDate: filter.endTimestamp || undefined,
   })
-  const funnelData = useQuery(api.analyticsEvents.funnel, {
-    startDate: filter.startTimestamp || undefined,
-    endDate: filter.endTimestamp || undefined,
-  })
-  const eventOverview = useQuery(api.analyticsEvents.overview, {
-    startDate: filter.startTimestamp || undefined,
-    endDate: filter.endTimestamp || undefined,
-  })
+  const convex = useConvex()
+
+  // The funnel reads the high-volume `analyticsEvents` table. It is fetched on
+  // demand (and refetched when the range changes) instead of being kept as a
+  // live subscription: a subscription would re-run the read on *every* visitor
+  // event, which made this page the dominant source of read traffic.
+  // The result is keyed by range so "loading" is derived rather than set from
+  // inside the effect. `data: null` means the read failed.
+  const funnelKey = `${filter.startTimestamp ?? ""}:${filter.endTimestamp ?? ""}`
+  const [funnelResult, setFunnelResult] = useState<{ key: string; data: FunnelData | null } | null>(null)
+  const funnelLoading = funnelResult?.key !== funnelKey
+  const funnelData = funnelLoading ? undefined : funnelResult?.data
+
+  useEffect(() => {
+    let cancelled = false
+    convex
+      .query(api.analyticsEvents.funnel, {
+        startDate: filter.startTimestamp || undefined,
+        endDate: filter.endTimestamp || undefined,
+      })
+      .then((data) => {
+        if (!cancelled) setFunnelResult({ key: funnelKey, data })
+      })
+      .catch(() => {
+        if (!cancelled) setFunnelResult({ key: funnelKey, data: null })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [convex, filter, funnelKey])
 
   const loading =
     summary === undefined ||
@@ -103,8 +130,7 @@ export default function AnalyticsPage() {
     paymentMethods === undefined ||
     ltvSegments === undefined ||
     geoData === undefined ||
-    funnelData === undefined ||
-    eventOverview === undefined
+    funnelLoading
 
   const productPerformance = useMemo(() => {
     const productList = products?.items ?? []

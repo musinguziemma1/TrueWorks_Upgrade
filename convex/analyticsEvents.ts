@@ -3,6 +3,16 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { requireAdminSilent } from "./users";
 
+/** Sort-maximum sentinels so every index range is explicitly bounded. */
+const MAX_TIMESTAMP = 9007199254740991;
+
+/**
+ * Upper bound on how many analytics events a single read will scan. The window
+ * is pushed into the `by_createdAt` index and capped so cost stays flat as the
+ * table grows instead of scaling with every event ever recorded.
+ */
+const MAX_EVENTS_SCAN = 5000;
+
 /**
  * Record a single conversion-funnel event. Events are fire-and-forget on the
  * client (best-effort); never forward PII you don't need.
@@ -64,21 +74,20 @@ export const funnel = query({
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) {
-      return { steps: [], rates: [] };
+      return { funnel: [], rates: [] };
     }
 
-    let events = await ctx.db
+    // Push the date window into the index — a post-scan `.filter()` would still
+    // read the whole table — and cap the scan.
+    const events = await ctx.db
       .query("analyticsEvents")
-      .withIndex("by_createdAt")
+      .withIndex("by_createdAt", (range) =>
+        range
+          .gte("createdAt", args.startDate ?? 0)
+          .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
       .order("asc")
-      .collect();
-
-    if (args.startDate) {
-      events = events.filter((e) => e.createdAt >= args.startDate!);
-    }
-    if (args.endDate) {
-      events = events.filter((e) => e.createdAt <= args.endDate!);
-    }
+      .take(MAX_EVENTS_SCAN);
 
     const stepOrder = [
       "view_product",
@@ -122,15 +131,18 @@ export const overview = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    if (!(await requireAdminSilent(ctx))) return { total: 0, byEvent: [], topProducts: [] };
-    let events = await ctx.db
-      .query("analyticsEvents")
-      .withIndex("by_createdAt")
-      .order("asc")
-      .collect();
+    if (!(await requireAdminSilent(ctx))) return { total: 0, byEvent: {}, topProducts: [] };
 
-    if (args.startDate) events = events.filter((e) => e.createdAt >= args.startDate!);
-    if (args.endDate) events = events.filter((e) => e.createdAt <= args.endDate!);
+    // Index-range + capped scan (see MAX_EVENTS_SCAN).
+    const events = await ctx.db
+      .query("analyticsEvents")
+      .withIndex("by_createdAt", (range) =>
+        range
+          .gte("createdAt", args.startDate ?? 0)
+          .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+      )
+      .order("asc")
+      .take(MAX_EVENTS_SCAN);
 
     const byEvent = new Map<string, number>();
     const top = new Map<string, { name: string; count: number }>();

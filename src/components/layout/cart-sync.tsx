@@ -7,6 +7,30 @@ import { useCart } from "@/components/layout/cart-context";
 import { useWishlist } from "@/components/layout/wishlist-context";
 import { useAuth } from "@/lib/auth/provider";
 
+const GUEST_SESSION_KEY = "tw-guest-session";
+
+/**
+ * Stable per-session guest address for anonymous abandoned-cart tracking.
+ * Anonymous carts can't be emailed (`*.local`), but keeping one address per
+ * session means a browsing visitor produces a single cart row that gets
+ * updated, instead of one row per cart edit.
+ */
+function getGuestSessionEmail() {
+  if (typeof window === "undefined") return "";
+  try {
+    let id = window.sessionStorage.getItem(GUEST_SESSION_KEY);
+    if (!id) {
+      id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      window.sessionStorage.setItem(GUEST_SESSION_KEY, id);
+    }
+    return `guest-${id}@trueworks.local`;
+  } catch {
+    // sessionStorage can throw when storage is blocked — fall back to a
+    // per-page-load address so tracking still works.
+    return `guest-page-${Date.now()}@trueworks.local`;
+  }
+}
+
 export function CartSync() {
   const { isAuthenticated, loading } = useAuth();
   const cart = useCart();
@@ -63,9 +87,13 @@ export function CartSync() {
 
     const t = setTimeout(() => {
       lastTrackedRef.current = fingerprint;
-      const sessionEmail = `guest-${Date.now()}@trueworks.local`;
+      // One stable guest address per browser session. This used to be
+      // `guest-${Date.now()}` — unique on every edit — so every anonymous cart
+      // change inserted a *brand-new* abandoned-cart row that could never be
+      // emailed or recovered. With a stable address the backend patches the
+      // one guest cart for the session instead of piling up rows.
       trackAbandoned({
-        email: sessionEmail,
+        email: getGuestSessionEmail(),
         items: cart.items,
       }).catch(() => {});
     }, 5000);
