@@ -655,6 +655,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_status", ["status"])
+    .index("by_status_scheduledAt", ["status", "scheduledAt"])
     .index("by_createdAt", ["createdAt"]),
 
   emailEvents: defineTable({
@@ -686,6 +687,7 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_recovered", ["recovered"])
+    .index("by_recovered_createdAt", ["recovered", "createdAt"])
     .index("by_isGuest_createdAt", ["isGuest", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 

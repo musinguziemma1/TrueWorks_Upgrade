@@ -113,11 +113,15 @@ export const list = query({
 export const listInternal = internalQuery({
   args: {},
   handler: async (ctx) => {
-    // Hourly cron read: only unrecovered carts are candidates, so query the
-    // index and cap the batch instead of scanning every cart ever recorded.
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+
+    // Only read stale, unrecovered carts. The `by_recovered_createdAt` index
+    // keeps the cron scan bounded to the subset that is actually eligible.
     const carts = await ctx.db
       .query("abandonedCarts")
-      .withIndex("by_recovered", (q) => q.eq("recovered", false))
+      .withIndex("by_recovered_createdAt", (q) =>
+        q.eq("recovered", false).lte("createdAt", oneHourAgo)
+      )
       .order("desc")
       .take(RECOVERY_SCAN);
 

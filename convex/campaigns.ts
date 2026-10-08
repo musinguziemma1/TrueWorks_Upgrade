@@ -246,8 +246,11 @@ export const listDueScheduled = internalQuery({
     const now = Date.now();
     const scheduled = await ctx.db
       .query("campaigns")
-      .withIndex("by_status", (q) => q.eq("status", "scheduled"))
-      .collect();
+      .withIndex("by_status_scheduledAt", (q) =>
+        q.eq("status", "scheduled").lte("scheduledAt", now)
+      )
+      .order("asc")
+      .take(200);
     return scheduled.filter(
       (c) => typeof c.scheduledAt === "number" && c.scheduledAt <= now
     );
