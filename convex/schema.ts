@@ -348,7 +348,8 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_key", ["key"])
     .index("by_productId", ["productId"])
-    .index("by_orderId", ["orderId"]),
+    .index("by_orderId", ["orderId"])
+    .index("by_status", ["status"]),
 
   reviews: defineTable({
     productId: v.id("products"),
@@ -420,7 +421,8 @@ export default defineSchema({
     active: v.boolean(),
     createdAt: v.number(),
   })
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_active", ["active"]),
 
   analytics: defineTable({
     date: v.string(),
