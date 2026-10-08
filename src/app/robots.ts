@@ -12,25 +12,20 @@ const AI_CRAWLERS = [
   "ClaudeBot",
 ];
 
+const PRIVATE_ROUTES = [
+  "/admin",
+  "/account",
+  "/api",
+  "/sso-callback",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/admin",
-          "/account",
-          "/api",
-          "/checkout",
-          "/cart",
-          "/order-confirmation",
-          "/sign-in",
-          "/sign-up",
-          "/sso-callback",
-          "/reset-password",
-          "/verify-email",
-        ],
+        disallow: PRIVATE_ROUTES,
       },
       ...AI_CRAWLERS.map((userAgent) => ({ userAgent, disallow: "/" })),
     ],
