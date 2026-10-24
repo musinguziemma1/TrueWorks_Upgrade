@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "convex/react";
@@ -46,8 +47,18 @@ function FeaturedProductsInner() {
     status: "published",
     featured: true,
     productType: "template",
+    limit: 100,
   });
-  const featured = (products?.items ?? []).slice(0, 6) as StoreProduct[];
+  const rawFeatured = products?.items;
+  const allFeatured = useMemo(() => (rawFeatured ?? []) as StoreProduct[], [rawFeatured]);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(allFeatured.map((product) => product.category).filter(Boolean)))],
+    [allFeatured]
+  );
+  const featured = allFeatured
+    .filter((product) => activeCategory === "All" || product.category === activeCategory)
+    .slice(0, 12);
 
   if (products === undefined) {
     return (
@@ -86,7 +97,7 @@ function FeaturedProductsInner() {
               </span>
             </div>
             <h2 className="font-heading text-3xl font-semibold text-primary md:text-4xl">
-              Templates &amp; Systems That Deliver
+              Templates &amp; systems that deliver
             </h2>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-muted">
               Professional-grade Excel solutions, ready to download and deploy in
@@ -102,9 +113,37 @@ function FeaturedProductsInner() {
           </Link>
         </motion.div>
 
-        {/* Product Grid - max 2 rows (6 cards on 3-col, 4 on 2-col) */}
+        <div className="mb-8 overflow-x-auto pb-1" role="tablist" aria-label="Featured template categories">
+          <div className="flex min-w-max items-center gap-2 rounded-2xl border border-border/70 bg-white/75 p-2 shadow-sm backdrop-blur">
+            {categories.map((category) => {
+              const count = category === "All"
+                ? allFeatured.length
+                : allFeatured.filter((product) => product.category === category).length;
+              const active = activeCategory === category;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveCategory(category)}
+                  className={active
+                    ? "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/15"
+                    : "rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-primary"}
+                >
+                  {category}
+                  <span className={active ? "ml-2 text-xs text-white/60" : "ml-2 text-xs text-muted-foreground"}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Product Grid - six columns by two rows on wide screens */}
         {featured.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: "1fr" }}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" style={{ gridAutoRows: "1fr" }}>
             {featured.map((product, i) => (
               <motion.div
                 key={product._id}
@@ -122,10 +161,10 @@ function FeaturedProductsInner() {
         ) : (
           <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-white px-6 py-10 text-center">
             <p className="font-heading text-base font-semibold text-primary">
-              No featured templates yet
+              No templates in this category yet
             </p>
             <p className="mt-1 text-sm text-muted">
-              Featured templates will appear here as they&apos;re published.{" "}
+              Try another category or browse all featured templates.{" "}
               <Link href="/store" className="font-semibold text-primary underline">
                 Browse the store
               </Link>
