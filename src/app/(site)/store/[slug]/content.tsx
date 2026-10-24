@@ -36,6 +36,8 @@ import {
   MessageCircle,
   CircleDollarSign,
   Mail,
+  BookOpen,
+  Globe2,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -238,6 +240,7 @@ export default function ProductDetail({
   }
 
   const p = product as StoreProduct;
+  const isBook = p.productType === "book";
   const hasTiers = !!p.pricingTiers && p.pricingTiers.length > 0;
   const isBundle = !!p.bundleProductIds && p.bundleProductIds.length > 0;
   const members = (bundleMembers ?? []) as StoreProduct[];
@@ -383,17 +386,25 @@ export default function ProductDetail({
 
         <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
           {/* ─── Sticky 2-col: gallery + buy box ─────────────────────── */}
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+          <div className={cn(
+            "grid grid-cols-1 gap-12 lg:gap-12",
+            isBook ? "lg:grid-cols-[0.9fr_1.1fr]" : "lg:grid-cols-[1.1fr_0.9fr]"
+          )}>
             {/* Gallery (sticky on desktop) */}
             <div className="lg:sticky lg:top-6 lg:self-start">
-              <div className={cn("relative aspect-[4/3] overflow-hidden rounded-2xl shadow-card bg-gradient-to-br from-primary/80 to-primary")}>
+              <div className={cn(
+                "relative overflow-hidden rounded-2xl shadow-card",
+                isBook
+                  ? "aspect-[3/4] bg-gradient-to-br from-[#061a34] via-[#0d3864] to-[#285f86] lg:aspect-[4/5]"
+                  : "aspect-[4/3] bg-gradient-to-br from-primary/80 to-primary"
+              )}>
                 {gallery.length > 0 ? (
                   <Image
                     src={gallery[selectedImage]}
                     alt={p.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 55vw"
-                    className="object-cover"
+                    className={isBook ? "object-contain p-7 sm:p-10" : "object-cover"}
                     priority
                   />
                 ) : p.thumbnail ? (
@@ -402,7 +413,7 @@ export default function ProductDetail({
                     alt={p.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 55vw"
-                    className="object-cover"
+                    className={isBook ? "object-contain p-7 sm:p-10" : "object-cover"}
                     priority
                   />
                 ) : (
@@ -437,7 +448,7 @@ export default function ProductDetail({
                   </span>
                 )}
                 {p.featured && (
-                  <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-dark shadow-md">
+                    <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-dark shadow-md">
                     <Sparkles className="h-2.5 w-2.5" />
                     Featured
                   </span>
@@ -502,10 +513,19 @@ export default function ProductDetail({
 
             {/* Buy box (sticky on desktop) */}
             <div className="lg:sticky lg:top-6 lg:self-start">
-              <div className="rounded-2xl border border-border/70 bg-white p-6 shadow-card sm:p-7">
+              <div className={cn(
+                "rounded-2xl border p-6 shadow-card sm:p-7",
+                isBook
+                  ? "border-accent/25 bg-gradient-to-br from-white via-white to-[#fffaf0] shadow-[0_18px_50px_rgba(10,42,76,0.12)]"
+                  : "border-border/70 bg-white"
+              )}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-primary/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary">
-                    {p.category}
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider",
+                    isBook ? "bg-primary text-white" : "bg-primary/[0.06] text-primary"
+                  )}>
+                    {isBook && <BookOpen className="h-3 w-3 text-accent" />}
+                    {isBook ? "Digital book" : p.category}
                   </span>
                   {p.industry && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -515,9 +535,13 @@ export default function ProductDetail({
                   )}
                 </div>
 
-                <h1 className="mt-4 font-heading text-3xl font-semibold leading-tight text-primary md:text-4xl">
+                <h1 className="mt-4 font-heading text-3xl font-semibold leading-tight text-primary md:text-4xl lg:text-[2.65rem]">
                   {p.name}
                 </h1>
+
+                {isBook && p.bookAuthor && (
+                  <p className="mt-3 text-base text-muted-foreground">by <span className="font-semibold text-primary">{p.bookAuthor}</span></p>
+                )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted">
                   <span className="flex items-center gap-1.5">
@@ -555,12 +579,21 @@ export default function ProductDetail({
                 {/* Specs row */}
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
-                    { icon: FileType2, label: "Format", value: p.fileType },
-                    p.fileSize ? { icon: Package, label: "Size", value: p.fileSize } : null,
-                    p.version ? { icon: Hash, label: "Version", value: `v${p.version}` } : null,
-                    p.downloadLimit
-                      ? { icon: RefreshCw, label: "Downloads", value: `${p.downloadLimit}` }
-                      : { icon: ShieldCheck, label: "Updates", value: "Lifetime" },
+                    ...(isBook
+                      ? [
+                          { icon: BookOpen, label: "Edition", value: p.bookEdition ?? "Digital" },
+                          { icon: FileType2, label: "Format", value: p.fileType },
+                          p.bookPageCount ? { icon: ListChecks, label: "Pages", value: `${p.bookPageCount}` } : null,
+                          p.bookLanguage ? { icon: Globe2, label: "Language", value: p.bookLanguage } : null,
+                        ]
+                      : [
+                          { icon: FileType2, label: "Format", value: p.fileType },
+                          p.fileSize ? { icon: Package, label: "Size", value: p.fileSize } : null,
+                          p.version ? { icon: Hash, label: "Version", value: `v${p.version}` } : null,
+                          p.downloadLimit
+                            ? { icon: RefreshCw, label: "Downloads", value: `${p.downloadLimit}` }
+                            : { icon: ShieldCheck, label: "Updates", value: "Lifetime" },
+                        ]),
                   ]
                     .filter(Boolean)
                     .map((spec) => spec && (
@@ -1238,7 +1271,11 @@ export default function ProductDetail({
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {recommended.map((rp) => (
-                  <ProductCard key={rp._id} product={rp} />
+                  <ProductCard
+                    key={rp._id}
+                    product={rp}
+                    layout={isBook ? "grid" : undefined}
+                  />
                 ))}
               </div>
             </div>
