@@ -74,6 +74,7 @@ export interface StoreProduct {
 interface ProductCardProps {
   product: StoreProduct;
   className?: string;
+  layout?: "grid" | "list";
 }
 
 function ShareModal({
@@ -178,7 +179,7 @@ function ShareModal({
   );
 }
 
-export function ProductCard({ product, className }: ProductCardProps) {
+export function ProductCard({ product, className, layout }: ProductCardProps) {
   const formatPrice = useFormatPrice();
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
@@ -190,6 +191,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const href = `/store/${product.slug}`;
+  const isBookList = product.productType === "book" && layout !== "grid";
   const price = product.salePrice ?? product.price;
   const productLabel = product.productType === "book" ? "Book" : "Template";
   const discount = product.salePrice && product.price > 0
@@ -256,7 +258,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <article
         className={cn(
           "group relative flex h-full overflow-hidden rounded-2xl border border-border/60 bg-white shadow-card transition-all duration-300 hover:shadow-elevated hover:border-accent/30",
-          product.productType === "book" ? "flex-col sm:flex-row sm:min-h-[240px]" : "flex-col hover:-translate-y-1.5",
+          isBookList ? "flex-col sm:flex-row sm:min-h-[240px]" : "flex-col hover:-translate-y-1.5",
           className
         )}
       >
@@ -264,7 +266,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <div
           className={cn(
             "relative cursor-pointer overflow-hidden",
-            product.productType === "book"
+            isBookList
               ? "h-64 bg-[#f5f1e8] sm:h-[240px] sm:w-52 sm:shrink-0"
               : "h-48 bg-gradient-to-br from-primary via-primary-light to-secondary"
           )}
@@ -350,7 +352,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
           onClick={handleWishlist}
           className={cn(
             "absolute right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
-            product.productType === "book" ? "top-3 sm:left-[204px] sm:right-auto" : "top-[188px]",
+            isBookList
+              ? "top-3 sm:left-[204px] sm:right-auto"
+              : product.productType === "book"
+                ? "top-[252px]"
+                : "top-[188px]",
             inWishlist
               ? "bg-red-500 border-red-500 text-white"
               : "bg-white/95 border-white/80 text-muted hover:text-red-500 hover:border-red-200"
@@ -360,11 +366,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </button>
 
         {/* Content */}
-        <div className={cn("flex flex-1 flex-col p-5", product.productType === "book" && "sm:p-6")}>
+        <div className={cn("flex flex-1 flex-col p-5", isBookList && "sm:p-6")}>
           <Link href={href} className="focus-visible:outline-none">
             <h3 className={cn(
               "font-heading text-[1.05rem] leading-snug font-semibold text-primary transition-colors group-hover:text-accent-dark",
-              product.productType === "book" ? "line-clamp-2 text-lg" : "line-clamp-1"
+              isBookList ? "line-clamp-2 text-lg" : "line-clamp-1"
             )}>
               {product.name}
             </h3>

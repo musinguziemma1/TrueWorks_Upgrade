@@ -42,7 +42,11 @@ export default function FeaturedProducts() {
 }
 
 function FeaturedProductsInner() {
-  const products = useQuery(api.products.list, { status: "published", featured: true });
+  const products = useQuery(api.products.list, {
+    status: "published",
+    featured: true,
+    productType: "template",
+  });
   const featured = (products?.items ?? []).slice(0, 6) as StoreProduct[];
 
   if (products === undefined) {

@@ -8,6 +8,7 @@ import StatsBand from "@/components/home/stats-band";
 export const revalidate = 300;
 
 const FeaturedProducts = dynamic(() => import("@/components/home/featured-products"));
+const BooksShowcase = dynamic(() => import("@/components/home/books-showcase"));
 const ShopByIndustry = dynamic(() => import("@/components/home/shop-by-industry"));
 const WhyTrueWorks = dynamic(() => import("@/components/home/why-trueworks"));
 const HowItWorks = dynamic(() => import("@/components/home/how-it-works"));
@@ -76,6 +77,7 @@ export default function HomePage() {
       <TrustedBy />
       <StatsBand />
       <FeaturedProducts />
+      <BooksShowcase />
       <ShopByIndustry />
       <HowItWorks />
       <WhyTrueWorks />
