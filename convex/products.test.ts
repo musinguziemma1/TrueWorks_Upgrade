@@ -136,4 +136,17 @@ describe("products.bulkRemove", () => {
     const deleted = await asAdmin.mutation(api.products.bulkRemove, { ids: [fakeId, fakeId] });
     expect(deleted).toBe(1);
   });
+
+  test("returns zero for stale ids without writing an audit row", async () => {
+    const t = convexTest(schema, modules);
+    const fakeId = await t.run(async (ctx) => ctx.db.insert("products", makeProduct({ sku: "TW-STALE" })));
+    await t.run(async (ctx) => ctx.db.delete(fakeId));
+    const asAdmin = t.withIdentity({ tokenIdentifier: "admin|test", email: "admin@example.com", name: "Admin" });
+
+    const deleted = await asAdmin.mutation(api.products.bulkRemove, { ids: [fakeId] });
+
+    expect(deleted).toBe(0);
+    const auditLogs = await t.run(async (ctx) => ctx.db.query("auditLogs").collect());
+    expect(auditLogs).toEqual([]);
+  });
 });

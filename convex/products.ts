@@ -560,27 +560,29 @@ export const bulkRemove = mutation({
     for (const category of touchedCategories) {
       await syncCategoryProductCount(ctx, category);
     }
-    const identity = await ctx.auth.getUserIdentity();
-    const actor = identity
-      ? await ctx.db
-          .query("users")
-          .withIndex("by_tokenIdentifier", (q) =>
-            q.eq("tokenIdentifier", identity.tokenIdentifier)
-          )
-          .first()
-      : null;
-    await ctx.db.insert("auditLogs", {
-      actorId: actor?._id,
-      actorEmail: actor?.email ?? identity?.email ?? "system",
-      actorName: actor?.name,
-      action: "product.bulkDelete",
-      entityType: "product",
-      entityId: args.ids[0],
-      summary: `Bulk deleted ${deleted}/${args.ids.length} products${
-        deletedNames.length ? `: ${deletedNames.slice(0, 5).join(", ")}${deletedNames.length > 5 ? "…" : ""}` : ""
-      }`,
-      createdAt: now,
-    });
+    if (deleted > 0 && args.ids[0] !== undefined) {
+      const identity = await ctx.auth.getUserIdentity();
+      const actor = identity
+        ? await ctx.db
+            .query("users")
+            .withIndex("by_tokenIdentifier", (q) =>
+              q.eq("tokenIdentifier", identity.tokenIdentifier)
+            )
+            .first()
+        : null;
+      await ctx.db.insert("auditLogs", {
+        actorId: actor?._id,
+        actorEmail: actor?.email ?? identity?.email ?? "system",
+        actorName: actor?.name,
+        action: "product.bulkDelete",
+        entityType: "product",
+        entityId: args.ids[0],
+        summary: `Bulk deleted ${deleted}/${args.ids.length} products${
+          deletedNames.length ? `: ${deletedNames.slice(0, 5).join(", ")}${deletedNames.length > 5 ? "…" : ""}` : ""
+        }`,
+        createdAt: now,
+      });
+    }
     return deleted;
   },
 });
