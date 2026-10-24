@@ -339,23 +339,6 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
 
           {/* Product Grid */}
           <div className="flex-1 min-w-0">
-            {productType === "book" && (
-              <div className="mb-6 rounded-2xl border border-accent/20 bg-gradient-to-br from-[#fffaf0] via-white to-[#f4f7fb] p-5 shadow-card sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-dark">The TrueWorks Library</p>
-                    <h2 className="mt-1 font-heading text-2xl font-semibold text-primary sm:text-3xl">Ideas you can put to work.</h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                      Thoughtful digital books for founders, managers and teams who want clearer decisions and stronger systems.
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-primary/70">
-                    <BookOpen className="h-4 w-4 text-accent-dark" />
-                    Instant digital delivery
-                  </div>
-                </div>
-              </div>
-            )}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-white px-4 py-3 shadow-card">
               <p className="text-sm text-muted-foreground">
                 {isLoading ? (
