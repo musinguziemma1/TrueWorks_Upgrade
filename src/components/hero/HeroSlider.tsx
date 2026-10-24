@@ -168,7 +168,7 @@ export default function HeroSlider({
       aria-label="Featured templates"
     >
       {/* Background */}
-      <HeroBackground />
+      <HeroBackground slide={currentSlideData} />
 
       {/* Main content grid */}
       <div className="relative z-10 h-full grid lg:grid-cols-2">

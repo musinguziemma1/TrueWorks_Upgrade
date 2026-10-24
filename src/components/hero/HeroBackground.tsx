@@ -1,7 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { floatingParticle } from './animations';
+import type { SlideData } from './data';
+
+const heroImages: Record<SlideData['id'], string> = {
+  'hospital-kpi': '/images/hero/hero-1.png',
+  'ngo-grant-tracker': '/images/hero/hero-2.png',
+  'school-fee-manager': '/images/hero/hero-3.png',
+  'sme-cashflow': '/images/hero/hero-4.png',
+};
 
 const particles = Array.from({ length: 24 }, (_, i) => ({
   id: i,
@@ -37,10 +45,25 @@ const rings = Array.from({ length: 3 }, (_, i) => ({
   duration: 9 + i * 2
 }));
 
-export default function HeroBackground() {
+export default function HeroBackground({ slide }: { slide: SlideData }) {
   return (
     <div className="absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[#04101F] via-[#071A33] to-[#04101F]" />
+
+      {/* Cinematic slide artwork: subtle enough for copy, but visible across the whole hero. */}
+      <AnimatePresence mode="sync" initial={false}>
+        <motion.div
+          key={slide.id}
+          className="absolute -inset-10 bg-cover bg-center opacity-25 mix-blend-screen"
+          style={{ backgroundImage: `url(${heroImages[slide.id]})` }}
+          initial={{ opacity: 0, scale: 1.08 }}
+          animate={{ opacity: 0.25, scale: 1.16 }}
+          exit={{ opacity: 0, scale: 1.04 }}
+          transition={{ duration: 8, ease: 'linear' }}
+        />
+      </AnimatePresence>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#04101F]/95 via-[#04101F]/78 to-[#04101F]/45" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#04101F]/80 via-transparent to-[#04101F]/20" />
 
       <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-[#DAA520]/10 blur-3xl" />
       <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/10 blur-3xl" />
