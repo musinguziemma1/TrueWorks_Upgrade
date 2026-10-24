@@ -19,15 +19,13 @@ const THROTTLE_MS: Record<TrackEvent, number> = {
   add_to_cart: 0,
   reach_checkout: 0,
   payment_start: 0,
-  purchase: 0,
 };
 
 export type TrackEvent =
   | "view_product"
   | "add_to_cart"
   | "reach_checkout"
-  | "payment_start"
-  | "purchase";
+  | "payment_start";
 
 /**
  * Fire-and-forget conversion-funnel tracking. Call `track()` from the relevant

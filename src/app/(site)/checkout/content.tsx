@@ -378,9 +378,6 @@ export default function CheckoutContent() {
           const pesapalResult = await initiateResponse.json();
           if (pesapalResult.success && pesapalResult.redirectUrl) {
             clearCart();
-            track("purchase", {
-              value: finalTotal,
-            });
             // Open the Pesapal payment page in a popup dialog instead of a full-page redirect
             setPesapalRedirectUrl(pesapalResult.redirectUrl);
             setPesapalDialogOpen(true);
@@ -402,9 +399,6 @@ export default function CheckoutContent() {
 
   const handleStripeSuccess = () => {
     clearCart();
-    track("purchase", {
-      value: finalTotal,
-    });
     router.push(`/order-confirmation?order=${orderId}&total=${finalTotal}`);
   };
 
