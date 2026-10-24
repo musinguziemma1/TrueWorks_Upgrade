@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
@@ -57,7 +58,6 @@ import { useSignedPreviewUrl } from "@/lib/use-signed-preview";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { Id } from "@convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 
 /**
@@ -267,7 +267,7 @@ export default function ProductDetail({
       tier: selectedTierObj?.name,
     });
     track("add_to_cart", {
-      productId: p._id,
+      productId: p._id as Id<"products">,
       productName: p.name,
       category: p.category,
       value: price,
@@ -360,7 +360,7 @@ export default function ProductDetail({
       image: p.thumbnail || "",
     });
     track("add_to_cart", {
-      productId: p._id,
+      productId: p._id as Id<"products">,
       productName: p.name,
       category: p.category,
     });

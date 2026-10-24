@@ -438,6 +438,9 @@ export default defineSchema({
 
   analyticsEvents: defineTable({
     event: v.string(), // e.g. "view_product", "add_to_cart", "reach_checkout", "payment_start", "purchase"
+    // Optional for backwards compatibility with historical rows. New writes
+    // must provide an id so retries can be safely deduplicated.
+    eventId: v.optional(v.string()),
     sessionId: v.optional(v.string()),
     productId: v.optional(v.id("products")),
     productName: v.optional(v.string()),
@@ -448,6 +451,7 @@ export default defineSchema({
     email: v.optional(v.string()),
     createdAt: v.number(),
   })
+    .index("by_eventId", ["eventId"])
     .index("by_event", ["event"])
     .index("by_productId", ["productId"])
     .index("by_createdAt", ["createdAt"]),

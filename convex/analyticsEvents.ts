@@ -1,6 +1,5 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { requireAdminSilent } from "./users";
 
 /** Sort-maximum sentinels so every index range is explicitly bounded. */
@@ -13,46 +12,76 @@ const MAX_TIMESTAMP = 9007199254740991;
  */
 const MAX_EVENTS_SCAN = 5000;
 
+const eventValidator = v.union(
+  v.literal("view_product"),
+  v.literal("add_to_cart"),
+  v.literal("reach_checkout"),
+  v.literal("payment_start"),
+  v.literal("purchase")
+);
+
+const MAX_EVENT_ID_LENGTH = 128;
+const MAX_SESSION_ID_LENGTH = 128;
+const MAX_PRODUCT_NAME_LENGTH = 256;
+const MAX_CATEGORY_LENGTH = 128;
+const MAX_PATH_LENGTH = 2048;
+
+function assertBounded(value: string | undefined, max: number, name: string) {
+  if (value !== undefined && (value.length === 0 || value.length > max)) {
+    throw new Error(`${name} is invalid`);
+  }
+}
+
 /**
  * Record a single conversion-funnel event. Events are fire-and-forget on the
  * client (best-effort); never forward PII you don't need.
  */
 export const track = mutation({
   args: {
-    event: v.string(),
+    eventId: v.string(),
+    event: eventValidator,
     sessionId: v.optional(v.string()),
-    productId: v.optional(v.string()),
+    productId: v.optional(v.id("products")),
     productName: v.optional(v.string()),
     category: v.optional(v.string()),
     value: v.optional(v.number()),
     path: v.optional(v.string()),
     referrer: v.optional(v.string()),
-    email: v.optional(v.string()),
   },
+  returns: v.object({ accepted: v.boolean(), duplicate: v.boolean() }),
   handler: async (ctx, args) => {
-    // Only record events within a recognized set to avoid junk rows.
-    const allowed = new Set([
-      "view_product",
-      "add_to_cart",
-      "reach_checkout",
-      "payment_start",
-      "purchase",
-    ]);
-    if (!allowed.has(args.event)) return;
+    assertBounded(args.eventId, MAX_EVENT_ID_LENGTH, "eventId");
+    assertBounded(args.sessionId, MAX_SESSION_ID_LENGTH, "sessionId");
+    assertBounded(args.productName, MAX_PRODUCT_NAME_LENGTH, "productName");
+    assertBounded(args.category, MAX_CATEGORY_LENGTH, "category");
+    assertBounded(args.path, MAX_PATH_LENGTH, "path");
+    assertBounded(args.referrer, MAX_PATH_LENGTH, "referrer");
+    if (args.value !== undefined && !Number.isFinite(args.value)) {
+      throw new Error("value is invalid");
+    }
+
+    // A client may replay a request after a timeout. The event ID makes that
+    // replay idempotent instead of creating another analytics row.
+    const existing = await ctx.db
+      .query("analyticsEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .first();
+    if (existing) return { accepted: true, duplicate: true };
 
     const now = Date.now();
     await ctx.db.insert("analyticsEvents", {
-      event: args.event as "view_product",
+      event: args.event,
+      eventId: args.eventId,
       sessionId: args.sessionId,
-      productId: args.productId as Id<"products"> | undefined,
+      productId: args.productId,
       productName: args.productName,
       category: args.category,
       value: args.value,
       path: args.path,
       referrer: args.referrer,
-      email: args.email,
       createdAt: now,
     });
+    return { accepted: true, duplicate: false };
   },
 });
 
@@ -70,8 +99,12 @@ export const funnel = query({
   args: {
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
-    productId: v.optional(v.string()),
+    productId: v.optional(v.id("products")),
   },
+  returns: v.object({
+    funnel: v.array(v.object({ name: v.string(), count: v.number() })),
+    rates: v.array(v.object({ from: v.string(), to: v.string(), rate: v.number() })),
+  }),
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) {
       return { funnel: [], rates: [] };
@@ -130,6 +163,11 @@ export const overview = query({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
+  returns: v.object({
+    total: v.number(),
+    byEvent: v.record(v.string(), v.number()),
+    topProducts: v.array(v.object({ name: v.string(), count: v.number() })),
+  }),
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { total: 0, byEvent: {}, topProducts: [] };
 

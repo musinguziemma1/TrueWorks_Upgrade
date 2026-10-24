@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/components/layout/cart-context";
 import { useWishlist } from "@/components/layout/wishlist-context";
 import { useAnalytics } from "@/lib/use-analytics";
+import type { Id } from "@convex/_generated/dataModel";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -199,7 +200,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       slug: product.slug,
     });
     track("add_to_cart", {
-      productId: product._id,
+      productId: product._id as Id<"products">,
       productName: product.name,
       category: product.category,
       value: price,

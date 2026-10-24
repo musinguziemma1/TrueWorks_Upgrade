@@ -322,7 +322,6 @@ export default function CheckoutContent() {
     try {
       track("payment_start", {
         value: totalPrice,
-        email: email.trim() || undefined,
       });
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -381,7 +380,6 @@ export default function CheckoutContent() {
             clearCart();
             track("purchase", {
               value: finalTotal,
-              email: email.trim() || undefined,
             });
             // Open the Pesapal payment page in a popup dialog instead of a full-page redirect
             setPesapalRedirectUrl(pesapalResult.redirectUrl);
@@ -406,7 +404,6 @@ export default function CheckoutContent() {
     clearCart();
     track("purchase", {
       value: finalTotal,
-      email: email.trim() || undefined,
     });
     router.push(`/order-confirmation?order=${orderId}&total=${finalTotal}`);
   };
