@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, PackageSearch, Loader2 } from "lucide-react";
+import { BookOpen, CheckCircle2, LayoutTemplate, PackageSearch, Loader2 } from "lucide-react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -139,10 +139,34 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
   return (
     <div className="min-h-screen bg-surface">
       {/* ─── Hero ──────────────────────────────────────────────── */}
-      <section className="gradient-brand relative overflow-hidden">
-        <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
-        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-accent/[0.10] blur-3xl" aria-hidden />
-        <div className="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
+      <section
+        className={cn(
+          "relative overflow-hidden",
+          productType === "book" ? "bg-[#071827]" : "gradient-brand"
+        )}
+      >
+        {productType === "book" ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('/images/books/trueworks-books-hero.png')" }}
+            aria-hidden
+          />
+        ) : (
+          <>
+            <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+            <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-accent/[0.10] blur-3xl" aria-hidden />
+            <div className="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
+          </>
+        )}
+        <div
+          className={cn(
+            "absolute inset-0",
+            productType === "book"
+              ? "bg-gradient-to-r from-[#04111f]/95 via-[#04111f]/75 to-[#04111f]/35"
+              : "bg-transparent"
+          )}
+          aria-hidden
+        />
 
         <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 lg:px-8 lg:pb-28 lg:pt-20">
           <div className="grid items-center gap-12 lg:grid-cols-12">
@@ -156,21 +180,6 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
                 {productLabel} Store
               </motion.div>
-              <div className="mt-4 inline-flex rounded-xl border border-white/15 bg-white/10 p-1 text-sm">
-                {(["template", "book"] as const).map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    onClick={() => setProductType(kind)}
-                    className={cn(
-                      "rounded-lg px-4 py-2 font-medium transition-colors",
-                      productType === kind ? "bg-white text-primary" : "text-white/70 hover:text-white"
-                    )}
-                  >
-                    {kind === "template" ? "Templates" : "Books"}
-                  </button>
-                ))}
-              </div>
               <motion.h1
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -230,7 +239,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                     )}
                   >
                     <p className="font-heading text-3xl font-semibold text-white tabular-nums">
-                      {isLoading && m.l === "Templates" ? "—" : m.v}
+                      {isLoading && m.l === productLabel ? "—" : m.v}
                     </p>
                     <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
                       {m.l}
@@ -242,6 +251,61 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
           </div>
         </div>
       </section>
+
+      <div className="relative z-10 mx-auto -mt-8 max-w-4xl px-6 lg:px-8">
+        <div className="rounded-2xl border border-border/70 bg-white/95 p-2 shadow-elevated backdrop-blur">
+          <div className="grid gap-2 sm:grid-cols-2" role="tablist" aria-label="Storefront sections">
+            {([
+              {
+                kind: "template" as const,
+                label: "Templates",
+                description: "Ready-to-use business systems",
+                icon: LayoutTemplate,
+              },
+              {
+                kind: "book" as const,
+                label: "Books",
+                description: "Practical guides and playbooks",
+                icon: BookOpen,
+              },
+            ]).map(({ kind, label, description, icon: Icon }) => (
+              <button
+                key={kind}
+                type="button"
+                role="tab"
+                aria-selected={productType === kind}
+                onClick={() => setProductType(kind)}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all",
+                  productType === kind
+                    ? "bg-primary text-white shadow-card"
+                    : "text-muted-foreground hover:bg-surface hover:text-primary"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                    productType === kind ? "bg-accent text-primary-dark" : "bg-surface text-primary"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2 font-semibold">
+                    {label}
+                    {productType === kind && (
+                      <span className="text-xs font-normal text-white/60">{pageFacets.total}</span>
+                    )}
+                  </span>
+                  <span className={cn("block text-xs", productType === kind ? "text-white/65" : "text-muted-foreground")}>
+                    {description}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
       <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
@@ -275,6 +339,23 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
 
           {/* Product Grid */}
           <div className="flex-1 min-w-0">
+            {productType === "book" && (
+              <div className="mb-6 rounded-2xl border border-accent/20 bg-gradient-to-br from-[#fffaf0] via-white to-[#f4f7fb] p-5 shadow-card sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-dark">The TrueWorks Library</p>
+                    <h2 className="mt-1 font-heading text-2xl font-semibold text-primary sm:text-3xl">Ideas you can put to work.</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                      Thoughtful digital books for founders, managers and teams who want clearer decisions and stronger systems.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-primary/70">
+                    <BookOpen className="h-4 w-4 text-accent-dark" />
+                    Instant digital delivery
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-white px-4 py-3 shadow-card">
               <p className="text-sm text-muted-foreground">
                 {isLoading ? (

@@ -25,6 +25,31 @@ const PRODUCT_SORT = [
 
 type ProductsInfo = NamedTableInfo<DataModel, "products">;
 
+function createIsbn13(): string {
+  // TrueWorks assigns an internal ISBN-13-shaped identifier when a book is
+  // created without one. The checksum keeps it machine-valid while the
+  // indexed collision check below makes it unique inside this catalogue.
+  const seed = `${Date.now()}${Math.floor(Math.random() * 1_000_000)}`.slice(-9);
+  const body = `978${seed}`;
+  const checksum = body.split("").reduce((sum, digit, index) => {
+    return sum + Number(digit) * (index % 2 === 0 ? 1 : 3);
+  }, 0);
+  return `${body}${(10 - (checksum % 10)) % 10}`;
+}
+
+async function reserveBookIsbn(ctx: MutationCtx, requested?: string): Promise<string> {
+  if (requested?.trim()) return requested.trim();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = createIsbn13();
+    const existing = await ctx.db
+      .query("products")
+      .withIndex("by_bookIsbn", (q) => q.eq("bookIsbn", candidate))
+      .first();
+    if (!existing) return candidate;
+  }
+  throw new Error("Could not allocate a unique ISBN. Please try again.");
+}
+
 /**
  * SECURITY: The permanent storage URL (downloadableFile) must never reach the
  * browser for non-admin callers — it is the sellable content and would let
@@ -409,10 +434,13 @@ export const create = mutation({
     if (existing.length > 0) {
       throw new Error(`Product with slug "${slug}" already exists`);
     }
+    const productType = args.productType ?? "template";
+    const bookIsbn = productType === "book" ? await reserveBookIsbn(ctx, args.bookIsbn) : args.bookIsbn;
     const now = Date.now();
     const id = await ctx.db.insert("products", {
       ...args,
-      productType: args.productType ?? "template",
+      productType,
+      bookIsbn,
       slug,
       totalSales: 0,
       rating: 0,
@@ -493,6 +521,10 @@ export const update = mutation({
     await requireEditor(ctx);
     const { id, ...updates } = args;
     const oldProduct = await ctx.db.get(id);
+    const nextProductType = updates.productType ?? oldProduct?.productType ?? "template";
+    if (nextProductType === "book" && !oldProduct?.bookIsbn && !updates.bookIsbn) {
+      updates.bookIsbn = await reserveBookIsbn(ctx);
+    }
     // Normalize slug so legacy spacey/title-case slugs are corrected on edit.
     if (updates.slug !== undefined) updates.slug = slugify(updates.slug) || slugify(updates.name ?? "");
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));

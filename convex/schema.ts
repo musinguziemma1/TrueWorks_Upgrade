@@ -227,6 +227,7 @@ export default defineSchema({
     .index("by_industry", ["industry"])
     .index("by_status", ["status"])
     .index("by_productType_status", ["productType", "status"])
+    .index("by_bookIsbn", ["bookIsbn"])
     .index("by_featured", ["featured"])
     .index("by_price", ["price"])
     .index("by_name", ["name"])

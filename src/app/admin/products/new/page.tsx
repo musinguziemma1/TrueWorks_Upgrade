@@ -51,7 +51,7 @@ export default function NewProductPage() {
   const [industry, setIndustry] = useState("")
   const [fileType, setFileType] = useState("")
   const [bookAuthor, setBookAuthor] = useState("")
-  const [bookIsbn, setBookIsbn] = useState("")
+  const [bookIsbn] = useState("")
   const [bookPublisher, setBookPublisher] = useState("")
   const [bookPageCount, setBookPageCount] = useState("")
   const [bookLanguage, setBookLanguage] = useState("English")
@@ -393,7 +393,7 @@ export default function NewProductPage() {
                   {productType === "book" && (
                     <>
                       <div className="space-y-2"><Label>Author</Label><Input value={bookAuthor} onChange={(e) => setBookAuthor(e.target.value)} /></div>
-                      <div className="space-y-2"><Label>ISBN</Label><Input value={bookIsbn} onChange={(e) => setBookIsbn(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>ISBN</Label><Input value={bookIsbn} readOnly placeholder="Generated automatically on save" /><p className="text-xs text-muted-foreground">A unique ISBN-13 identifier will be assigned automatically.</p></div>
                       <div className="space-y-2"><Label>Publisher</Label><Input value={bookPublisher} onChange={(e) => setBookPublisher(e.target.value)} /></div>
                       <div className="space-y-2"><Label>Page Count</Label><Input type="number" min="1" value={bookPageCount} onChange={(e) => setBookPageCount(e.target.value)} /></div>
                       <div className="space-y-2"><Label>Language</Label><Input value={bookLanguage} onChange={(e) => setBookLanguage(e.target.value)} /></div>

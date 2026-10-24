@@ -261,7 +261,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
       >
         {/* Image area */}
         <div
-          className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-br from-primary via-primary-light to-secondary"
+          className={cn(
+            "relative cursor-pointer overflow-hidden",
+            product.productType === "book"
+              ? "h-64 bg-[#f5f1e8]"
+              : "h-48 bg-gradient-to-br from-primary via-primary-light to-secondary"
+          )}
           onClick={handleView}
         >
             {product.thumbnail && !imgError ? (
@@ -271,7 +276,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 onError={() => setImgError(true)}
-                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                className={cn(
+                  "transition-transform duration-700 group-hover:scale-110",
+                  product.productType === "book" ? "object-contain p-3" : "object-cover"
+                )}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -340,7 +348,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <button
           onClick={handleWishlist}
           className={cn(
-            "absolute right-3 top-[188px] z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
+            "absolute right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
+            product.productType === "book" ? "top-[252px]" : "top-[188px]",
             inWishlist
               ? "bg-red-500 border-red-500 text-white"
               : "bg-white/95 border-white/80 text-muted hover:text-red-500 hover:border-red-200"
@@ -359,6 +368,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
           <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">
             {product.shortDescription}
           </p>
+          {product.productType === "book" && product.bookAuthor && (
+            <p className="mt-2 text-xs font-medium text-primary/70">by {product.bookAuthor}</p>
+          )}
 
           {/* Rating + sales */}
           {product.reviewCount > 0 && (

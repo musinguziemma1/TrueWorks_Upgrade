@@ -483,7 +483,7 @@ export default function EditProductPage() {
                   {productType === "book" && (
                     <>
                       <div className="space-y-2"><Label>Author</Label><Input value={bookAuthor} onChange={(e) => setBookAuthor(e.target.value)} /></div>
-                      <div className="space-y-2"><Label>ISBN</Label><Input value={bookIsbn} onChange={(e) => setBookIsbn(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>ISBN</Label><Input value={bookIsbn} readOnly placeholder="Generated automatically on save" /><p className="text-xs text-muted-foreground">ISBNs are assigned by the catalogue and cannot be edited here.</p></div>
                       <div className="space-y-2"><Label>Publisher</Label><Input value={bookPublisher} onChange={(e) => setBookPublisher(e.target.value)} /></div>
                       <div className="space-y-2"><Label>Page Count</Label><Input type="number" min="1" value={bookPageCount} onChange={(e) => setBookPageCount(e.target.value)} /></div>
                       <div className="space-y-2"><Label>Language</Label><Input value={bookLanguage} onChange={(e) => setBookLanguage(e.target.value)} /></div>
