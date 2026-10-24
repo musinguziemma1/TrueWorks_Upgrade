@@ -58,7 +58,7 @@ function FeaturedProductsInner() {
   );
   const featured = allFeatured
     .filter((product) => activeCategory === "All" || product.category === activeCategory)
-    .slice(0, 12);
+    .slice(0, 6);
 
   if (products === undefined) {
     return (
@@ -141,7 +141,7 @@ function FeaturedProductsInner() {
           </div>
         </div>
 
-        {/* Product Grid - six columns by two rows on wide screens */}
+        {/* Product Grid - at most six products per selected category */}
         {featured.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" style={{ gridAutoRows: "1fr" }}>
             {featured.map((product, i) => (
