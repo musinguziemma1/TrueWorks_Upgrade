@@ -153,9 +153,12 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
           />
         ) : (
           <>
-            <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
-            <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-accent/[0.10] blur-3xl" aria-hidden />
-            <div className="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" aria-hidden />
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('/images/templates/trueworks-templates-hero.png')" }}
+              aria-hidden
+            />
+            <div className="texture-dots absolute inset-0 opacity-25" aria-hidden />
           </>
         )}
         <div
@@ -163,7 +166,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
             "absolute inset-0",
             productType === "book"
               ? "bg-gradient-to-r from-[#04111f]/95 via-[#04111f]/75 to-[#04111f]/35"
-              : "bg-transparent"
+              : "bg-gradient-to-r from-[#061a34]/95 via-[#061a34]/72 to-[#061a34]/25"
           )}
           aria-hidden
         />
