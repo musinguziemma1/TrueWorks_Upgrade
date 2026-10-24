@@ -11,7 +11,7 @@ import { convexClient } from "@/lib/convex";
 import { useFormatPrice } from "@/lib/use-format-price";
 import type { StoreProduct } from "@/components/product/product-card";
 
-const ROTATION_MS = 30_000;
+const ROTATION_MS = 15_000;
 
 export default function BooksShowcase() {
   if (!convexClient) return null;
@@ -99,7 +99,7 @@ function BooksShowcaseInner() {
                 </motion.div>
               </AnimatePresence>
               <div className="mt-7 h-1 overflow-hidden rounded-full bg-white/15"><motion.div key={activeBook._id} initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: ROTATION_MS / 1000, ease: "linear" }} className="h-full rounded-full bg-accent" /></div>
-              <p className="mt-2 text-[11px] text-white/50">Next book in 30 seconds</p>
+              <p className="mt-2 text-[11px] text-white/50">Next book in 15 seconds</p>
             </div>
           </div>
 
