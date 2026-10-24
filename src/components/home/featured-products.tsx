@@ -141,9 +141,9 @@ function FeaturedProductsInner() {
           </div>
         </div>
 
-        {/* Product Grid - at most six products per selected category */}
+        {/* Product Grid - exactly six products, three columns by two rows on desktop */}
         {featured.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" style={{ gridAutoRows: "1fr" }}>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: "1fr" }}>
             {featured.map((product, i) => (
               <motion.div
                 key={product._id}
