@@ -1,6 +1,9 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireAdminSilent } from "./users";
+import { checkRateLimit } from "./rateLimit";
 
 /** Sort-maximum sentinels so every index range is explicitly bounded. */
 const MAX_TIMESTAMP = 9007199254740991;
@@ -10,7 +13,7 @@ const MAX_TIMESTAMP = 9007199254740991;
  * is pushed into the `by_createdAt` index and capped so cost stays flat as the
  * table grows instead of scaling with every event ever recorded.
  */
-const MAX_EVENTS_SCAN = 5000;
+const MAX_OVERVIEW_SCAN = 5000;
 
 const eventValidator = v.union(
   v.literal("view_product"),
@@ -24,6 +27,100 @@ const MAX_SESSION_ID_LENGTH = 128;
 const MAX_PRODUCT_NAME_LENGTH = 256;
 const MAX_CATEGORY_LENGTH = 128;
 const MAX_PATH_LENGTH = 2048;
+const FUNNEL_COUNTER_SHARDS = 16;
+
+const STAGE_BY_EVENT = {
+  view_product: 0,
+  add_to_cart: 1,
+  reach_checkout: 2,
+  payment_start: 3,
+  purchase: 4,
+} as const;
+
+type FunnelProgressInput = {
+  sessionKey: string;
+  sessionId?: string;
+  orderId?: Id<"orders">;
+  productId?: Id<"products">;
+  stage: number;
+  reachedAt: number;
+  eventId: string;
+};
+
+function counterShard(sessionKey: string) {
+  let hash = 0;
+  for (let i = 0; i < sessionKey.length; i++) {
+    hash = (hash * 31 + sessionKey.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % FUNNEL_COUNTER_SHARDS;
+}
+
+async function incrementFunnelCounter(
+  ctx: MutationCtx,
+  input: { date: string; stage: number; productId?: Id<"products">; shard: number }
+) {
+  const key = `${input.date}:${input.stage}:${input.productId ?? "all"}:${input.shard}`;
+  const existing = await ctx.db
+    .query("analyticsFunnelCounters")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .first();
+  if (existing) {
+    await ctx.db.patch(existing._id, { count: existing.count + 1 });
+  } else {
+    await ctx.db.insert("analyticsFunnelCounters", { key, ...input, count: 1 });
+  }
+}
+
+async function advanceFunnelProgress(ctx: MutationCtx, input: FunnelProgressInput) {
+  const previous = await ctx.db
+    .query("analyticsFunnelProgress")
+    .withIndex("by_sessionKey_stage", (q) => q.eq("sessionKey", input.sessionKey))
+    .order("desc")
+    .first();
+
+  // Only accept the next stage. This makes progression chronological and
+  // prevents late/out-of-order events from manufacturing earlier stages.
+  if (!previous && input.stage !== 0 && input.stage !== STAGE_BY_EVENT.purchase) return;
+  if (previous && input.stage !== previous.stage + 1) return;
+
+  await ctx.db.insert("analyticsFunnelProgress", input);
+  const date = new Date(input.reachedAt).toISOString().slice(0, 10);
+  const shard = counterShard(input.sessionKey);
+  await incrementFunnelCounter(ctx, { date, stage: input.stage, shard });
+  if (input.productId) {
+    await incrementFunnelCounter(ctx, {
+      date,
+      stage: input.stage,
+      productId: input.productId,
+      shard,
+    });
+  }
+}
+
+async function readFunnelCounter(
+  ctx: QueryCtx,
+  stage: number,
+  productId: Id<"products"> | undefined,
+  startDate: number | undefined,
+  endDate: number | undefined
+) {
+  const start = startDate === undefined ? "0000-01-01" : new Date(startDate).toISOString().slice(0, 10);
+  const end = endDate === undefined ? "9999-12-31" : new Date(endDate).toISOString().slice(0, 10);
+  const rows = productId
+    ? ctx.db
+        .query("analyticsFunnelCounters")
+        .withIndex("by_stage_productId_date", (range) =>
+          range.eq("stage", stage).eq("productId", productId).gte("date", start).lte("date", end)
+        )
+    : ctx.db
+        .query("analyticsFunnelCounters")
+        .withIndex("by_stage_date", (range) =>
+          range.eq("stage", stage).gte("date", start).lte("date", end)
+        );
+  let total = 0;
+  for await (const row of rows) total += row.count;
+  return total;
+}
 
 function assertBounded(value: string | undefined, max: number, name: string) {
   if (value !== undefined && (value.length === 0 || value.length > max)) {
@@ -67,6 +164,8 @@ export const track = mutation({
       .first();
     if (existing) return { accepted: true, duplicate: true };
 
+    await checkRateLimit(ctx, "analytics.track", args.sessionId ?? args.eventId, 120, 60_000);
+
     const now = Date.now();
     await ctx.db.insert("analyticsEvents", {
       event: args.event,
@@ -80,6 +179,16 @@ export const track = mutation({
       referrer: args.referrer,
       createdAt: now,
     });
+    if (args.sessionId) {
+      await advanceFunnelProgress(ctx, {
+        sessionKey: `${args.sessionId}:${args.productId ?? ""}`,
+        sessionId: args.sessionId,
+        productId: args.productId,
+        stage: STAGE_BY_EVENT[args.event],
+        reachedAt: now,
+        eventId: args.eventId,
+      });
+    }
     return { accepted: true, duplicate: false };
   },
 });
@@ -91,6 +200,7 @@ export const track = mutation({
 export const recordPurchase = internalMutation({
   args: {
     orderId: v.id("orders"),
+    sessionId: v.optional(v.string()),
     items: v.array(
       v.object({
         productId: v.id("products"),
@@ -101,14 +211,13 @@ export const recordPurchase = internalMutation({
   },
   returns: v.object({ accepted: v.boolean(), duplicate: v.boolean() }),
   handler: async (ctx, args) => {
-    const items = args.items.length > 0
-      ? args.items
-      : [{ productId: undefined, productName: undefined, value: 0 }];
+    const items = args.items.length > 0 ? args.items : [null];
     let existingCount = 0;
 
     for (const item of items) {
-      const eventId = item.productId
-        ? `purchase:${args.orderId}:${item.productId}`
+      const productId = item?.productId;
+      const eventId = productId
+        ? `purchase:${args.orderId}:${productId}`
         : `purchase:${args.orderId}`;
       const existing = await ctx.db
         .query("analyticsEvents")
@@ -123,10 +232,19 @@ export const recordPurchase = internalMutation({
         event: "purchase",
         eventId,
         orderId: args.orderId,
-        productId: item.productId,
-        productName: item.productName,
-        value: item.value,
+        productId,
+        productName: item?.productName,
+        value: item?.value,
         createdAt: Date.now(),
+      });
+      await advanceFunnelProgress(ctx, {
+        sessionKey: `${args.sessionId ?? `order:${args.orderId}`}:${productId ?? ""}`,
+        sessionId: args.sessionId,
+        orderId: args.orderId,
+        productId,
+        stage: STAGE_BY_EVENT.purchase,
+        reachedAt: Date.now(),
+        eventId,
       });
     }
 
@@ -161,16 +279,6 @@ export const funnel = query({
 
     // Push the date window into the index — a post-scan `.filter()` would still
     // read the whole table — and cap the scan at the most recent events.
-    const events = await ctx.db
-      .query("analyticsEvents")
-      .withIndex("by_createdAt", (range) =>
-        range
-          .gte("createdAt", args.startDate ?? 0)
-          .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
-      )
-      .order("desc")
-      .take(MAX_EVENTS_SCAN);
-
     const stepOrder = [
       "view_product",
       "add_to_cart",
@@ -179,30 +287,20 @@ export const funnel = query({
       "purchase",
     ];
 
-    const counts = new Map<string, number>();
-    const uniqueKeys = new Map<string, Set<string>>();
-    for (const step of stepOrder) counts.set(step, 0);
-    for (const step of stepOrder) uniqueKeys.set(step, new Set());
+    const counts = await Promise.all(
+      stepOrder.map((_, stage) =>
+        readFunnelCounter(ctx, stage, args.productId, args.startDate, args.endDate)
+      )
+    );
 
-    for (const e of events) {
-      if (!counts.has(e.event)) continue;
-      if (args.productId && e.productId !== args.productId) continue;
-      const key =
-        e.event === "purchase"
-          ? e.orderId ?? e.sessionId ?? e.eventId ?? e._id
-          : e.sessionId ?? e.eventId ?? e._id;
-      uniqueKeys.get(e.event)?.add(key);
-    }
-    for (const step of stepOrder) counts.set(step, uniqueKeys.get(step)?.size ?? 0);
-
-    const funnel: FunnelStep[] = stepOrder.map((name) => ({
+    const funnel: FunnelStep[] = stepOrder.map((name, i) => ({
       name,
-      count: counts.get(name) ?? 0,
+      count: counts[i] ?? 0,
     }));
 
     const rates = stepOrder.slice(1).map((name, i) => {
-      const prev = counts.get(stepOrder[i]) ?? 0;
-      const curr = counts.get(name) ?? 0;
+      const prev = counts[i] ?? 0;
+      const curr = counts[i + 1] ?? 0;
       return {
         from: stepOrder[i],
         to: name,
@@ -236,7 +334,7 @@ export const overview = query({
           .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
       )
       .order("desc")
-      .take(MAX_EVENTS_SCAN);
+      .take(MAX_OVERVIEW_SCAN);
 
     const byEvent = new Map<string, number>();
     const top = new Map<string, { name: string; count: number }>();

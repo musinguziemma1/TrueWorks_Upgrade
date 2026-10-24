@@ -4,19 +4,8 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-
-const SESSION_KEY = "tw-session-id";
+import { getAnalyticsSessionId } from "@/lib/use-analytics";
 const VISIT_KEY = "tw-visited-date";
-
-function getSessionId(): string {
-  if (typeof window === "undefined") return "ssr";
-  let id = localStorage.getItem(SESSION_KEY);
-  if (!id) {
-    id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(SESSION_KEY, id);
-  }
-  return id;
-}
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -39,7 +28,7 @@ export function AnalyticsTracker() {
       const date = today();
       if (localStorage.getItem(VISIT_KEY) !== date) {
         localStorage.setItem(VISIT_KEY, date);
-        incrementVisitors({ date, sessionId: getSessionId() }).catch(() => {});
+        incrementVisitors({ date, sessionId: getAnalyticsSessionId() ?? "anonymous" }).catch(() => {});
       }
     } catch {
       // ignore
@@ -52,7 +41,7 @@ export function AnalyticsTracker() {
     if (!pathname || pathname.startsWith("/admin")) return;
     if (lastTracked.current === pathname) return;
     lastTracked.current = pathname;
-    incrementPageViews({ date: today(), sessionId: getSessionId() }).catch(() => {});
+    incrementPageViews({ date: today(), sessionId: getAnalyticsSessionId() ?? "anonymous" }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 

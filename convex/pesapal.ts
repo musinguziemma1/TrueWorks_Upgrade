@@ -603,6 +603,7 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
   });
   await ctx.runMutation(internal.analyticsEvents.recordPurchase, {
     orderId: order._id,
+    sessionId: order.sessionId,
     items: order.items.map((item) => ({
       productId: item.productId,
       productName: item.productName,

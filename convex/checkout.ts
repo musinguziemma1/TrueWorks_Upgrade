@@ -34,7 +34,8 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     const body = await request.json();
-    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress, currency } = body;
+    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress, currency, sessionId } = body;
+    const checkoutSessionId = typeof sessionId === "string" && sessionId.length <= 128 ? sessionId : undefined;
     const orderCurrency = typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : "USD";
 
     // The submitted email must match the authenticated user's email. This
@@ -185,6 +186,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
       orderNumber,
       customerEmail: verifiedEmail,
       customerName: verifiedName,
+      sessionId: checkoutSessionId,
       items: orderItems,
       subtotal,
       tax,

@@ -6,6 +6,9 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
 
+process.env.ADMIN_EMAILS = "admin@example.com";
+process.env.SUPERADMIN_EMAILS = "admin@example.com";
+
 describe("analytics event durability", () => {
   test("replaying a client event does not create a second row", async () => {
     const t = convexTest(schema, modules);
@@ -75,5 +78,43 @@ describe("analytics event durability", () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.event).toBe("purchase");
+  });
+
+  test("only counts chronological funnel progression", async () => {
+    const t = convexTest(schema, modules);
+    const admin = t.withIdentity({ tokenIdentifier: "admin|analytics", email: "admin@example.com" });
+
+    await t.mutation(api.analyticsEvents.track, {
+      eventId: "funnel-view",
+      event: "view_product",
+      sessionId: "funnel-session",
+    });
+    await t.mutation(api.analyticsEvents.track, {
+      eventId: "funnel-payment-too-early",
+      event: "payment_start",
+      sessionId: "funnel-session",
+    });
+    await t.mutation(api.analyticsEvents.track, {
+      eventId: "funnel-cart",
+      event: "add_to_cart",
+      sessionId: "funnel-session",
+    });
+
+    const beforeCheckout = await admin.query(api.analyticsEvents.funnel, {});
+    expect(beforeCheckout.funnel.map((step) => step.count)).toEqual([1, 1, 0, 0, 0]);
+
+    await t.mutation(api.analyticsEvents.track, {
+      eventId: "funnel-checkout",
+      event: "reach_checkout",
+      sessionId: "funnel-session",
+    });
+    await t.mutation(api.analyticsEvents.track, {
+      eventId: "funnel-payment",
+      event: "payment_start",
+      sessionId: "funnel-session",
+    });
+
+    const afterCheckout = await admin.query(api.analyticsEvents.funnel, {});
+    expect(afterCheckout.funnel.map((step) => step.count)).toEqual([1, 1, 1, 1, 0]);
   });
 });

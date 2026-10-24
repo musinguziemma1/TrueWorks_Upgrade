@@ -32,7 +32,7 @@ import { api } from "@convex/_generated/api";
 import { convexClient } from "@/lib/convex";
 import { cn } from "@/lib/utils";
 import { useCart, cartItemKey } from "@/components/layout/cart-context";
-import { useAnalytics } from "@/lib/use-analytics";
+import { getAnalyticsSessionId, useAnalytics } from "@/lib/use-analytics";
 import { useFormatPrice } from "@/lib/use-format-price";
 import { useSettings } from "@/lib/settings-context";
 import { COUNTRIES } from "@/lib/countries";
@@ -334,6 +334,7 @@ export default function CheckoutContent() {
           })),
           customerEmail: email,
           customerName: `${firstName} ${lastName}`.trim(),
+          sessionId: getAnalyticsSessionId(),
           paymentMethod:
             safePaymentProvider === "pesapal"
               ? pesapalMethod === "mtn"

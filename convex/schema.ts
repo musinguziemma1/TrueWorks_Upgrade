@@ -253,6 +253,8 @@ export default defineSchema({
     country: v.optional(v.string()),
     region: v.optional(v.string()),
     city: v.optional(v.string()),
+    // Anonymous attribution key captured before checkout; never used for auth.
+    sessionId: v.optional(v.string()),
     currency: v.optional(v.string()),
     billingAddress: v.optional(v.object({
       street: v.optional(v.string()),
@@ -286,6 +288,7 @@ export default defineSchema({
     .index("by_status_createdAt", ["orderStatus", "createdAt"])
     .index("by_paymentStatus_createdAt", ["paymentStatus", "createdAt"])
     .index("by_paymentId", ["paymentId"])
+    .index("by_sessionId", ["sessionId"])
     .index("by_createdAt", ["createdAt"]),
 
   customers: defineTable({
@@ -457,6 +460,36 @@ export default defineSchema({
     .index("by_event", ["event"])
     .index("by_productId", ["productId"])
     .index("by_createdAt", ["createdAt"]),
+
+  // One row represents one reached funnel stage for one session/product key.
+  // The unique key is enforced transactionally by analyticsEvents.ts; the
+  // indexes make stage counts bounded and independent of raw event volume.
+  analyticsFunnelProgress: defineTable({
+    sessionKey: v.string(),
+    sessionId: v.optional(v.string()),
+    orderId: v.optional(v.id("orders")),
+    productId: v.optional(v.id("products")),
+    stage: v.number(),
+    reachedAt: v.number(),
+    eventId: v.string(),
+  })
+    .index("by_sessionKey_stage", ["sessionKey", "stage"])
+    .index("by_reachedAt", ["reachedAt"])
+    .index("by_stage_reachedAt", ["stage", "reachedAt"])
+    .index("by_stage_productId_reachedAt", ["stage", "productId", "reachedAt"]),
+
+  analyticsFunnelCounters: defineTable({
+    key: v.string(),
+    date: v.string(),
+    stage: v.number(),
+    productId: v.optional(v.id("products")),
+    shard: v.number(),
+    count: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_stage_date", ["stage", "date"])
+    .index("by_stage_productId_date", ["stage", "productId", "date"])
+    .index("by_date", ["date"]),
 
   settings: defineTable({
     key: v.string(),

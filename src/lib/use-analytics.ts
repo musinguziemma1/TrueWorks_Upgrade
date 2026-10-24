@@ -5,7 +5,21 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
-const SESSION_KEY = "trueworks-session";
+export const ANALYTICS_SESSION_KEY = "trueworks-session";
+
+export function getAnalyticsSessionId(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    let id = localStorage.getItem(ANALYTICS_SESSION_KEY);
+    if (!id) {
+      id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(ANALYTICS_SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Minimum gap between two writes of the same event for the same product.
@@ -38,19 +52,7 @@ export function useAnalytics() {
 
   useEffect(() => {
     if (sessionRef.current) return;
-    let id = "";
-    try {
-      id = localStorage.getItem(SESSION_KEY) ?? "";
-    } catch {
-      id = "";
-    }
-    if (!id) {
-      id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-      try {
-        localStorage.setItem(SESSION_KEY, id);
-      } catch {}
-    }
-    sessionRef.current = id;
+    sessionRef.current = getAnalyticsSessionId() ?? "";
   }, []);
 
   const track = useCallback(

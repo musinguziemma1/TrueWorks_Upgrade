@@ -199,6 +199,7 @@ const orderCreateArgs = {
   country: v.optional(v.string()),
   region: v.optional(v.string()),
   city: v.optional(v.string()),
+  sessionId: v.optional(v.string()),
   currency: v.optional(v.string()),
   billingAddress: v.optional(v.object({
     street: v.optional(v.string()),
@@ -230,6 +231,7 @@ async function insertOrder(ctx: MutationCtx, args: {
   country?: string;
   region?: string;
   city?: string;
+  sessionId?: string;
   billingAddress?: {
     street?: string;
     city?: string;

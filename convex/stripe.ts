@@ -439,6 +439,7 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
         });
         await ctx.runMutation(internal.analyticsEvents.recordPurchase, {
           orderId,
+          sessionId: order.sessionId,
           items: order.items.map((item) => ({
             productId: item.productId,
             productName: item.productName,

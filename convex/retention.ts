@@ -19,6 +19,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const RETENTION_MS = {
   /** Raw funnel/overview events — only recent windows are ever charted. */
   analyticsEvents: 90 * DAY_MS,
+  analyticsFunnelProgress: 90 * DAY_MS,
+  analyticsFunnelCounters: 90 * DAY_MS,
   /** Security trail — kept longer for investigations. */
   auditLogs: 180 * DAY_MS,
   /** Webhook delivery logs — operational only. */
@@ -44,6 +46,12 @@ export const runDailyRetention = internalMutation({
     const now = Date.now();
     await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsEvents, {
       before: now - RETENTION_MS.analyticsEvents,
+    });
+    await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsFunnelProgress, {
+      before: now - RETENTION_MS.analyticsFunnelProgress,
+    });
+    await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsFunnelCounters, {
+      before: new Date(now - RETENTION_MS.analyticsFunnelCounters).toISOString().slice(0, 10),
     });
     await ctx.scheduler.runAfter(0, internal.retention.pruneAuditLogs, {
       before: now - RETENTION_MS.auditLogs,
@@ -75,6 +83,42 @@ export const pruneAnalyticsEvents = internalMutation({
     }
     // Still had a full batch of work — continue in a fresh transaction.
     await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsEvents, args);
+    return deleted;
+  },
+});
+
+export const pruneAnalyticsFunnelProgress = internalMutation({
+  args: { before: v.number() },
+  handler: async (ctx, args) => {
+    let deleted = 0;
+    for (let batch = 0; batch < BATCHES_PER_CALL; batch++) {
+      const rows = await ctx.db
+        .query("analyticsFunnelProgress")
+        .withIndex("by_reachedAt", (q) => q.lt("reachedAt", args.before))
+        .take(BATCH);
+      for (const row of rows) await ctx.db.delete(row._id);
+      deleted += rows.length;
+      if (rows.length < BATCH) return deleted;
+    }
+    await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsFunnelProgress, args);
+    return deleted;
+  },
+});
+
+export const pruneAnalyticsFunnelCounters = internalMutation({
+  args: { before: v.string() },
+  handler: async (ctx, args) => {
+    let deleted = 0;
+    for (let batch = 0; batch < BATCHES_PER_CALL; batch++) {
+      const rows = await ctx.db
+        .query("analyticsFunnelCounters")
+        .withIndex("by_date", (q) => q.lt("date", args.before))
+        .take(BATCH);
+      for (const row of rows) await ctx.db.delete(row._id);
+      deleted += rows.length;
+      if (rows.length < BATCH) return deleted;
+    }
+    await ctx.scheduler.runAfter(0, internal.retention.pruneAnalyticsFunnelCounters, args);
     return deleted;
   },
 });
