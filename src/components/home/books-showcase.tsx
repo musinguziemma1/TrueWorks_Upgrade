@@ -79,8 +79,8 @@ function BooksShowcaseInner() {
 
             <div className="relative z-10 flex flex-1 items-center justify-center py-8">
               <AnimatePresence mode="wait">
-                <motion.div key={activeBook._id} initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.45 }} className="relative h-[330px] w-[225px] overflow-hidden rounded-md bg-white/10 shadow-[0_24px_45px_rgba(0,0,0,0.35)] ring-1 ring-white/20 sm:h-[390px] sm:w-[265px]">
-                  {activeBook.thumbnail ? <Image src={activeBook.thumbnail} alt={activeBook.name} fill priority sizes="(max-width: 640px) 225px, 265px" className="object-contain" /> : <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/70">{activeBook.name}</div>}
+                <motion.div key={activeBook._id} initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.45 }} className="relative h-[390px] w-[265px] overflow-hidden rounded-md bg-white/10 shadow-[0_24px_45px_rgba(0,0,0,0.38)] ring-1 ring-white/20 sm:h-[455px] sm:w-[310px]">
+                  {activeBook.thumbnail ? <Image src={activeBook.thumbnail} alt={activeBook.name} fill priority sizes="(max-width: 640px) 265px, 310px" className="object-contain" /> : <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/70">{activeBook.name}</div>}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -89,7 +89,7 @@ function BooksShowcaseInner() {
               <AnimatePresence mode="wait">
                 <motion.div key={`${activeBook._id}-details`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35 }}>
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-accent-light">Digital book</p>
-                  <h3 className="mt-2 max-w-xl font-heading text-2xl font-semibold leading-tight sm:text-3xl">{activeBook.name}</h3>
+                  <h3 className="mt-2 max-w-xl font-heading text-2xl font-semibold leading-tight text-white sm:text-3xl">{activeBook.name}</h3>
                   {activeBook.bookAuthor && <p className="mt-2 text-sm text-white/70">by {activeBook.bookAuthor}</p>}
                   <div className="mt-5 flex flex-wrap items-center gap-4">
                     <span className="font-heading text-2xl font-bold">{formatPrice(activePrice)}</span>
