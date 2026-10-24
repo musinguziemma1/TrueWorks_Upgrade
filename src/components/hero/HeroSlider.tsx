@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { heroSlides } from './data';
 import HeroBackground from './HeroBackground';
 import HeroContent from './HeroContent';
-import HeroSlide from './HeroImageSlide';
 import HeroProgress from './HeroProgress';
 import HeroNavigation from './HeroNavigation';
 import HeroIndicators from './HeroIndicators';
@@ -170,28 +169,15 @@ export default function HeroSlider({
       {/* Background */}
       <HeroBackground slide={currentSlideData} />
 
-      {/* Main content grid */}
-      <div className="relative z-10 h-full grid lg:grid-cols-2">
-        {/* Left: Content */}
-        <div className="relative flex items-center">
+      {/* Main content layer */}
+      <div className="relative z-10 h-full">
+        {/* Copy stays on the left while the active artwork fills the background. */}
+        <div className="relative flex h-full w-full items-center lg:w-[58%]">
           <HeroContent
             slide={currentSlideData}
             onExploreClick={onExploreClick}
             onDemoClick={onDemoClick}
           />
-        </div>
-
-        {/* Right: Visual */}
-        <div className="relative hidden lg:block" data-parallax="0.5">
-          <div className="absolute inset-0">
-            {heroSlides.map((slide, index) => (
-              <HeroSlide
-                key={slide.id}
-                slide={slide}
-                isActive={index === currentSlide}
-              />
-            ))}
-          </div>
         </div>
       </div>
 
