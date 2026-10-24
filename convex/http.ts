@@ -468,14 +468,18 @@ const publicCatalogQuery = async (ctx: ActionCtx, req: Request): Promise<Respons
       return json({ error: "Unauthorized: missing or invalid x-api-key" }, 401);
     }
     const category = url.searchParams.get("category") ?? undefined;
+    const productTypeParam = url.searchParams.get("productType");
+    const productType = productTypeParam === "book" || productTypeParam === "template" ? productTypeParam : undefined;
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 50) || 50, 100);
     const products = await ctx.runQuery(api.products.list, {
+      productType,
       category: category === "all" ? undefined : category,
     });
     const rows = (products?.items ?? []).slice(0, limit).map((p) => ({
       id: p._id,
       name: p.name,
       slug: p.slug,
+      productType: p.productType ?? "template",
       category: p.category,
       shortDescription: p.shortDescription,
       price: p.salePrice ?? p.price,

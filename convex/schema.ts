@@ -157,6 +157,8 @@ export default defineSchema({
     .index("by_folder", ["folder"]),
 
   products: defineTable({
+    // Optional for backwards compatibility; legacy products are templates.
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     name: v.string(),
     slug: v.string(),
     sku: v.string(),
@@ -182,6 +184,13 @@ export default defineSchema({
     downloadableFileStorageId: v.optional(v.id("_storage")),
     documentationFile: v.optional(v.string()),
     documentationFileStorageId: v.optional(v.id("_storage")),
+    bookAuthor: v.optional(v.string()),
+    bookIsbn: v.optional(v.string()),
+    bookPublisher: v.optional(v.string()),
+    bookPageCount: v.optional(v.number()),
+    bookLanguage: v.optional(v.string()),
+    bookEdition: v.optional(v.string()),
+    bookPreviewStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),
@@ -217,6 +226,7 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_industry", ["industry"])
     .index("by_status", ["status"])
+    .index("by_productType_status", ["productType", "status"])
     .index("by_featured", ["featured"])
     .index("by_price", ["price"])
     .index("by_name", ["name"])
@@ -225,7 +235,7 @@ export default defineSchema({
     .index("by_salePrice", ["salePrice"])
     .searchIndex("search_products", {
       searchField: "name",
-      filterFields: ["status", "category", "industry", "fileType", "featured"],
+      filterFields: ["status", "productType", "category", "industry", "fileType", "featured"],
     }),
 
   orders: defineTable({
@@ -236,6 +246,7 @@ export default defineSchema({
     items: v.array(v.object({
       productId: v.id("products"),
       productName: v.string(),
+      productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
       quantity: v.number(),
       price: v.number(),
     })),
@@ -441,6 +452,7 @@ export default defineSchema({
 
   analyticsEvents: defineTable({
     event: v.string(), // e.g. "view_product", "add_to_cart", "reach_checkout", "payment_start", "purchase"
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     // Optional for backwards compatibility with historical rows. New writes
     // must provide an id so retries can be safely deduplicated.
     eventId: v.optional(v.string()),
@@ -459,6 +471,7 @@ export default defineSchema({
     .index("by_orderId", ["orderId"])
     .index("by_event", ["event"])
     .index("by_productId", ["productId"])
+    .index("by_productType_createdAt", ["productType", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 
   // One row represents one reached funnel stage for one session/product key.

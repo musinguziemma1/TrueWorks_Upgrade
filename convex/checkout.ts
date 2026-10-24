@@ -135,6 +135,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
           orderItems.push({
             productId: member._id,
             productName: member.name,
+            productType: member.productType ?? "template",
             quantity: item.quantity,
             price: memberPrice,
           });
@@ -144,6 +145,7 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
         orderItems.push({
           productId: product._id,
           productName: item.tier ? `${product.name} (${item.tier})` : product.name,
+          productType: product.productType ?? "template",
           quantity: item.quantity,
           price,
         });

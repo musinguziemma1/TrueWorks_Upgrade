@@ -56,6 +56,7 @@ async function adjustCategoryProductCount(ctx: MutationCtx, categoryName: string
 
 export const list = query({
   args: {
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     category: v.optional(v.string()),
     industry: v.optional(v.string()),
     status: v.optional(v.string()),
@@ -85,14 +86,18 @@ export const list = query({
       ? ctx.db.query("products").withIndex("by_featured", (q) => q.eq("featured", args.featured!))
       : ctx.db.query("products");
 
+    const matchesProductType = (p: Doc<"products">) =>
+      args.productType === undefined ||
+      (args.productType === "book" ? p.productType === "book" : (p.productType ?? "template") === "template");
+
     if (args.search) {
       const lower = sanitizeSearch(args.search).toLowerCase();
       const all = await q.collect();
-      const filtered = all.filter((p) =>
+      const filtered = all.filter((p) => matchesProductType(p) && (
         p.name.toLowerCase().includes(lower) ||
         p.sku.toLowerCase().includes(lower) ||
         p.shortDescription.toLowerCase().includes(lower)
-      );
+      ));
       const total = filtered.length;
       const start = args.offset ?? 0;
       const end = args.limit ? start + args.limit : undefined;
@@ -100,7 +105,7 @@ export const list = query({
       return { items: isAdmin ? page : page.map((p) => publicProduct(p)), total };
     }
 
-    const all = await q.order("desc").collect();
+    const all = (await q.order("desc").collect()).filter(matchesProductType);
     const total = all.length;
     const start = args.offset ?? 0;
     const end = args.limit ? start + args.limit : undefined;
@@ -168,6 +173,7 @@ export const getBySlug = query({
  */
 export const listPaginated = query({
   args: {
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     search: v.optional(v.string()),
     category: v.optional(v.string()),
     industries: v.optional(v.array(v.string())),
@@ -190,6 +196,10 @@ export const listPaginated = query({
     const buildConds = (qb: FilterBuilder<ProductsInfo>): Expression<boolean>[] => {
       const c: Expression<boolean>[] = [];
       if (args.category) c.push(qb.eq(qb.field("category"), sanitizeText(args.category)));
+      if (args.productType === "book") c.push(qb.eq(qb.field("productType"), "book"));
+      if (args.productType === "template") {
+        c.push(qb.or(qb.eq(qb.field("productType"), "template"), qb.eq(qb.field("productType"), undefined)));
+      }
       if (args.industries?.length)
         c.push(qb.or(...args.industries.map((i) => qb.eq(qb.field("industry"), sanitizeText(i)))));
       if (args.fileTypes?.length)
@@ -268,11 +278,18 @@ export const listPaginated = query({
  * (category/industry/file-type counts, min/max price, sale/featured counts).
  */
 export const getStoreFacets = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
+  },
+  handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("products")
       .withIndex("by_status", (q) => q.eq("status", "published"))
+      .filter((q) => args.productType === undefined
+        ? q.eq(q.field("status"), "published")
+        : args.productType === "book"
+        ? q.eq(q.field("productType"), "book")
+        : q.or(q.eq(q.field("productType"), "template"), q.eq(q.field("productType"), undefined)))
       .collect();
 
     const categoryCounts: Record<string, number> = {};
@@ -333,6 +350,7 @@ export const getBundleMembers = query({
 
 export const create = mutation({
   args: {
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     name: v.string(),
     slug: v.string(),
     sku: v.string(),
@@ -358,6 +376,13 @@ export const create = mutation({
     downloadableFileStorageId: v.optional(v.id("_storage")),
     documentationFile: v.optional(v.string()),
     documentationFileStorageId: v.optional(v.id("_storage")),
+    bookAuthor: v.optional(v.string()),
+    bookIsbn: v.optional(v.string()),
+    bookPublisher: v.optional(v.string()),
+    bookPageCount: v.optional(v.number()),
+    bookLanguage: v.optional(v.string()),
+    bookEdition: v.optional(v.string()),
+    bookPreviewStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),
@@ -387,6 +412,7 @@ export const create = mutation({
     const now = Date.now();
     const id = await ctx.db.insert("products", {
       ...args,
+      productType: args.productType ?? "template",
       slug,
       totalSales: 0,
       rating: 0,
@@ -414,6 +440,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("products"),
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
     sku: v.optional(v.string()),
@@ -439,6 +466,13 @@ export const update = mutation({
     downloadableFileStorageId: v.optional(v.id("_storage")),
     documentationFile: v.optional(v.string()),
     documentationFileStorageId: v.optional(v.id("_storage")),
+    bookAuthor: v.optional(v.string()),
+    bookIsbn: v.optional(v.string()),
+    bookPublisher: v.optional(v.string()),
+    bookPageCount: v.optional(v.number()),
+    bookLanguage: v.optional(v.string()),
+    bookEdition: v.optional(v.string()),
+    bookPreviewStorageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.string()),
     version: v.optional(v.string()),
     changelog: v.optional(v.string()),
@@ -602,6 +636,7 @@ export const stats = query({
 export const bulkImport = mutation({
   args: {
     products: v.array(v.object({
+      productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
       name: v.string(),
       slug: v.string(),
       sku: v.string(),
@@ -631,7 +666,7 @@ export const bulkImport = mutation({
     for (const p of args.products) {
       try {
         const slug = slugify(p.slug) || slugify(p.name);
-        const normalized = { ...p, slug };
+        const normalized = { ...p, productType: p.productType ?? "template", slug };
         const existing = await ctx.db
           .query("products")
           .withIndex("by_slug", (q) => q.eq("slug", slug))

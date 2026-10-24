@@ -34,6 +34,7 @@ export interface StoreFacets {
 }
 
 interface StoreSidebarProps {
+  productType: "template" | "book"
   facets: StoreFacets
   categories: string[]
   search: string
@@ -121,6 +122,7 @@ function FilterSection({
 }
 
 export function StoreSidebar({
+  productType,
   facets,
   categories: dbCategories,
   search,
@@ -169,7 +171,7 @@ export function StoreSidebar({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <Input
-            placeholder="Search templates..."
+            placeholder={`Search ${productType === "book" ? "books" : "templates"}...`}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-10 border-border bg-surface pl-10 text-sm focus:bg-white"

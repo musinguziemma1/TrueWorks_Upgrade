@@ -176,8 +176,10 @@ export const track = mutation({
     await checkRateLimit(ctx, "analytics.track", args.sessionId ?? args.eventId, 120, 60_000);
 
     const now = Date.now();
+    const product = args.productId ? await ctx.db.get(args.productId) : null;
     await ctx.db.insert("analyticsEvents", {
       event: args.event,
+      productType: product?.productType ?? (args.productId ? "template" : undefined),
       eventId: args.eventId,
       sessionId: args.sessionId,
       productId: args.productId,
@@ -240,6 +242,9 @@ export const recordPurchase = internalMutation({
 
       await ctx.db.insert("analyticsEvents", {
         event: "purchase",
+        productType: productId
+          ? ((await ctx.db.get(productId))?.productType ?? "template")
+          : undefined,
         eventId,
         orderId: args.orderId,
         productId,

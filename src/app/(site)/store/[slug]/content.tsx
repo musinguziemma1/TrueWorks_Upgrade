@@ -172,13 +172,13 @@ export default function ProductDetail({
   const recommendedInCategory = useQuery(
     api.products.list,
     product
-      ? { status: "published", category: product.category, featured: true, limit: 4 }
+      ? { status: "published", productType: product.productType ?? "template", category: product.category, featured: true, limit: 4 }
       : "skip"
   );
   const recommendedFeatured = useQuery(
     api.products.list,
     product
-      ? { status: "published", featured: true, limit: 8 }
+      ? { status: "published", productType: product.productType ?? "template", featured: true, limit: 8 }
       : "skip"
   );
   const recommended = useMemo(() => {
@@ -680,7 +680,7 @@ export default function ProductDetail({
                       <FileType2 className="h-4 w-4" />
                     </span>
                     <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                      About this template
+                      About this {p.productType === "book" ? "book" : "template"}
                     </h2>
                   </div>
 
@@ -1033,10 +1033,15 @@ export default function ProductDetail({
                     </h3>
                     <dl className="mt-4 space-y-2.5 text-sm">
                       {[
+                        { label: "Product family", value: p.productType === "book" ? "Digital book" : "Template" },
                         { label: "Category", value: p.category },
                         { label: "Industry", value: p.industry },
                         { label: "SKU", value: p.sku },
                         { label: "Format", value: p.fileType },
+                        p.productType === "book" && p.bookAuthor ? { label: "Author", value: p.bookAuthor } : null,
+                        p.productType === "book" && p.bookIsbn ? { label: "ISBN", value: p.bookIsbn } : null,
+                        p.productType === "book" && p.bookPageCount ? { label: "Pages", value: `${p.bookPageCount}` } : null,
+                        p.productType === "book" && p.bookLanguage ? { label: "Language", value: p.bookLanguage } : null,
                         p.fileSize ? { label: "File size", value: p.fileSize } : null,
                         p.version ? { label: "Version", value: `v${p.version}` } : null,
                         p.downloadLimit ? { label: "Downloads", value: `${p.downloadLimit}` } : null,
@@ -1224,7 +1229,7 @@ export default function ProductDetail({
                   </p>
                 </div>
                 <Link
-                  href={`/store?category=${encodeURIComponent(p.category)}`}
+                  href={`/store?type=${p.productType === "book" ? "book" : "template"}&category=${encodeURIComponent(p.category)}`}
                   className="hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-accent-dark sm:inline-flex"
                 >
                   View all

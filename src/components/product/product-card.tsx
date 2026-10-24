@@ -29,6 +29,13 @@ import { useSignedPreviewUrl } from "@/lib/use-signed-preview";
 
 export interface StoreProduct {
   _id: string;
+  productType?: "template" | "book";
+  bookAuthor?: string;
+  bookIsbn?: string;
+  bookPublisher?: string;
+  bookPageCount?: number;
+  bookLanguage?: string;
+  bookEdition?: string;
   name: string;
   slug: string;
   shortDescription: string;
@@ -184,6 +191,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   const href = `/store/${product.slug}`;
   const price = product.salePrice ?? product.price;
+  const productLabel = product.productType === "book" ? "Book" : "Template";
   const discount = product.salePrice && product.price > 0
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : null;
@@ -300,7 +308,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
             {/* Category pill */}
             <span className="absolute right-4 top-4 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm border border-white/10">
-              {product.category.split(" ")[0]}
+              {product.productType === "book" ? productLabel : product.category.split(" ")[0]}
             </span>
 
             {/* Shine sweep on hover */}

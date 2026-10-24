@@ -31,8 +31,10 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const qParam = searchParams.get("q");
+  const typeParam = searchParams.get("type");
 
   const [search, setSearch] = useState(qParam || "");
+  const [productType, setProductType] = useState<"template" | "book">(typeParam === "book" ? "book" : "template");
   const [activeCategory, setActiveCategory] = useState(categoryParam || "All");
   const [sort, setSort] = useState("newest");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 999999]);
@@ -63,6 +65,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
   const { results, status, loadMore } = usePaginatedQuery(
     api.products.listPaginated,
     {
+      productType,
       search: search.trim() || undefined,
       category: activeCategory !== "All" ? activeCategory : undefined,
       industries: industries.length > 0 ? industries : undefined,
@@ -78,7 +81,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
     { initialNumItems: STORE_ITEMS_PER_PAGE }
   );
 
-  const facets = useQuery(api.products.getStoreFacets);
+  const facets = useQuery(api.products.getStoreFacets, { productType });
   const dbCategories = useQuery(api.categories.list, {});
   const categoryNames = (dbCategories ?? []).map((c) => c.name);
 
@@ -87,6 +90,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
   // Convex rather than show stale, unfiltered products.
   const filtersAreDefault =
     search.trim() === "" &&
+    productType === "template" &&
     activeCategory === "All" &&
     sort === STORE_DEFAULT_SORT &&
     priceRange[0] === 0 &&
@@ -109,6 +113,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
 
   const reset = () => {
     setSearch("");
+    setProductType("template");
     setActiveCategory("All");
     setSort("newest");
     setPriceRange([0, 999999]);
@@ -129,6 +134,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
     maxPrice: facets?.maxPrice ?? 0,
     total: facets?.total ?? 0,
   };
+  const productLabel = productType === "book" ? "Books" : "Templates";
 
   return (
     <div className="min-h-screen bg-surface">
@@ -148,16 +154,31 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                 className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-light backdrop-blur"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                The Store
+                {productLabel} Store
               </motion.div>
+              <div className="mt-4 inline-flex rounded-xl border border-white/15 bg-white/10 p-1 text-sm">
+                {(["template", "book"] as const).map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    onClick={() => setProductType(kind)}
+                    className={cn(
+                      "rounded-lg px-4 py-2 font-medium transition-colors",
+                      productType === kind ? "bg-white text-primary" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    {kind === "template" ? "Templates" : "Books"}
+                  </button>
+                ))}
+              </div>
               <motion.h1
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.08, ease: "easeOut" }}
                 className="mt-5 font-heading text-4xl font-semibold leading-[1.05] text-white sm:text-5xl lg:text-6xl"
               >
-                Premium templates &amp;{" "}
-                <span className="text-gradient-gold">business systems</span>.
+                {productType === "book" ? "Practical books for " : "Premium templates & "}{" "}
+                <span className="text-gradient-gold">better work</span>.
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 18 }}
@@ -165,9 +186,9 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                 transition={{ duration: 0.5, delay: 0.16, ease: "easeOut" }}
                 className="mt-5 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg"
               >
-                Professional-grade Excel templates and dashboards for Global
-                organizations. Pay securely, download instantly, and put them to
-                work the same day.
+                {productType === "book"
+                  ? "Digital books and guides from TrueWorks. Pay securely and download instantly."
+                  : "Professional-grade Excel templates and business systems for growing organizations."}
               </motion.p>
               <motion.ul
                 initial={{ opacity: 0, y: 18 }}
@@ -197,7 +218,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
             >
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                 {[
-                  { v: pageFacets.total.toLocaleString(), l: "Templates" },
+                  { v: pageFacets.total.toLocaleString(), l: productLabel },
                   { v: categoryNames.length.toString(), l: "Categories" },
                   { v: Object.values(pageFacets.industryCounts).reduce((s, n) => s + n, 0).toLocaleString(), l: "Industry picks" },
                 ].map((m, i) => (
@@ -227,6 +248,7 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
         <div className="flex gap-8">
           {/* Sidebar */}
           <StoreSidebar
+            productType={productType}
             categories={categoryNames}
             search={search}
             onSearchChange={setSearch}
@@ -258,14 +280,14 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    Loading templates...
+                    Loading {productLabel.toLowerCase()}...
                   </span>
                 ) : (
                   <>
                     Showing{" "}
                     <span className="font-semibold text-foreground">{products.length}</span> of{" "}
                     <span className="font-semibold text-foreground">{pageFacets.total}</span>{" "}
-                    template{pageFacets.total === 1 ? "" : "s"}
+                    {productLabel.toLowerCase().slice(0, -1)}{pageFacets.total === 1 ? "" : "s"}
                   </>
                 )}
               </p>
@@ -321,10 +343,10 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                   <PackageSearch className="h-8 w-8 text-muted-foreground" />
                 </span>
                 <p className="mt-6 font-heading text-xl font-semibold text-primary">
-                  No templates found
+                  No {productLabel.toLowerCase()} found
                 </p>
                 <p className="mt-2 max-w-sm text-sm text-muted-foreground leading-relaxed">
-                  We couldn&apos;t find any templates matching your filters.
+                  We couldn&apos;t find any {productLabel.toLowerCase()} matching your filters.
                   Try adjusting your search or browse a different category.
                 </p>
                 <Button onClick={reset} className="mt-7 gradient-gold text-primary-dark">

@@ -39,6 +39,7 @@ export default function NewProductPage() {
   const router = useRouter()
 
   const [name, setName] = useState("")
+  const [productType, setProductType] = useState<"template" | "book">("template")
   const [slug, setSlug] = useState("")
   const [sku, setSku] = useState("")
   const [shortDescription, setShortDescription] = useState("")
@@ -49,6 +50,12 @@ export default function NewProductPage() {
   const [category, setCategory] = useState("")
   const [industry, setIndustry] = useState("")
   const [fileType, setFileType] = useState("")
+  const [bookAuthor, setBookAuthor] = useState("")
+  const [bookIsbn, setBookIsbn] = useState("")
+  const [bookPublisher, setBookPublisher] = useState("")
+  const [bookPageCount, setBookPageCount] = useState("")
+  const [bookLanguage, setBookLanguage] = useState("English")
+  const [bookEdition, setBookEdition] = useState("")
   const [tags, setTags] = useState("")
   const [version, setVersion] = useState("1.0.0")
   const [demoVideo, setDemoVideo] = useState("")
@@ -162,6 +169,7 @@ export default function NewProductPage() {
     }
 
     const payload = {
+      productType,
       name,
       slug,
       sku,
@@ -180,6 +188,12 @@ export default function NewProductPage() {
       category,
       industry,
       fileType: fileType || "ZIP",
+      bookAuthor: productType === "book" ? bookAuthor || undefined : undefined,
+      bookIsbn: productType === "book" ? bookIsbn || undefined : undefined,
+      bookPublisher: productType === "book" ? bookPublisher || undefined : undefined,
+      bookPageCount: productType === "book" && bookPageCount ? Number(bookPageCount) : undefined,
+      bookLanguage: productType === "book" ? bookLanguage || undefined : undefined,
+      bookEdition: productType === "book" ? bookEdition || undefined : undefined,
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       galleryImages,
       thumbnail,
@@ -340,6 +354,17 @@ export default function NewProductPage() {
               <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Organization</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Product Family *</Label>
+                    <Select value={productType} onValueChange={(v) => setProductType(v as "template" | "book")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="template">Template / Business System</SelectItem>
+                        <SelectItem value="book">Digital Book</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Controls storefront placement, metadata, and reporting.</p>
+                  </div>
                   <div className="space-y-2">
                     <Label>Category *</Label>
                     <Select value={category} onValueChange={(v) => { if (v) setCategory(v) }}>
@@ -365,6 +390,16 @@ export default function NewProductPage() {
                     <Label>Tags</Label>
                     <Input placeholder="Comma separated tags" value={tags} onChange={(e) => setTags(e.target.value)} />
                   </div>
+                  {productType === "book" && (
+                    <>
+                      <div className="space-y-2"><Label>Author</Label><Input value={bookAuthor} onChange={(e) => setBookAuthor(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>ISBN</Label><Input value={bookIsbn} onChange={(e) => setBookIsbn(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>Publisher</Label><Input value={bookPublisher} onChange={(e) => setBookPublisher(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>Page Count</Label><Input type="number" min="1" value={bookPageCount} onChange={(e) => setBookPageCount(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>Language</Label><Input value={bookLanguage} onChange={(e) => setBookLanguage(e.target.value)} /></div>
+                      <div className="space-y-2"><Label>Edition</Label><Input value={bookEdition} onChange={(e) => setBookEdition(e.target.value)} /></div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

@@ -177,6 +177,7 @@ const orderCreateArgs = {
   items: v.array(v.object({
     productId: v.id("products"),
     productName: v.string(),
+    productType: v.optional(v.union(v.literal("template"), v.literal("book"))),
     quantity: v.number(),
     price: v.number(),
   })),
@@ -216,7 +217,7 @@ async function insertOrder(ctx: MutationCtx, args: {
   customerId?: Id<"customers">;
   customerEmail: string;
   customerName: string;
-  items: { productId: Id<"products">; productName: string; quantity: number; price: number }[];
+  items: { productId: Id<"products">; productName: string; productType?: "template" | "book"; quantity: number; price: number }[];
   subtotal: number;
   tax: number;
   discountAmount?: number;

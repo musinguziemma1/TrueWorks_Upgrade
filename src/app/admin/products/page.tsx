@@ -48,6 +48,7 @@ export default function ProductsPage() {
   const [category, setCategoryState] = useState("All")
   const [industry, setIndustryState] = useState("All")
   const [status, setStatusState] = useState("All")
+  const [productType, setProductTypeState] = useState<"All" | "template" | "book">("All")
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [page, setPage] = useState(1)
 
@@ -55,6 +56,7 @@ export default function ProductsPage() {
   const setCategory = (v: string) => { setCategoryState(v); setPage(1) }
   const setIndustry = (v: string) => { setIndustryState(v); setPage(1) }
   const setStatus = (v: string) => { setStatusState(v); setPage(1) }
+  const setProductType = (v: "All" | "template" | "book") => { setProductTypeState(v); setPage(1) }
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -67,6 +69,7 @@ export default function ProductsPage() {
   const perPage = 8
 
   const products = useProducts({
+    productType: productType !== "All" ? productType : undefined,
     category: category !== "All" ? category : undefined,
     industry: industry !== "All" ? industry : undefined,
     status: status !== "All" ? STATUS_MAP[status] : undefined,
@@ -177,6 +180,7 @@ export default function ProductsPage() {
       const rows: Record<string, string | number | boolean>[] = XLSX.utils.sheet_to_json(sheet)
 
       const products = rows.map((row) => ({
+        productType: (String(row["Product Type"] ?? row["productType"] ?? "template") === "book" ? "book" : "template") as "template" | "book",
         name: String(row["Name"] ?? row["name"] ?? ""),
         slug: String(row["Slug"] ?? row["slug"] ?? ""),
         sku: String(row["SKU"] ?? row["sku"] ?? ""),
@@ -351,6 +355,14 @@ export default function ProductsPage() {
           <Select value={status} onValueChange={(v) => { if (v) setStatus(v) }}>
             <SelectTrigger className="h-10 w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={productType} onValueChange={(v) => { if (v) setProductType(v as "All" | "template" | "book") }}>
+            <SelectTrigger className="h-10 w-[150px]"><SelectValue placeholder="Product family" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All products</SelectItem>
+              <SelectItem value="template">Templates</SelectItem>
+              <SelectItem value="book">Books</SelectItem>
+            </SelectContent>
           </Select>
           <div className="flex overflow-hidden rounded-lg border border-border">
             <button

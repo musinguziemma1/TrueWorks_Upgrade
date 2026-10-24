@@ -12,6 +12,7 @@ process.env.ADMIN_EMAILS = "admin@example.com";
 process.env.SUPERADMIN_EMAILS = "admin@example.com";
 
 type ProductSeed = {
+  productType?: "template" | "book";
   name: string;
   slug: string;
   sku: string;
@@ -105,6 +106,32 @@ describe("products.getBySlug", () => {
       slug: "hospital-finance-kit",
     });
     expect(product).toBeNull();
+  });
+});
+
+describe("products.productType", () => {
+  test("keeps books and templates in separate catalog views", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("products", makeProduct({
+        name: "TrueWorks Guide",
+        slug: "trueworks-guide",
+        sku: "TW-BOOK-001",
+        productType: "book",
+        fileType: "PDF",
+      }));
+      await ctx.db.insert("products", makeProduct({
+        name: "Finance Template",
+        slug: "finance-template",
+        sku: "TW-TEMPLATE-001",
+      }));
+    });
+
+    const books = await t.query(api.products.list, { productType: "book" });
+    const templates = await t.query(api.products.list, { productType: "template" });
+
+    expect(books.items.map((product) => product.name)).toEqual(["TrueWorks Guide"]);
+    expect(templates.items.map((product) => product.name)).toEqual(["Finance Template"]);
   });
 });
 

@@ -32,6 +32,7 @@ export const revalidate = 300;
 function toCardProduct(p: StoreProduct): StoreProduct {
   return {
     _id: p._id,
+    productType: p.productType,
     name: p.name,
     slug: p.slug,
     shortDescription: p.shortDescription,
@@ -62,6 +63,7 @@ const loadStoreFirstPage = cache(async (): Promise<StoreProduct[]> => {
   if (!convexServer) return [];
   try {
     const result = await convexServer.query(api.products.listPaginated, {
+      productType: "template",
       status: "published",
       sort: STORE_DEFAULT_SORT,
       paginationOpts: { numItems: STORE_ITEMS_PER_PAGE, cursor: null },

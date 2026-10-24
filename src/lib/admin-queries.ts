@@ -5,8 +5,10 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
 export type ProductStatus = "draft" | "published" | "archived";
+export type ProductType = "template" | "book";
 
 export interface ProductInput {
+  productType?: ProductType;
   name: string;
   slug: string;
   sku: string;
@@ -24,6 +26,13 @@ export interface ProductInput {
   downloadableFileStorageId?: Id<"_storage">;
   documentationFile?: string;
   documentationFileStorageId?: Id<"_storage">;
+  bookAuthor?: string;
+  bookIsbn?: string;
+  bookPublisher?: string;
+  bookPageCount?: number;
+  bookLanguage?: string;
+  bookEdition?: string;
+  bookPreviewStorageId?: Id<"_storage">;
   fileSize?: string;
   version?: string;
   changelog?: string;
@@ -60,6 +69,7 @@ export interface CouponInput {
 }
 
 export function useProducts(args?: {
+  productType?: ProductType;
   category?: string;
   industry?: string;
   status?: string;
