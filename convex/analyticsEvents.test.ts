@@ -116,5 +116,18 @@ describe("analytics event durability", () => {
 
     const afterCheckout = await admin.query(api.analyticsEvents.funnel, {});
     expect(afterCheckout.funnel.map((step) => step.count)).toEqual([1, 1, 1, 1, 0]);
+
+    const overview = await admin.query(api.analyticsEvents.overview, {});
+    expect(overview).toEqual({
+      total: 4,
+      byEvent: {
+        view_product: 1,
+        add_to_cart: 1,
+        reach_checkout: 1,
+        payment_start: 1,
+        purchase: 0,
+      },
+      topProducts: [],
+    });
   });
 });

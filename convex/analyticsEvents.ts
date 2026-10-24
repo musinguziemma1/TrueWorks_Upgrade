@@ -5,16 +5,6 @@ import type { Id } from "./_generated/dataModel";
 import { requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
 
-/** Sort-maximum sentinels so every index range is explicitly bounded. */
-const MAX_TIMESTAMP = 9007199254740991;
-
-/**
- * Upper bound on how many analytics events a single read will scan. The window
- * is pushed into the `by_createdAt` index and capped so cost stays flat as the
- * table grows instead of scaling with every event ever recorded.
- */
-const MAX_OVERVIEW_SCAN = 5000;
-
 const eventValidator = v.union(
   v.literal("view_product"),
   v.literal("add_to_cart"),
@@ -45,6 +35,7 @@ type FunnelProgressInput = {
   stage: number;
   reachedAt: number;
   eventId: string;
+  productName?: string;
 };
 
 function counterShard(sessionKey: string) {
@@ -57,7 +48,13 @@ function counterShard(sessionKey: string) {
 
 async function incrementFunnelCounter(
   ctx: MutationCtx,
-  input: { date: string; stage: number; productId?: Id<"products">; shard: number }
+  input: {
+    date: string;
+    stage: number;
+    productId?: Id<"products">;
+    productName?: string;
+    shard: number;
+  }
 ) {
   const key = `${input.date}:${input.stage}:${input.productId ?? "all"}:${input.shard}`;
   const existing = await ctx.db
@@ -65,7 +62,10 @@ async function incrementFunnelCounter(
     .withIndex("by_key", (q) => q.eq("key", key))
     .first();
   if (existing) {
-    await ctx.db.patch(existing._id, { count: existing.count + 1 });
+    await ctx.db.patch(existing._id, {
+      count: existing.count + 1,
+      ...(input.productName ? { productName: input.productName } : {}),
+    });
   } else {
     await ctx.db.insert("analyticsFunnelCounters", { key, ...input, count: 1 });
   }
@@ -83,7 +83,15 @@ async function advanceFunnelProgress(ctx: MutationCtx, input: FunnelProgressInpu
   if (!previous && input.stage !== 0 && input.stage !== STAGE_BY_EVENT.purchase) return;
   if (previous && input.stage !== previous.stage + 1) return;
 
-  await ctx.db.insert("analyticsFunnelProgress", input);
+  await ctx.db.insert("analyticsFunnelProgress", {
+    sessionKey: input.sessionKey,
+    sessionId: input.sessionId,
+    orderId: input.orderId,
+    productId: input.productId,
+    stage: input.stage,
+    reachedAt: input.reachedAt,
+    eventId: input.eventId,
+  });
   const date = new Date(input.reachedAt).toISOString().slice(0, 10);
   const shard = counterShard(input.sessionKey);
   await incrementFunnelCounter(ctx, { date, stage: input.stage, shard });
@@ -92,6 +100,7 @@ async function advanceFunnelProgress(ctx: MutationCtx, input: FunnelProgressInpu
       date,
       stage: input.stage,
       productId: input.productId,
+      productName: input.productName,
       shard,
     });
   }
@@ -187,6 +196,7 @@ export const track = mutation({
         stage: STAGE_BY_EVENT[args.event],
         reachedAt: now,
         eventId: args.eventId,
+        productName: args.productName,
       });
     }
     return { accepted: true, duplicate: false };
@@ -242,6 +252,7 @@ export const recordPurchase = internalMutation({
         sessionId: args.sessionId,
         orderId: args.orderId,
         productId,
+        productName: item?.productName,
         stage: STAGE_BY_EVENT.purchase,
         reachedAt: Date.now(),
         eventId,
@@ -325,33 +336,53 @@ export const overview = query({
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return { total: 0, byEvent: {}, topProducts: [] };
 
-    // Index-range + capped scan (see MAX_EVENTS_SCAN); newest events first.
-    const events = await ctx.db
-      .query("analyticsEvents")
-      .withIndex("by_createdAt", (range) =>
-        range
-          .gte("createdAt", args.startDate ?? 0)
-          .lte("createdAt", args.endDate ?? MAX_TIMESTAMP)
+    // Read maintained counters instead of scanning raw events. The date range
+    // is applied inside each indexed query, so cost is bounded by days and
+    // counter shards rather than event volume.
+    const stepOrder = [
+      "view_product",
+      "add_to_cart",
+      "reach_checkout",
+      "payment_start",
+      "purchase",
+    ];
+    const counts = await Promise.all(
+      stepOrder.map((_, stage) =>
+        readFunnelCounter(ctx, stage, undefined, args.startDate, args.endDate)
       )
-      .order("desc")
-      .take(MAX_OVERVIEW_SCAN);
+    );
+    const byEvent = Object.fromEntries(
+      stepOrder.map((event, index) => [event, counts[index] ?? 0])
+    );
 
-    const byEvent = new Map<string, number>();
+    const start = args.startDate === undefined
+      ? "0000-01-01"
+      : new Date(args.startDate).toISOString().slice(0, 10);
+    const end = args.endDate === undefined
+      ? "9999-12-31"
+      : new Date(args.endDate).toISOString().slice(0, 10);
     const top = new Map<string, { name: string; count: number }>();
-    for (const e of events) {
-      byEvent.set(e.event, (byEvent.get(e.event) ?? 0) + 1);
-      if (e.productId && e.productName) {
-        const key = e.productId;
-        const cur = top.get(key) ?? { name: e.productName, count: 0 };
-        cur.count += 1;
-        cur.name = e.productName;
-        top.set(key, cur);
+    for (const stage of [0, 1, 2, 3, 4]) {
+      const rows = ctx.db
+        .query("analyticsFunnelCounters")
+        .withIndex("by_stage_date_productId", (range) =>
+          range.eq("stage", stage).gte("date", start).lte("date", end)
+        );
+      for await (const row of rows) {
+        if (!row.productId) continue;
+        const current = top.get(row.productId) ?? {
+          name: row.productName ?? row.productId,
+          count: 0,
+        };
+        current.count += row.count;
+        if (row.productName) current.name = row.productName;
+        top.set(row.productId, current);
       }
     }
 
     return {
-      total: events.length,
-      byEvent: Object.fromEntries(byEvent),
+      total: counts.reduce((total, count) => total + count, 0),
+      byEvent,
       topProducts: Array.from(top.values())
         .sort((a, b) => b.count - a.count)
         .slice(0, 10),

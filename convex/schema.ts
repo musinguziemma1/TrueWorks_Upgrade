@@ -483,12 +483,14 @@ export default defineSchema({
     date: v.string(),
     stage: v.number(),
     productId: v.optional(v.id("products")),
+      productName: v.optional(v.string()),
     shard: v.number(),
     count: v.number(),
   })
     .index("by_key", ["key"])
     .index("by_stage_date", ["stage", "date"])
     .index("by_stage_productId_date", ["stage", "productId", "date"])
+    .index("by_stage_date_productId", ["stage", "date", "productId"])
     .index("by_date", ["date"]),
 
   settings: defineTable({
