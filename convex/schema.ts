@@ -441,6 +441,7 @@ export default defineSchema({
     // Optional for backwards compatibility with historical rows. New writes
     // must provide an id so retries can be safely deduplicated.
     eventId: v.optional(v.string()),
+    orderId: v.optional(v.id("orders")),
     sessionId: v.optional(v.string()),
     productId: v.optional(v.id("products")),
     productName: v.optional(v.string()),
@@ -452,6 +453,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_eventId", ["eventId"])
+    .index("by_orderId", ["orderId"])
     .index("by_event", ["event"])
     .index("by_productId", ["productId"])
     .index("by_createdAt", ["createdAt"]),

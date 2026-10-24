@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminSilent } from "./users";
 
@@ -16,8 +16,7 @@ const eventValidator = v.union(
   v.literal("view_product"),
   v.literal("add_to_cart"),
   v.literal("reach_checkout"),
-  v.literal("payment_start"),
-  v.literal("purchase")
+  v.literal("payment_start")
 );
 
 const MAX_EVENT_ID_LENGTH = 128;
@@ -85,6 +84,56 @@ export const track = mutation({
   },
 });
 
+/**
+ * Record a settled purchase from a verified payment callback.
+ * The browser is deliberately not allowed to create purchase events.
+ */
+export const recordPurchase = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    items: v.array(
+      v.object({
+        productId: v.id("products"),
+        productName: v.string(),
+        value: v.number(),
+      })
+    ),
+  },
+  returns: v.object({ accepted: v.boolean(), duplicate: v.boolean() }),
+  handler: async (ctx, args) => {
+    const items = args.items.length > 0
+      ? args.items
+      : [{ productId: undefined, productName: undefined, value: 0 }];
+    let existingCount = 0;
+
+    for (const item of items) {
+      const eventId = item.productId
+        ? `purchase:${args.orderId}:${item.productId}`
+        : `purchase:${args.orderId}`;
+      const existing = await ctx.db
+        .query("analyticsEvents")
+        .withIndex("by_eventId", (q) => q.eq("eventId", eventId))
+        .first();
+      if (existing) {
+        existingCount += 1;
+        continue;
+      }
+
+      await ctx.db.insert("analyticsEvents", {
+        event: "purchase",
+        eventId,
+        orderId: args.orderId,
+        productId: item.productId,
+        productName: item.productName,
+        value: item.value,
+        createdAt: Date.now(),
+      });
+    }
+
+    return { accepted: true, duplicate: existingCount === items.length };
+  },
+});
+
 export interface FunnelStep {
   name: string;
   count: number;
@@ -131,13 +180,20 @@ export const funnel = query({
     ];
 
     const counts = new Map<string, number>();
+    const uniqueKeys = new Map<string, Set<string>>();
     for (const step of stepOrder) counts.set(step, 0);
+    for (const step of stepOrder) uniqueKeys.set(step, new Set());
 
     for (const e of events) {
       if (!counts.has(e.event)) continue;
       if (args.productId && e.productId !== args.productId) continue;
-      counts.set(e.event, (counts.get(e.event) ?? 0) + 1);
+      const key =
+        e.event === "purchase"
+          ? e.orderId ?? e.sessionId ?? e.eventId ?? e._id
+          : e.sessionId ?? e.eventId ?? e._id;
+      uniqueKeys.get(e.event)?.add(key);
     }
+    for (const step of stepOrder) counts.set(step, uniqueKeys.get(step)?.size ?? 0);
 
     const funnel: FunnelStep[] = stepOrder.map((name) => ({
       name,

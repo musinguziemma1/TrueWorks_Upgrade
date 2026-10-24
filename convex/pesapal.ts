@@ -601,6 +601,14 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     timestamp: order.createdAt,
     revenue: order.total ?? 0,
   });
+  await ctx.runMutation(internal.analyticsEvents.recordPurchase, {
+    orderId: order._id,
+    items: order.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      value: item.price * item.quantity,
+    })),
+  });
 
   await ctx.runMutation(internal.notifications.createPublic, {
     type: "order",

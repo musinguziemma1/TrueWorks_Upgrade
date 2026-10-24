@@ -437,6 +437,14 @@ export const handleStripeWebhook = async (ctx: ActionCtx, req: Request): Promise
           timestamp: order.createdAt,
           revenue: order.total ?? 0,
         });
+        await ctx.runMutation(internal.analyticsEvents.recordPurchase, {
+          orderId,
+          items: order.items.map((item) => ({
+            productId: item.productId,
+            productName: item.productName,
+            value: item.price * item.quantity,
+          })),
+        });
 
         await sendPaymentEmail(order, order.items);
       }
