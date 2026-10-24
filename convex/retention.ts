@@ -33,6 +33,9 @@ export const RETENTION_MS = {
 
 /** Rows deleted per transaction. */
 const BATCH = 500;
+/** Audit rows may contain large changes/metadata payloads. */
+const AUDIT_LOG_BATCH = 100;
+const MIN_BYTES_REMAINING = 2 * 1024 * 1024;
 /** Batches drained before handing the rest of the work to a fresh transaction. */
 const BATCHES_PER_CALL = 4;
 
@@ -127,16 +130,22 @@ export const pruneAuditLogs = internalMutation({
   args: { before: v.number() },
   handler: async (ctx, args) => {
     let deleted = 0;
-    for (let batch = 0; batch < BATCHES_PER_CALL; batch++) {
-      const rows = await ctx.db
-        .query("auditLogs")
-        .withIndex("by_createdAt", (q) => q.lt("createdAt", args.before))
-        .take(BATCH);
-      for (const row of rows) await ctx.db.delete(row._id);
-      deleted += rows.length;
-      if (rows.length < BATCH) return deleted;
+    const rows = ctx.db
+      .query("auditLogs")
+      .withIndex("by_createdAt", (q) => q.lt("createdAt", args.before));
+    for await (const row of rows) {
+      await ctx.db.delete(row._id);
+      deleted += 1;
+      const metrics = await ctx.meta.getTransactionMetrics();
+      if (
+        deleted >= AUDIT_LOG_BATCH ||
+        metrics.bytesRead.remaining < MIN_BYTES_REMAINING ||
+        metrics.bytesWritten.remaining < MIN_BYTES_REMAINING
+      ) {
+        await ctx.scheduler.runAfter(0, internal.retention.pruneAuditLogs, args);
+        return deleted;
+      }
     }
-    await ctx.scheduler.runAfter(0, internal.retention.pruneAuditLogs, args);
     return deleted;
   },
 });

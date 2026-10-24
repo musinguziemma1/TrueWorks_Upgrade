@@ -1,4 +1,6 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireAdmin, requireAdminSilent } from "./users";
 import { checkRateLimit } from "./rateLimit";
@@ -19,8 +21,10 @@ const MAX_TIMESTAMP = 9007199254740991;
 const MAX_LOG_SCAN = 5000;
 /** Row cap for the filter-dropdown helpers (recent rows are representative). */
 const MAX_FILTER_SCAN = 2000;
-/** Rows pruned per cleanup transaction, so a prune never exceeds tx limits. */
-const CLEANUP_BATCH = 1000;
+/** Maximum rows pruned per cleanup transaction. */
+const CLEANUP_BATCH = 100;
+/** Leave headroom for unusually large changes/metadata payloads. */
+const CLEANUP_MIN_BYTES_REMAINING = 2 * 1024 * 1024;
 
 /** Resolve a start cutoff from an explicit timestamp or a trailing-days window. */
 function resolveStartDate(startDate?: number, days?: number): number | undefined {
@@ -461,21 +465,55 @@ export const getById = query({
  */
 export const cleanup = mutation({
   args: { olderThan: v.number() },
+  returns: v.number(),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const cutoff = Date.now() - args.olderThan;
-    // Batched prune: one transaction can't delete an unbounded number of rows,
-    // so remove the oldest batch and re-run the call to drain further.
-    const old = await ctx.db
-      .query("auditLogs")
-      .withIndex("by_createdAt", (q) => q.lt("createdAt", cutoff))
-      .take(CLEANUP_BATCH);
-    for (const log of old) {
-      await ctx.db.delete(log._id);
+    const result = await deleteAuditLogBatch(ctx, cutoff);
+    if (result.hasMore) {
+      await ctx.scheduler.runAfter(0, internal.auditLogs.cleanupBatch, { cutoff });
     }
-    return old.length;
+    return result.deleted;
   },
 });
+
+/** Delete one byte-bounded batch, then continue in a fresh transaction. */
+export const cleanupBatch = internalMutation({
+  args: { cutoff: v.number() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const result = await deleteAuditLogBatch(ctx, args.cutoff);
+    if (result.hasMore) {
+      await ctx.scheduler.runAfter(0, internal.auditLogs.cleanupBatch, args);
+    }
+    return result.deleted;
+  },
+});
+
+async function deleteAuditLogBatch(ctx: MutationCtx, cutoff: number) {
+  let deleted = 0;
+  let hasMore = false;
+  const old = ctx.db
+    .query("auditLogs")
+    .withIndex("by_createdAt", (q) => q.lt("createdAt", cutoff));
+
+  for await (const log of old) {
+    await ctx.db.delete(log._id);
+    deleted += 1;
+
+    const metrics = await ctx.meta.getTransactionMetrics();
+    if (
+      deleted >= CLEANUP_BATCH ||
+      metrics.bytesRead.remaining < CLEANUP_MIN_BYTES_REMAINING ||
+      metrics.bytesWritten.remaining < CLEANUP_MIN_BYTES_REMAINING
+    ) {
+      hasMore = true;
+      break;
+    }
+  }
+
+  return { deleted, hasMore };
+}
 
 /**
  * Get unique actor emails for filter dropdown.
