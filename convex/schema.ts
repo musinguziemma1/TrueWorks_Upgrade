@@ -380,7 +380,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_industry", ["industry"]),
+    .index("by_industry", ["industry"])
+    .index("by_name", ["name"]),
 
   coupons: defineTable({
     code: v.string(),

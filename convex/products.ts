@@ -42,17 +42,16 @@ function publicProduct(p: Doc<"products">): PublicProduct {
   return { ...rest, hasDownloadableFile: !!(p.downloadableFileStorageId ?? downloadableFile) };
 }
 
-async function syncCategoryProductCount(ctx: MutationCtx, categoryName: string) {
-  const cats = await ctx.db
+async function adjustCategoryProductCount(ctx: MutationCtx, categoryName: string, delta: number) {
+  if (delta === 0) return;
+  const category = await ctx.db
     .query("categories")
-    .collect();
-  const category = cats.find((c) => c.name === categoryName);
+    .withIndex("by_name", (q) => q.eq("name", categoryName))
+    .unique();
   if (!category) return;
-  const count = await ctx.db
-    .query("products")
-    .collect()
-    .then((ps) => ps.filter((p) => p.category === categoryName).length);
-  await ctx.db.patch(category._id, { productCount: count });
+  await ctx.db.patch(category._id, {
+    productCount: Math.max(0, category.productCount + delta),
+  });
 }
 
 export const list = query({
@@ -395,7 +394,7 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    await syncCategoryProductCount(ctx, args.category);
+    await adjustCategoryProductCount(ctx, args.category, 1);
     const identity = await ctx.auth.getUserIdentity();
     const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
     await ctx.db.insert("auditLogs", {
@@ -465,8 +464,8 @@ export const update = mutation({
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
     if (updates.category && oldProduct && updates.category !== oldProduct.category) {
-      await syncCategoryProductCount(ctx, oldProduct.category);
-      await syncCategoryProductCount(ctx, updates.category);
+      await adjustCategoryProductCount(ctx, oldProduct.category, -1);
+      await adjustCategoryProductCount(ctx, updates.category, 1);
     }
     const identity = await ctx.auth.getUserIdentity();
     const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
@@ -491,7 +490,7 @@ export const remove = mutation({
     const product = await ctx.db.get(args.id);
     await ctx.db.delete(args.id);
     if (product) {
-      await syncCategoryProductCount(ctx, product.category);
+      await adjustCategoryProductCount(ctx, product.category, -1);
     }
     const identity = await ctx.auth.getUserIdentity();
     const actor = identity ? await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first() : null;
@@ -547,18 +546,18 @@ export const bulkRemove = mutation({
     await requireAdmin(ctx);
     const now = Date.now();
     let deleted = 0;
-    const touchedCategories = new Set<string>();
+    const deletedByCategory = new Map<string, number>();
     const deletedNames: string[] = [];
     for (const id of args.ids) {
       const product = await ctx.db.get(id);
       if (!product) continue;
       await ctx.db.delete(id);
       deleted++;
-      touchedCategories.add(product.category);
+      deletedByCategory.set(product.category, (deletedByCategory.get(product.category) ?? 0) + 1);
       deletedNames.push(product.name);
     }
-    for (const category of touchedCategories) {
-      await syncCategoryProductCount(ctx, category);
+    for (const [category, count] of deletedByCategory) {
+      await adjustCategoryProductCount(ctx, category, -count);
     }
     if (deleted > 0 && args.ids[0] !== undefined) {
       const identity = await ctx.auth.getUserIdentity();
