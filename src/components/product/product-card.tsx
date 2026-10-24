@@ -255,7 +255,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
     <>
       <article
         className={cn(
-          "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated hover:border-accent/30",
+          "group relative flex h-full overflow-hidden rounded-2xl border border-border/60 bg-white shadow-card transition-all duration-300 hover:shadow-elevated hover:border-accent/30",
+          product.productType === "book" ? "flex-col sm:flex-row sm:min-h-[240px]" : "flex-col hover:-translate-y-1.5",
           className
         )}
       >
@@ -264,7 +265,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           className={cn(
             "relative cursor-pointer overflow-hidden",
             product.productType === "book"
-              ? "h-64 bg-[#f5f1e8]"
+              ? "h-64 bg-[#f5f1e8] sm:h-[240px] sm:w-52 sm:shrink-0"
               : "h-48 bg-gradient-to-br from-primary via-primary-light to-secondary"
           )}
           onClick={handleView}
@@ -349,7 +350,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           onClick={handleWishlist}
           className={cn(
             "absolute right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-md transition-all duration-200 hover:scale-110",
-            product.productType === "book" ? "top-[252px]" : "top-[188px]",
+            product.productType === "book" ? "top-3 sm:left-[204px] sm:right-auto" : "top-[188px]",
             inWishlist
               ? "bg-red-500 border-red-500 text-white"
               : "bg-white/95 border-white/80 text-muted hover:text-red-500 hover:border-red-200"
@@ -359,9 +360,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </button>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col p-5">
+        <div className={cn("flex flex-1 flex-col p-5", product.productType === "book" && "sm:p-6")}>
           <Link href={href} className="focus-visible:outline-none">
-            <h3 className="font-heading text-[1.05rem] leading-snug font-semibold text-primary transition-colors group-hover:text-accent-dark line-clamp-1">
+            <h3 className={cn(
+              "font-heading text-[1.05rem] leading-snug font-semibold text-primary transition-colors group-hover:text-accent-dark",
+              product.productType === "book" ? "line-clamp-2 text-lg" : "line-clamp-1"
+            )}>
               {product.name}
             </h3>
           </Link>
@@ -370,6 +374,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </p>
           {product.productType === "book" && product.bookAuthor && (
             <p className="mt-2 text-xs font-medium text-primary/70">by {product.bookAuthor}</p>
+          )}
+          {product.productType === "book" && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span className="font-semibold text-accent-dark">Digital edition</span>
+              {product.bookLanguage && <span>{product.bookLanguage}</span>}
+              {product.bookPageCount && <span>{product.bookPageCount} pages</span>}
+            </div>
           )}
 
           {/* Rating + sales */}
@@ -419,6 +430,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 </span>
               )}
             </div>
+            {product.productType === "book" && (
+              <p className="mt-2 text-xs text-muted-foreground">Available instantly after secure checkout</p>
+            )}
             <Button
               onClick={handleAdd}
               className="mt-4 w-full rounded-xl bg-primary text-white hover:bg-primary/90 shadow-sm font-semibold text-sm h-11"

@@ -378,11 +378,20 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className={cn(
+                "grid grid-cols-1",
+                productType === "book" ? "gap-3" : "gap-6 md:grid-cols-2 xl:grid-cols-3"
+              )}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="overflow-hidden rounded-2xl border border-border bg-white">
-                    <div className="h-48 animate-pulse bg-gradient-to-br from-surface to-border/30" />
-                    <div className="p-5 space-y-3">
+                  <div key={i} className={cn(
+                    "overflow-hidden rounded-2xl border border-border bg-white",
+                    productType === "book" && "sm:flex sm:h-[240px]"
+                  )}>
+                    <div className={cn(
+                      "animate-pulse bg-gradient-to-br from-surface to-border/30",
+                      productType === "book" ? "h-64 sm:h-auto sm:w-52" : "h-48"
+                    )} />
+                    <div className="flex-1 space-y-3 p-5">
                       <div className="h-5 w-3/4 animate-pulse rounded-lg bg-surface" />
                       <div className="h-4 w-full animate-pulse rounded bg-surface" />
                       <div className="h-4 w-2/3 animate-pulse rounded bg-surface" />
@@ -404,7 +413,10 @@ function StoreContentInner({ initialProducts }: { initialProducts: StoreProduct[
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3"
+                className={cn(
+                  "grid grid-cols-1",
+                  productType === "book" ? "gap-3" : "gap-7 sm:grid-cols-2 xl:grid-cols-3"
+                )}
                 style={{ minHeight: "600px" }}
               >
                 {products.map((product, i) => (
