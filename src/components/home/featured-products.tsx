@@ -51,13 +51,13 @@ function FeaturedProductsInner() {
   });
   const rawFeatured = products?.items;
   const allFeatured = useMemo(() => (rawFeatured ?? []) as StoreProduct[], [rawFeatured]);
-  const [activeCategory, setActiveCategory] = useState("All");
-  const categories = useMemo(
-    () => ["All", ...Array.from(new Set(allFeatured.map((product) => product.category).filter(Boolean)))],
+  const [activeIndustry, setActiveIndustry] = useState("All");
+  const industries = useMemo(
+    () => ["All", ...Array.from(new Set(allFeatured.map((product) => product.industry).filter(Boolean)))],
     [allFeatured]
   );
   const featured = allFeatured
-    .filter((product) => activeCategory === "All" || product.category === activeCategory)
+    .filter((product) => activeIndustry === "All" || product.industry === activeIndustry)
     .slice(0, 6);
 
   if (products === undefined) {
@@ -113,20 +113,20 @@ function FeaturedProductsInner() {
           </Link>
         </motion.div>
 
-        <div className="mb-8 overflow-x-auto pb-1" role="tablist" aria-label="Featured template categories">
+        <div className="mb-8 overflow-x-auto pb-1" role="tablist" aria-label="Featured template industries">
           <div className="flex min-w-max items-center gap-2 rounded-2xl border border-border/70 bg-white/75 p-2 shadow-sm backdrop-blur">
-            {categories.map((category) => {
+            {industries.map((category) => {
               const count = category === "All"
                 ? allFeatured.length
-                : allFeatured.filter((product) => product.category === category).length;
-              const active = activeCategory === category;
+                : allFeatured.filter((product) => product.industry === category).length;
+              const active = activeIndustry === category;
               return (
                 <button
                   key={category}
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => setActiveIndustry(category)}
                   className={active
                     ? "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/15"
                     : "rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-primary"}
