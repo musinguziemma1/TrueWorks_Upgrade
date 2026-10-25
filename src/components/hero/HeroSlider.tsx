@@ -172,7 +172,7 @@ export default function HeroSlider({
       {/* Main content layer */}
       <div className="relative z-10 h-full">
         {/* Copy stays on the left while the active artwork fills the background. */}
-        <div className="relative flex h-full w-full items-center lg:w-[58%]">
+        <div className="relative flex h-full w-full items-center lg:w-[60%]">
           <HeroContent
             slide={currentSlideData}
             onExploreClick={onExploreClick}
