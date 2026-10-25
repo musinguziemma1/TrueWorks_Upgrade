@@ -54,16 +54,20 @@ export default function HeroBackground({ slide }: { slide: SlideData }) {
       <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={slide.id}
-          className="absolute -inset-10 bg-cover bg-center opacity-30 mix-blend-screen"
-          style={{ backgroundImage: `url(${heroImages[slide.id]})` }}
+          className="absolute -inset-8 bg-cover bg-center opacity-80 mix-blend-screen"
+          style={{
+            backgroundImage: `url(${heroImages[slide.id]})`,
+            filter: 'brightness(1.2) saturate(1.15)'
+          }}
           initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 0.32, scale: 1.16 }}
+          animate={{ opacity: 0.82, scale: 1.18 }}
           exit={{ opacity: 0, scale: 1.04 }}
           transition={{ duration: 8, ease: 'linear' }}
         />
       </AnimatePresence>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#04101F]/90 via-[#04101F]/68 to-[#04101F]/20" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#04101F]/65 via-transparent to-[#04101F]/20" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-[62%] bg-gradient-to-r from-[#04101F]/95 via-[#04101F]/78 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-[52%] bg-gradient-to-l from-[#04101F]/18 via-[#04101F]/8 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#04101F]/70 via-transparent to-[#04101F]/25" />
 
       <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full bg-[#DAA520]/10 blur-3xl" />
       <div className="absolute -bottom-32 -right-24 h-[24rem] w-[24rem] rounded-full bg-blue-500/10 blur-3xl" />
