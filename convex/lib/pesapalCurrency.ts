@@ -4,6 +4,37 @@ export function normalizeCurrencyCode(value: unknown): string | null {
   return /^[A-Z]{3}$/.test(currency) ? currency : null;
 }
 
+const COUNTRY_CURRENCY: Record<string, string> = {
+  UG: "UGX",
+  KE: "KES",
+  TZ: "TZS",
+  RW: "RWF",
+  SS: "SSP",
+  NG: "NGN",
+  GH: "GHS",
+  ZA: "ZAR",
+};
+
+export function resolveSettlementCurrency(
+  reportedCurrency: unknown,
+  paymentMethod: unknown,
+): { currency: string | null; source: "payment_method" | "gateway" | null } {
+  if (typeof paymentMethod === "string") {
+    // Pesapal may retain the requested currency in `currency` while reporting
+    // the actual local mobile-money rail in `payment_method`.
+    const match = paymentMethod.trim().toUpperCase().match(
+      /(?:^|[^A-Z])(?:AIRTEL|MTN|SAFARICOM|M-?PESA|TIGO|VODACOM|HALOPESA|ORANGE|MOOV|WAVE|MOMO)[ _-]*([A-Z]{2})$/,
+    );
+    const methodCurrency = match ? COUNTRY_CURRENCY[match[1]] : null;
+    if (methodCurrency) return { currency: methodCurrency, source: "payment_method" };
+  }
+  const currency = normalizeCurrencyCode(reportedCurrency);
+  return {
+    currency,
+    source: currency ? "gateway" : null,
+  };
+}
+
 export function parseSettlementAmount(value: unknown): number | null {
   if (typeof value !== "number" && typeof value !== "string") return null;
   if (typeof value === "string" && !/^\d+(?:\.\d+)?$/.test(value.trim())) return null;

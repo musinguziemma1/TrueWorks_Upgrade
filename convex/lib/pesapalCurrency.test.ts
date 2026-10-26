@@ -4,6 +4,7 @@ import {
   currencyMinorUnits,
   normalizeCurrencyCode,
   parseSettlementAmount,
+  resolveSettlementCurrency,
   toMinorUnits,
 } from "./pesapalCurrency";
 
@@ -19,6 +20,25 @@ describe("Pesapal settlement currency handling", () => {
     expect(parseSettlementAmount(-1)).toBeNull();
     expect(parseSettlementAmount("1,365.00")).toBeNull();
     expect(parseSettlementAmount(Number.NaN)).toBeNull();
+  });
+
+  test("uses the country-specific Pesapal mobile-money method currency over the original order currency", () => {
+    expect(resolveSettlementCurrency("USD", "AirtelUG")).toEqual({
+      currency: "UGX",
+      source: "payment_method",
+    });
+    expect(resolveSettlementCurrency("USD", "MTNUG")).toEqual({
+      currency: "UGX",
+      source: "payment_method",
+    });
+    expect(resolveSettlementCurrency("USD", "Visa")).toEqual({
+      currency: "USD",
+      source: "gateway",
+    });
+    expect(resolveSettlementCurrency(undefined, "UnknownLocalMethod")).toEqual({
+      currency: null,
+      source: null,
+    });
   });
 
   test("converts settlement amounts using the requested target-currency rate", () => {
@@ -38,5 +58,10 @@ describe("Pesapal settlement currency handling", () => {
     expect(toMinorUnits(0.31, "USD")).toBe(31);
     expect(toMinorUnits(1365, "UGX")).toBe(1365);
     expect(toMinorUnits(0.31, "INVALID")).toBeNull();
+  });
+
+  test("the confirmed Airtel Uganda receipt converts to the stored USD order total", () => {
+    const settlement = 661 * 0.000231;
+    expect(toMinorUnits(settlement, "USD")).toBe(toMinorUnits(0.15, "USD"));
   });
 });

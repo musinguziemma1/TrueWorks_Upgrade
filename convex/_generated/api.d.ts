@@ -41,6 +41,7 @@ import type * as invitations from "../invitations.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_mfa from "../lib/mfa.js";
 import type * as lib_password from "../lib/password.js";
+import type * as lib_pesapalCurrency from "../lib/pesapalCurrency.js";
 import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_sessions from "../lib/sessions.js";
 import type * as lib_tokens from "../lib/tokens.js";
@@ -112,6 +113,7 @@ declare const fullApi: ApiFromModules<{
   "lib/audit": typeof lib_audit;
   "lib/mfa": typeof lib_mfa;
   "lib/password": typeof lib_password;
+  "lib/pesapalCurrency": typeof lib_pesapalCurrency;
   "lib/sanitize": typeof lib_sanitize;
   "lib/sessions": typeof lib_sessions;
   "lib/tokens": typeof lib_tokens;

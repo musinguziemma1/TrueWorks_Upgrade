@@ -6,6 +6,7 @@ import {
   convertSettlementAmount,
   normalizeCurrencyCode,
   parseSettlementAmount,
+  resolveSettlementCurrency,
   toMinorUnits,
 } from "./lib/pesapalCurrency";
 
@@ -417,6 +418,7 @@ interface PesapalTransaction {
   amount?: unknown;
   currency?: unknown;
   currency_code?: unknown;
+  payment_method?: unknown;
   [key: string]: unknown;
 }
 
@@ -444,6 +446,10 @@ function makePaymentMetadata(
   verification: string,
   details: Record<string, string | number | null> = {},
 ): Record<string, unknown> {
+  const resolvedCurrency = resolveSettlementCurrency(
+    data.currency ?? data.currency_code,
+    data.payment_method,
+  );
   const statusCode =
     typeof data.status_code === "number" && Number.isFinite(data.status_code)
       ? data.status_code
@@ -457,7 +463,8 @@ function makePaymentMetadata(
         ? data.payment_status_description.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 100)
         : null,
     settlementAmount: parseSettlementAmount(data.amount),
-    settlementCurrency: normalizeCurrencyCode(data.currency ?? data.currency_code),
+    settlementCurrency: resolvedCurrency.currency,
+    settlementCurrencySource: resolvedCurrency.source,
     verification,
     ...details,
   };
@@ -599,12 +606,22 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<P
     return await keepPending(makePaymentMetadata(data, "gateway_pending"), false);
   }
 
-  const settlementCurrency = normalizeCurrencyCode(data.currency ?? data.currency_code);
+  const resolvedSettlementCurrency = resolveSettlementCurrency(
+    data.currency ?? data.currency_code,
+    data.payment_method,
+  );
+  const settlementCurrency = resolvedSettlementCurrency.currency;
   const settlementAmount = parseSettlementAmount(data.amount);
   const orderCurrency = normalizeCurrencyCode(order.currency ?? "USD");
   if (!settlementCurrency || settlementAmount === null || !orderCurrency) {
     console.error(`[pesapal] Settlement details incomplete for order ${order.orderNumber}`);
-    return await keepPending(makePaymentMetadata(data, "settlement_details_incomplete"), true);
+    return await keepPending(
+      makePaymentMetadata(data, "settlement_details_incomplete", {
+        settlementCurrency,
+        settlementCurrencySource: resolvedSettlementCurrency.source,
+      }),
+      true,
+    );
   }
 
   let exchangeRate = 1;
@@ -640,6 +657,8 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<P
   const expectedMinor = toMinorUnits(order.total, orderCurrency);
   const paidMinor = converted ? toMinorUnits(converted.amount, orderCurrency) : null;
   if (!converted || expectedMinor === null || paidMinor === null || expectedMinor !== paidMinor) {
+    const alreadyFlaggedForReview =
+      payment?.metadata?.verification === "amount_currency_mismatch";
     await keepPending(
       makePaymentMetadata(data, "amount_currency_mismatch", {
         orderCurrency,
@@ -647,22 +666,21 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<P
         convertedAmount: converted?.amount ?? null,
       }),
       false,
-      false,
     );
-    await ctx.runMutation(internal.notifications.createPublic, {
-      type: "order",
-      title: "Pesapal Payment Requires Review",
-      message: `A successful Pesapal payment for order ${order.orderNumber} could not be matched to the order total and currency. The order remains pending.`,
-      link: "/admin/orders",
-    });
-    await ctx.runMutation(internal.webhooks.markProcessed, {
-      provider: "pesapal",
-      eventId: trackingId,
-    });
+    if (!alreadyFlaggedForReview) {
+      await ctx.runMutation(internal.notifications.createPublic, {
+        type: "order",
+        title: "Pesapal Payment Requires Review",
+        message: `A successful Pesapal payment for order ${order.orderNumber} could not be matched to the order total and currency. The order remains pending.`,
+        link: "/admin/orders",
+      });
+    }
     return { status: "pending", retry: false };
   }
 
   const verifiedMetadata = makePaymentMetadata(data, "verified", {
+    settlementCurrency,
+    settlementCurrencySource: resolvedSettlementCurrency.source,
     orderCurrency,
     exchangeRate,
     convertedAmount: converted.amount,
