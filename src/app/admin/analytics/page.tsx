@@ -7,7 +7,7 @@ import { api } from "@convex/_generated/api"
 import {
   BarChart3, Download, Globe, ShoppingCart, CreditCard,
   ArrowUpRight, DollarSign, Package, Loader2, Eye, TrendingUp,
-  FileText, Users, MousePointerClick, Map, ChevronRight, Sparkles,
+  FileText, Users, MousePointerClick, Map, ChevronRight, Sparkles, RefreshCw,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,24 @@ type FunnelData = {
   funnel: { name: string; count: number }[]
   rates: { from: string; to: string; rate: number }[]
 }
+type AnalyticsSummary = {
+  totalRevenue: number
+  totalOrders: number
+  totalDownloads: number
+  totalVisitors: number
+  totalPageViews: number
+  dailyData: { date: string; revenue: number; orders: number; downloads: number; visitors: number; pageViews: number }[]
+}
+type DashboardBreakdown = {
+  refundedOrders: number
+  productPerformance: { productId: string; totalSales: number; totalRevenue: number }[]
+  paymentMethods: { name: string; value: number }[]
+  geoData: { country: string; orders: number; revenue: number; regions: { name: string; count: number }[]; cities: { name: string; count: number }[] }[]
+  ltvSegments: { label: string; count: number }[]
+}
+type DashboardResult =
+  | { key: string; summary: AnalyticsSummary; previousSummary: AnalyticsSummary | null; breakdown: DashboardBreakdown }
+  | { key: string; error: true }
 const chartConfig = {
   revenue: { label: "Revenue", color: "#0B2545" },
   orders: { label: "Orders", color: "#0B2545" },
@@ -69,29 +87,63 @@ export default function AnalyticsPage() {
     [compare, dateRange, filter]
   )
 
-  const summary = useQuery(api.analytics.summary, {
-    startDate: filter.startDate || undefined,
-    endDate: filter.endDate || undefined,
-  })
-  const prevSummary = useQuery(api.analytics.summary, {
-    startDate: prevFilter?.startDate || undefined,
-    endDate: prevFilter?.endDate || undefined,
-  })
   const products = useQuery(api.products.list, { status: "published" })
-  const orders = useQuery(api.orders.list, {
-    startDate: filter.startTimestamp || undefined,
-    endDate: filter.endTimestamp || undefined,
-  })
-  const paymentMethods = useQuery(api.orders.paymentMethodBreakdown, {
-    startDate: filter.startTimestamp || undefined,
-    endDate: filter.endTimestamp || undefined,
-  })
-  const ltvSegments = useQuery(api.orders.customerLtvSegments, {})
-  const geoData = useQuery(api.orders.geoBreakdown, {
-    startDate: filter.startTimestamp || undefined,
-    endDate: filter.endTimestamp || undefined,
-  })
   const convex = useConvex()
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const dashboardKey = [
+    filter.startDate ?? "",
+    filter.endDate ?? "",
+    filter.startTimestamp ?? "",
+    filter.endTimestamp ?? "",
+    prevFilter?.startDate ?? "",
+    prevFilter?.endDate ?? "",
+    refreshNonce,
+  ].join(":")
+  const [dashboardResult, setDashboardResult] = useState<DashboardResult | null>(null)
+  const dashboardLoading = dashboardResult?.key !== dashboardKey
+  const dashboardError = dashboardResult?.key === dashboardKey && "error" in dashboardResult
+  const summary =
+    dashboardResult?.key === dashboardKey && !("error" in dashboardResult)
+      ? dashboardResult.summary
+      : undefined
+  const prevSummary =
+    dashboardResult?.key === dashboardKey && !("error" in dashboardResult)
+      ? dashboardResult.previousSummary
+      : undefined
+  const breakdown =
+    dashboardResult?.key === dashboardKey && !("error" in dashboardResult)
+      ? dashboardResult.breakdown
+      : undefined
+
+  useEffect(() => {
+    let cancelled = false
+    convex
+      .query(api.analytics.dashboardData, {
+      startDate: filter.startDate || undefined,
+      endDate: filter.endDate || undefined,
+        startTimestamp: filter.startTimestamp || undefined,
+        endTimestamp: filter.endTimestamp || undefined,
+        previousStartDate: prevFilter?.startDate || undefined,
+        previousEndDate: prevFilter?.endDate || undefined,
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setDashboardResult({
+            key: dashboardKey,
+            summary: data.summary,
+            previousSummary: data.previousSummary,
+            breakdown: data.breakdown,
+          })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDashboardResult({ key: dashboardKey, error: true })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [convex, dashboardKey, filter, prevFilter])
 
   // The funnel reads the high-volume `analyticsEvents` table. It is fetched on
   // demand (and refetched when the range changes) instead of being kept as a
@@ -124,44 +176,32 @@ export default function AnalyticsPage() {
 
   const loading =
     summary === undefined ||
-    prevSummary === undefined ||
     products === undefined ||
-    orders === undefined ||
-    paymentMethods === undefined ||
-    ltvSegments === undefined ||
-    geoData === undefined ||
+    breakdown === undefined ||
+    dashboardLoading ||
     funnelLoading
 
   const productPerformance = useMemo(() => {
     const productList = products?.items ?? []
-    if (!productList.length || !orders) return [] as { name: string; totalSales: number; totalRevenue: number }[]
-    const productMap: Record<string, { name: string; totalSales: number; totalRevenue: number }> = {}
+    if (!productList.length || !breakdown) return [] as { name: string; totalSales: number; totalRevenue: number }[]
+    const productMap: Record<string, string> = {}
     for (const product of productList as { _id: string; name: string }[]) {
-      productMap[product._id] = { name: product.name, totalSales: 0, totalRevenue: 0 }
+      productMap[product._id] = product.name
     }
-    for (const order of orders as { paymentStatus: string; items: { productId: string; quantity: number; price: number }[] }[]) {
-      if (order.paymentStatus === "completed") {
-        for (const item of order.items ?? []) {
-          const existing = productMap[item.productId]
-          if (existing) {
-            existing.totalSales += item.quantity ?? 1
-            existing.totalRevenue += item.price * (item.quantity ?? 1)
-          }
-        }
-      }
-    }
-    return Object.values(productMap)
-      .filter((p) => p.totalSales > 0)
-      .sort((a, b) => b.totalSales - a.totalSales)
-      .slice(0, 10)
-  }, [products, orders])
+    return breakdown.productPerformance
+      .map((item) => ({ name: productMap[item.productId], totalSales: item.totalSales, totalRevenue: item.totalRevenue }))
+      .filter((item) => item.name)
+  }, [products, breakdown])
 
   const maxProductSales = useMemo(() => {
     if (productPerformance.length === 0) return 1
     return Math.max(...productPerformance.map((p) => p.totalSales))
   }, [productPerformance])
 
-  const ltvTotal = ltvSegments?.reduce((sum: number, s: { label: string; count: number }) => sum + s.count, 0) ?? 0
+  const paymentMethods = breakdown?.paymentMethods
+  const ltvSegments = breakdown?.ltvSegments
+  const geoData = breakdown?.geoData
+  const ltvTotal = ltvSegments?.reduce((sum, segment) => sum + segment.count, 0) ?? 0
 
   const safeSummary = useMemo(() => summary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [summary])
   const safePrev = useMemo(() => prevSummary ?? { totalRevenue: 0, totalOrders: 0, totalDownloads: 0, totalVisitors: 0, totalPageViews: 0, dailyData: [] }, [prevSummary])
@@ -372,6 +412,18 @@ export default function AnalyticsPage() {
     }
   }, [rangeLabel, safeSummary, completedOrdersCount, conversionRate, avgOrderValue, revenuePerVisitor, revenueData, productPerformance, paymentChartData, geoChartData, funnelData, ltvSegments])
 
+  if (dashboardError) {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+        <h1 className="font-semibold text-foreground">Analytics could not be loaded</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Please try again. No analytics data was refreshed.</p>
+        <Button className="mt-4" variant="outline" onClick={() => setRefreshNonce((value) => value + 1)}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -435,6 +487,17 @@ export default function AnalyticsPage() {
                 onCustomToChange={setCustomTo}
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              onClick={() => setRefreshNonce((value) => value + 1)}
+              disabled={dashboardLoading}
+              aria-label="Refresh analytics"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-1", dashboardLoading && "animate-spin")} />
+              Refresh
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -586,7 +649,7 @@ export default function AnalyticsPage() {
           <MetricCard
             icon={<Users className="h-5 w-5" />}
             label="Refunds"
-            value={((orders as { paymentStatus: string }[])?.filter((o) => o.paymentStatus === "refunded") ?? []).length.toLocaleString()}
+            value={(breakdown?.refundedOrders ?? 0).toLocaleString()}
           />
           <MetricCard
             icon={<Sparkles className="h-5 w-5" />}

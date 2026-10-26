@@ -7,9 +7,9 @@ import {
   Search, ChevronDown, ChevronUp, ChevronRight, CreditCard,
   FileSpreadsheet, DollarSign, CheckCircle2, Clock, RotateCcw,
   CalendarRange, BarChart3, Filter, X as XIcon,
-  ShoppingBag, Edit3, Trash2, FileText,
+  ShoppingBag, Edit3, Trash2, FileText, RefreshCw,
 } from "lucide-react"
-import { useQuery, useMutation } from "convex/react"
+import { useMutation, useConvex } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
@@ -42,9 +42,20 @@ const fmtPrice = (n: number, currency = "USD") =>
     maximumFractionDigits: currency === "UGX" ? 0 : 2,
   }).format(n)
 
+type OrderStats = {
+  total: number
+  totalRevenue: number
+  pending: number
+  completed: number
+  refunded: number
+  failed?: number
+  averageOrderValue?: number
+}
+
 export default function OrdersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const convex = useConvex()
 
   // Filters are URL-synced: refresh keeps them and views are shareable.
   const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "")
@@ -72,7 +83,23 @@ export default function OrdersPage() {
     daysAgo: range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : undefined,
     limit: 500,
   })
-  const orderStats = useQuery(api.orders.stats)
+  const [orderStats, setOrderStats] = useState<OrderStats | null>(null)
+  const [orderStatsError, setOrderStatsError] = useState(false)
+  const [statsRefreshNonce, setStatsRefreshNonce] = useState(0)
+  useEffect(() => {
+    let cancelled = false
+    convex
+      .query(api.orders.stats, {})
+      .then((stats) => {
+        if (!cancelled) setOrderStats(stats)
+      })
+      .catch(() => {
+        if (!cancelled) setOrderStatsError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [convex, statsRefreshNonce])
   const updateStatus = updateOrderStatus.useMutation()
   const bulkUpdate = useMutation(api.orders.bulkUpdateStatus)
   const removeOrder = deleteOrder.useMutation()
@@ -196,6 +223,17 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              onClick={() => {
+                setOrderStatsError(false)
+                setStatsRefreshNonce((value) => value + 1)
+              }}
+              disabled={orderStats === null && !orderStatsError}
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+            >
+              <RefreshCw className="h-4 w-4" /> Refresh totals
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
               className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
@@ -226,10 +264,12 @@ export default function OrdersPage() {
               </span>
             </div>
             <p className="mt-4 font-heading text-3xl font-bold tracking-tight text-white tabular-nums sm:text-4xl">
-              {fmtPrice(orderStats?.totalRevenue ?? 0)}
+              {orderStatsError ? "Unavailable" : fmtPrice(orderStats?.totalRevenue ?? 0)}
             </p>
             <p className="mt-2 text-xs text-white/70">
-              From {orderStats?.total ?? 0} {(orderStats?.total ?? 0) === 1 ? "order" : "orders"} in total
+              {orderStatsError
+                ? "Order totals could not be loaded"
+                : `From ${orderStats?.total ?? 0} ${(orderStats?.total ?? 0) === 1 ? "order" : "orders"} in total`}
             </p>
             <Link
               href="/admin/analytics"
@@ -242,10 +282,10 @@ export default function OrdersPage() {
         </div>
         <div className="grid grid-cols-2 gap-4 lg:col-span-2">
           {[
-            { label: "Total", value: orderStats?.total ?? 0, icon: ShoppingBag, tint: "text-foreground bg-muted", footnote: "All orders" },
-            { label: "Pending", value: orderStats?.pending ?? 0, icon: Clock, tint: "text-amber-700 bg-amber-50", footnote: "Awaiting action" },
-            { label: "Completed", value: orderStats?.completed ?? 0, icon: CheckCircle2, tint: "text-emerald-700 bg-emerald-50", footnote: "Fulfilled" },
-            { label: "Refunded", value: orderStats?.refunded ?? 0, icon: RotateCcw, tint: "text-orange-700 bg-orange-50", footnote: "Returned" },
+            { label: "Total", value: orderStatsError ? "Unavailable" : orderStats?.total ?? 0, icon: ShoppingBag, tint: "text-foreground bg-muted", footnote: "All orders" },
+            { label: "Pending", value: orderStatsError ? "Unavailable" : orderStats?.pending ?? 0, icon: Clock, tint: "text-amber-700 bg-amber-50", footnote: "Awaiting action" },
+            { label: "Completed", value: orderStatsError ? "Unavailable" : orderStats?.completed ?? 0, icon: CheckCircle2, tint: "text-emerald-700 bg-emerald-50", footnote: "Fulfilled" },
+            { label: "Refunded", value: orderStatsError ? "Unavailable" : orderStats?.refunded ?? 0, icon: RotateCcw, tint: "text-orange-700 bg-orange-50", footnote: "Returned" },
           ].map((s) => (
             <Card key={s.label}>
               <CardContent className="p-5">

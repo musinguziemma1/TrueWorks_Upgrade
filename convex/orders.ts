@@ -19,7 +19,10 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     if (!(await requireAdminSilent(ctx))) return [];
-    const limit = args.limit ?? 100;
+    const requestedLimit = args.limit ?? 100;
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(500, Math.max(1, Math.floor(requestedLimit)))
+      : 100;
     // Pure relative cutoff so clients never compute timestamps during render.
     const startDate = args.startDate ?? (args.daysAgo ? Date.now() - args.daysAgo * 24 * 60 * 60 * 1000 : undefined);
 
@@ -44,6 +47,36 @@ export const list = query({
             "createdAt",
             args.endDate ?? Number.MAX_SAFE_INTEGER
           )
+        )
+        .order("desc")
+        .take(limit);
+    }
+
+    // A single status filter can use the composite status/date index directly.
+    // This avoids collecting every historical order with that status just to
+    // display the newest bounded page.
+    if (!args.search && Boolean(args.paymentStatus) !== Boolean(args.orderStatus)) {
+      if (args.paymentStatus) {
+        return await ctx.db
+          .query("orders")
+          .withIndex("by_paymentStatus_createdAt", (q) =>
+            (startDate
+              ? q.eq("paymentStatus", args.paymentStatus as "pending" | "completed" | "failed" | "refunded")
+                  .gte("createdAt", startDate)
+              : q.eq("paymentStatus", args.paymentStatus as "pending" | "completed" | "failed" | "refunded")
+            ).lte("createdAt", args.endDate ?? Number.MAX_SAFE_INTEGER)
+          )
+          .order("desc")
+          .take(limit);
+      }
+      return await ctx.db
+        .query("orders")
+        .withIndex("by_status_createdAt", (q) =>
+          (startDate
+            ? q.eq("orderStatus", args.orderStatus as "pending" | "processing" | "completed" | "cancelled")
+                .gte("createdAt", startDate)
+            : q.eq("orderStatus", args.orderStatus as "pending" | "processing" | "completed" | "cancelled")
+          ).lte("createdAt", args.endDate ?? Number.MAX_SAFE_INTEGER)
         )
         .order("desc")
         .take(limit);
