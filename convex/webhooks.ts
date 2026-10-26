@@ -56,28 +56,98 @@ export const generateKey = mutation({
  * re-grant downloads and re-send emails. The event table records what we've already
  * processed, so replays are no-ops.
  *
- * `markProcessed` is insert-then-detect: Convex abort-retries on write conflicts,
- * so concurrent delivery of the same event can't both succeed.
+ * Pesapal uses a short processing lease so the browser callback and IPN cannot
+ * fulfill the same payment concurrently. Legacy rows without a state remain
+ * treated as processed for backwards compatibility.
  */
 export const isProcessed = internalQuery({
   args: { provider: v.string(), eventId: v.string() },
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const hit = await ctx.db
       .query("webhookEvents")
       .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
       .first();
-    return hit?.provider === args.provider;
+    return hit?.provider === args.provider && (hit.state === undefined || hit.state === "processed");
   },
 });
 
 export const markProcessed = internalMutation({
   args: { provider: v.string(), eventId: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("webhookEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .first();
+    if (existing) {
+      if (existing.provider !== args.provider) throw new Error("Webhook event provider mismatch");
+      await ctx.db.patch(existing._id, {
+        state: "processed",
+        leaseExpiresAt: undefined,
+      });
+    } else {
+      await ctx.db.insert("webhookEvents", {
+        provider: args.provider,
+        eventId: args.eventId,
+        state: "processed",
+        createdAt: Date.now(),
+      });
+    }
+    return null;
+  },
+});
+
+export const claimEventProcessing = internalMutation({
+  args: { provider: v.string(), eventId: v.string() },
+  returns: v.union(v.literal("claimed"), v.literal("processed"), v.literal("busy")),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("webhookEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .first();
+
+    if (existing) {
+      if (existing.provider !== args.provider || existing.state === "processed" || existing.state === undefined) {
+        return "processed";
+      }
+      if (existing.state === "processing" && (existing.leaseExpiresAt ?? 0) > now) {
+        return "busy";
+      }
+      await ctx.db.patch(existing._id, {
+        state: "processing",
+        leaseExpiresAt: now + 2 * 60 * 1000,
+      });
+      return "claimed";
+    }
+
     await ctx.db.insert("webhookEvents", {
       provider: args.provider,
       eventId: args.eventId,
-      createdAt: Date.now(),
+      state: "processing",
+      leaseExpiresAt: now + 2 * 60 * 1000,
+      createdAt: now,
     });
+    return "claimed";
+  },
+});
+
+export const releaseEventProcessing = internalMutation({
+  args: { provider: v.string(), eventId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const event = await ctx.db
+      .query("webhookEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .first();
+    if (event?.provider === args.provider && event.state === "processing") {
+      await ctx.db.patch(event._id, {
+        state: "pending",
+        leaseExpiresAt: undefined,
+      });
+    }
+    return null;
   },
 });
 

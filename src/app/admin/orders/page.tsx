@@ -34,8 +34,13 @@ import {
   deleteOrder,
 } from "@/lib/admin-queries"
 
-const fmtPrice = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n)
+const fmtPrice = (n: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: currency === "UGX" ? 0 : 2,
+  }).format(n)
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -143,6 +148,7 @@ export default function OrdersPage() {
         email: o.customerEmail,
         items: o.items.length,
         total: o.total,
+        currency: o.currency ?? "USD",
         paymentMethod: o.paymentMethod,
         paymentStatus: o.paymentStatus,
         orderStatus: o.orderStatus,
@@ -379,7 +385,9 @@ export default function OrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginated.map((order) => (
+                {paginated.map((order) => {
+                  const orderCurrency = order.currency ?? "USD"
+                  return (
                   <React.Fragment key={order._id}>
                     <TableRow
                       className={cn(
@@ -422,7 +430,7 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <span className="font-heading text-sm font-bold tabular-nums text-foreground">
-                          {fmtPrice(order.total)}
+                          {fmtPrice(order.total, orderCurrency)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -486,12 +494,12 @@ export default function OrdersPage() {
                                     <span className="font-medium text-foreground truncate">{item.productName}</span>
                                     <span className="text-xs text-muted-foreground">× {item.quantity}</span>
                                   </div>
-                                  <span className="font-semibold tabular-nums text-foreground">{fmtPrice(item.price * item.quantity)}</span>
+                                  <span className="font-semibold tabular-nums text-foreground">{fmtPrice(item.price * item.quantity, orderCurrency)}</span>
                                 </div>
                               ))}
                               <div className="flex items-center justify-between border-t-2 border-border/80 bg-muted/40 px-3 py-2 text-sm font-bold">
                                 <span className="text-foreground">Total</span>
-                                <span className="font-heading tabular-nums text-foreground">{fmtPrice(order.total)}</span>
+                                <span className="font-heading tabular-nums text-foreground">{fmtPrice(order.total, orderCurrency)}</span>
                               </div>
                             </div>
                             {order.notes && (
@@ -505,7 +513,8 @@ export default function OrdersPage() {
                       </TableRow>
                     )}
                   </React.Fragment>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
             {filtered.length === 0 && (

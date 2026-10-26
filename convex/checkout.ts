@@ -34,9 +34,22 @@ export const createCheckoutOrder = async (ctx: ActionCtx, request: Request): Pro
     }
 
     const body = await request.json();
-    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress, currency, sessionId } = body;
+    const { items, customerEmail, customerName, paymentMethod, couponCode, billingAddress, sessionId } = body;
     const checkoutSessionId = typeof sessionId === "string" && sessionId.length <= 128 ? sessionId : undefined;
-    const orderCurrency = typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : "USD";
+    const configuredCurrency = await ctx.runQuery(internal.settings.getInternal, { key: "currency" });
+    const orderCurrency =
+      configuredCurrency === null
+        ? "USD"
+        : typeof configuredCurrency === "string"
+          ? configuredCurrency.trim().toUpperCase()
+          : "";
+    if (!/^[A-Z]{3}$/.test(orderCurrency)) {
+      console.error("[checkout] Invalid default currency setting");
+      return new Response(JSON.stringify({ error: "Checkout currency is not configured correctly" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // The submitted email must match the authenticated user's email. This
     // prevents creating orders on behalf of another account.

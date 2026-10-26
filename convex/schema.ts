@@ -783,6 +783,8 @@ export default defineSchema({
   webhookEvents: defineTable({
     provider: v.string(),
     eventId: v.string(),
+    state: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("processed"))),
+    leaseExpiresAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_eventId", ["eventId"]),

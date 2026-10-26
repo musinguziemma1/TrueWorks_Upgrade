@@ -122,13 +122,19 @@ export const create = internalMutation({
     customerName: v.string(),
     metadata: v.optional(v.any()),
   },
+  returns: v.id("payments"),
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("payments", {
+    const paymentId = await ctx.db.insert("payments", {
       ...args,
       createdAt: now,
       updatedAt: now,
     });
+    await ctx.db.patch(args.orderId, {
+      paymentId: args.paymentId,
+      updatedAt: now,
+    });
+    return paymentId;
   },
 });
 

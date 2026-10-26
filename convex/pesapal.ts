@@ -2,6 +2,12 @@ import { internalQuery, internalMutation, ActionCtx } from "./_generated/server"
 import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import {
+  convertSettlementAmount,
+  normalizeCurrencyCode,
+  parseSettlementAmount,
+  toMinorUnits,
+} from "./lib/pesapalCurrency";
 
 const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY ?? "";
 const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET ?? "";
@@ -176,7 +182,7 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
   }
 
   const body = await request.json().catch(() => null);
-  const { orderId, currency, method, phone, description } =
+  const { orderId, method, phone, description } =
     typeof body === "object" && body ? body : {};
 
   if (!orderId) {
@@ -214,6 +220,11 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
 
     // SECURITY: server-side total — ignore client-supplied amount
     const serverAmount = order.total;
+    const orderCurrency = normalizeCurrencyCode(order.currency ?? "USD");
+    if (!orderCurrency) {
+      console.error(`[pesapal] Invalid order currency for ${order.orderNumber}`);
+      return json({ error: "Order currency is not configured correctly" }, 500);
+    }
 
     const callbackUrl = `${CONVEX_SITE_URL}/pesapal-callback`;
     const cancelUrl = `${SITE_URL}/order-confirmation?order=${order.orderNumber}&status=pending`;
@@ -226,7 +237,7 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
 
     const pesapalRequest: Record<string, unknown> = {
       id: order.orderNumber,
-      currency: (currency as string) || "USD",
+      currency: orderCurrency,
       amount: serverAmount,
       description: description || `TrueWorks Order ${order.orderNumber}`,
       callback_url: callbackUrl,
@@ -265,7 +276,7 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
         provider: "pesapal",
         method: (method as string) || "card",
         amount: serverAmount,
-        currency: (currency as string) || "USD",
+        currency: orderCurrency,
         status: "pending",
         customerEmail,
         customerName: customerName || "",
@@ -302,7 +313,7 @@ export const initiatePayment = async (ctx: ActionCtx, request: Request): Promise
           orderId,
           orderNumber: order.orderNumber,
           amount: serverAmount,
-          currency: currency || "USD",
+          currency: orderCurrency,
           pesapalError: data?.error ?? null,
         },
       });
@@ -339,6 +350,7 @@ interface PaymentOrder {
   customerEmail: string;
   customerName: string;
   total: number;
+  currency?: string;
   createdAt: number;
   items: { productId: Id<"products">; productName: string; quantity: number; price: number }[];
 }
@@ -400,10 +412,17 @@ function mapPesapalStatus(statusCode: unknown, statusDesc: unknown): MappedStatu
 }
 
 interface PesapalTransaction {
-  status_code?: number;
-  payment_status_description?: string;
-  amount?: number;
+  status_code?: unknown;
+  payment_status_description?: unknown;
+  amount?: unknown;
+  currency?: unknown;
+  currency_code?: unknown;
   [key: string]: unknown;
+}
+
+interface ProcessOutcome {
+  status: MappedStatus;
+  retry: boolean;
 }
 
 async function queryTransactionStatus(
@@ -416,29 +435,35 @@ async function queryTransactionStatus(
     { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } }
   );
   if (!response.ok) return null;
-  return await response.json();
+  const data: unknown = await response.json();
+  return data && typeof data === "object" ? data as PesapalTransaction : null;
 }
 
-/**
- * Shared processing for callback (browser redirect) and IPN (server-to-server).
- * Returns the mapped payment status so the caller can build the right response.
- *
- * Idempotency: a card payment fires BOTH the browser callback and the IPN for
- * the same orderTrackingId, and Pesapal retries failed deliveries. The order's
- * paymentStatus is the source of truth — a transaction is processed at most
- * once, replays are no-ops.
- */
-async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<MappedStatus> {
-  const alreadyProcessed = await ctx.runQuery(internal.webhooks.isProcessed, {
-    provider: "pesapal",
-    eventId: trackingId,
-  });
+function makePaymentMetadata(
+  data: PesapalTransaction,
+  verification: string,
+  details: Record<string, string | number | null> = {},
+): Record<string, unknown> {
+  const statusCode =
+    typeof data.status_code === "number" && Number.isFinite(data.status_code)
+      ? data.status_code
+      : typeof data.status_code === "string"
+        ? data.status_code.slice(0, 20)
+        : null;
+  return {
+    gatewayStatusCode: statusCode,
+    gatewayStatusDescription:
+      typeof data.payment_status_description === "string"
+        ? data.payment_status_description.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 100)
+        : null,
+    settlementAmount: parseSettlementAmount(data.amount),
+    settlementCurrency: normalizeCurrencyCode(data.currency ?? data.currency_code),
+    verification,
+    ...details,
+  };
+}
 
-  // Resolve the live status from Pesapal.
-  const data = await queryTransactionStatus(ctx, trackingId);
-  if (!data) return "pending";
-  const mapped = mapPesapalStatus(data.status_code, data.payment_status_description);
-
+async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<ProcessOutcome> {
   let payment = await ctx.runQuery(internal.payments.getByPaymentId, {
     paymentId: trackingId,
   });
@@ -457,7 +482,7 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
         provider: "pesapal",
         status: "pending",
         amount: order.total,
-        currency: "USD",
+        currency: order.currency ?? "USD",
         customerEmail: order.customerEmail,
         customerName: order.customerName,
         method: order.paymentMethod,
@@ -468,75 +493,188 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     }
   }
 
-  // Unknown order — nothing for us to update. Answer the ping with the mapped
-  // status so callers still get the expected ack shape.
-  if (!order) return mapped;
+  if (!order) return { status: "pending", retry: false };
 
-  // Already fulfilled by a prior delivery.
-  if (alreadyProcessed || order.paymentStatus === "completed") return "completed";
-
-  // Keep the payment record current but do not mark processed while pending — the
-  // payment has not settled yet.
-  if (payment) {
-    await ctx.runMutation(internal.payments.updateStatus, {
-      id: payment._id,
-      status: mapped === "refunded" ? "refunded" : mapped,
-      metadata: data,
-    });
+  const claim = await ctx.runMutation(internal.webhooks.claimEventProcessing, {
+    provider: "pesapal",
+    eventId: trackingId,
+  });
+  if (claim === "processed") {
+    return {
+      status: order.paymentStatus,
+      retry: false,
+    };
   }
+  if (claim === "busy") return { status: "pending", retry: true };
 
-  if (mapped === "refunded") {
-    // REVERSED payment — undo fulfillment and roll back settled stats.
-    await ctx.runMutation(internal.fulfillment.adjustSales, {
-      items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-      delta: -1,
-    });
-    await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
-      email: order.customerEmail,
-      amount: order.total,
-      delta: -1,
-    });
-    if (order.couponCode) {
-      await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
-        code: order.couponCode,
-        delta: -1,
+  const setPaymentStatus = async (
+    status: MappedStatus,
+    metadata: Record<string, unknown>,
+  ) => {
+    if (payment) {
+      await ctx.runMutation(internal.payments.updateStatus, {
+        id: payment._id,
+        status,
+        metadata,
       });
     }
-    await ctx.runMutation(internal.fulfillment.revokeFulfillment, { orderId: order._id });
+  };
+  const keepPending = async (
+    metadata: Record<string, unknown>,
+    retry: boolean,
+    release = true,
+  ): Promise<ProcessOutcome> => {
+    await setPaymentStatus("pending", metadata);
+    if (order.paymentStatus !== "completed") {
+      await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
+        id: order._id,
+        paymentStatus: "pending",
+        orderStatus: "pending",
+      });
+    }
+    if (release) {
+      await ctx.runMutation(internal.webhooks.releaseEventProcessing, {
+        provider: "pesapal",
+        eventId: trackingId,
+      });
+    }
+    return { status: "pending", retry };
+  };
+
+  const data = await queryTransactionStatus(ctx, trackingId);
+  if (!data) {
+    return await keepPending(makePaymentMetadata({}, "status_unavailable"), true);
+  }
+  const mapped = mapPesapalStatus(data.status_code, data.payment_status_description);
+
+  if (mapped === "refunded") {
+    await setPaymentStatus("refunded", makePaymentMetadata(data, "reversed"));
+    if (order.paymentStatus === "completed") {
+      // Reverse fulfillment and settled stats only if this order was completed.
+      await ctx.runMutation(internal.fulfillment.adjustSales, {
+        items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        delta: -1,
+      });
+      await ctx.runMutation(internal.fulfillment.adjustCustomerStats, {
+        email: order.customerEmail,
+        amount: order.total,
+        delta: -1,
+      });
+      if (order.couponCode) {
+        await ctx.runMutation(internal.fulfillment.adjustCouponUsage, {
+          code: order.couponCode,
+          delta: -1,
+        });
+      }
+      await ctx.runMutation(internal.fulfillment.revokeFulfillment, { orderId: order._id });
+    }
     await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
       id: order._id,
       paymentStatus: "refunded",
       orderStatus: "pending",
     });
     await sendRefundEmail(order);
-    return "refunded";
+    await ctx.runMutation(internal.webhooks.markProcessed, {
+      provider: "pesapal",
+      eventId: trackingId,
+    });
+    return { status: "refunded", retry: false };
   }
 
-  if (mapped !== "completed") {
-    // failed / invalid payment
+  if (mapped === "failed") {
+    await setPaymentStatus("failed", makePaymentMetadata(data, "gateway_failed"));
     await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
       id: order._id,
       paymentStatus: "failed",
       orderStatus: "pending",
     });
-    return "failed";
+    await ctx.runMutation(internal.webhooks.markProcessed, {
+      provider: "pesapal",
+      eventId: trackingId,
+    });
+    return { status: "failed", retry: false };
   }
 
-  // SECURITY: verify the amount matches the order total before fulfilling
-  const paidAmount = Number(data.amount);
-  if (Number.isFinite(paidAmount) && Math.abs(paidAmount - order.total) > 0.01) {
-    await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
-      id: order._id,
-      paymentStatus: "failed",
-      orderStatus: "pending",
-    });
+  if (mapped === "pending") {
+    return await keepPending(makePaymentMetadata(data, "gateway_pending"), false);
+  }
+
+  const settlementCurrency = normalizeCurrencyCode(data.currency ?? data.currency_code);
+  const settlementAmount = parseSettlementAmount(data.amount);
+  const orderCurrency = normalizeCurrencyCode(order.currency ?? "USD");
+  if (!settlementCurrency || settlementAmount === null || !orderCurrency) {
+    console.error(`[pesapal] Settlement details incomplete for order ${order.orderNumber}`);
+    return await keepPending(makePaymentMetadata(data, "settlement_details_incomplete"), true);
+  }
+
+  let exchangeRate = 1;
+  if (settlementCurrency !== orderCurrency) {
+    try {
+      const rates = await ctx.runAction(internal.currency.getExchangeRatesInternal, {
+        base: settlementCurrency,
+      });
+      const rate = rates.rates[orderCurrency];
+      if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0) {
+        console.error(`[pesapal] Exchange rate unavailable for ${settlementCurrency}/${orderCurrency}`);
+        return await keepPending(
+          makePaymentMetadata(data, "exchange_rate_unavailable", { orderCurrency }),
+          true,
+        );
+      }
+      exchangeRate = rate;
+    } catch {
+      console.error(`[pesapal] Currency conversion unavailable for order ${order.orderNumber}`);
+      return await keepPending(
+        makePaymentMetadata(data, "exchange_rate_unavailable", { orderCurrency }),
+        true,
+      );
+    }
+  }
+
+  const converted = convertSettlementAmount(
+    settlementAmount,
+    settlementCurrency,
+    orderCurrency,
+    exchangeRate,
+  );
+  const expectedMinor = toMinorUnits(order.total, orderCurrency);
+  const paidMinor = converted ? toMinorUnits(converted.amount, orderCurrency) : null;
+  if (!converted || expectedMinor === null || paidMinor === null || expectedMinor !== paidMinor) {
+    await keepPending(
+      makePaymentMetadata(data, "amount_currency_mismatch", {
+        orderCurrency,
+        exchangeRate,
+        convertedAmount: converted?.amount ?? null,
+      }),
+      false,
+      false,
+    );
     await ctx.runMutation(internal.notifications.createPublic, {
       type: "order",
-      title: "Payment Amount Mismatch",
-      message: `Pesapal payment for order ${order.orderNumber}: expected $${order.total}, got $${paidAmount}. Order NOT completed.`,
+      title: "Pesapal Payment Requires Review",
+      message: `A successful Pesapal payment for order ${order.orderNumber} could not be matched to the order total and currency. The order remains pending.`,
       link: "/admin/orders",
     });
-    return "failed";
+    await ctx.runMutation(internal.webhooks.markProcessed, {
+      provider: "pesapal",
+      eventId: trackingId,
+    });
+    return { status: "pending", retry: false };
+  }
+
+  const verifiedMetadata = makePaymentMetadata(data, "verified", {
+    orderCurrency,
+    exchangeRate,
+    convertedAmount: converted.amount,
+  });
+  await setPaymentStatus("completed", verifiedMetadata);
+
+  if (order.paymentStatus === "completed") {
+    await ctx.runMutation(internal.webhooks.markProcessed, {
+      provider: "pesapal",
+      eventId: trackingId,
+    });
+    return { status: "completed", retry: false };
   }
 
   await ctx.runMutation(internal.orders.updateOrderFromPaymentById, {
@@ -625,7 +763,7 @@ async function processTransaction(ctx: ActionCtx, trackingId: string): Promise<M
     eventId: trackingId,
   });
 
-  return "completed";
+  return { status: "completed", retry: false };
 }
 
 /** Browser redirect callback (GET). Redirects the customer to the storefront. */
@@ -640,10 +778,15 @@ export const handleCallback = async (ctx: ActionCtx, request: Request): Promise<
     return json({ error: "Missing parameters" }, 400);
   }
 
-  const mapped = await processTransaction(ctx, trackingId);
+  let outcome: ProcessOutcome = { status: "pending", retry: true };
+  try {
+    outcome = await processTransaction(ctx, trackingId);
+  } catch {
+    console.error("[pesapal] Callback processing failed");
+  }
 
-  const status = mapped === "completed" || mapped === "refunded" || mapped === "failed"
-    ? mapped
+  const status = outcome.status === "completed" || outcome.status === "refunded" || outcome.status === "failed"
+    ? outcome.status
     : "pending";
   return new Response(null, {
     status: 302,
@@ -674,8 +817,31 @@ export const handleIpn = async (ctx: ActionCtx, request: Request): Promise<Respo
   const trackingId = params.OrderTrackingId || params.order_tracking_id || "";
   const merchantReference = params.OrderMerchantReference || params.merchant_reference || "";
 
+  if (!trackingId) {
+    return json(
+      {
+        orderNotificationType: "IPNCHANGE",
+        orderTrackingId: "",
+        orderMerchantReference: merchantReference,
+        status: 400,
+      },
+      400,
+    );
+  }
+
   try {
-    await processTransaction(ctx, trackingId);
+    const outcome = await processTransaction(ctx, trackingId);
+    if (outcome.retry) {
+      return json(
+        {
+          orderNotificationType: "IPNCHANGE",
+          orderTrackingId: trackingId,
+          orderMerchantReference: merchantReference,
+          status: 500,
+        },
+        500,
+      );
+    }
     // Pesapal requires this exact JSON contract to stop retrying.
     return json(
       {
@@ -687,6 +853,7 @@ export const handleIpn = async (ctx: ActionCtx, request: Request): Promise<Respo
       200
     );
   } catch {
+    console.error("[pesapal] IPN processing failed");
     return json(
       {
         orderNotificationType: "IPNCHANGE",
