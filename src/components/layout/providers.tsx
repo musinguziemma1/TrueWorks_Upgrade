@@ -1,8 +1,8 @@
 "use client";
 
-import { ConvexProviderWithAuth } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import { convexClient } from "@/lib/convex";
-import { AuthProvider, useAuth as useAppAuth } from "@/lib/auth/provider";
+import { AuthProvider } from "@/lib/auth/provider";
 import { CartProvider } from "@/components/layout/cart-context";
 import { WishlistProvider } from "@/components/layout/wishlist-context";
 import { CartSync } from "@/components/layout/cart-sync";
@@ -27,24 +27,13 @@ export function Providers({ children }: { children: ReactNode }) {
     </CartProvider>
   );
 
-  return (
-    <AuthProvider>
-      {convexClient ? (
-        <ConvexProviderWithAuth client={convexClient} useAuth={useConvexAuth}>
-          {wrapped}
-        </ConvexProviderWithAuth>
-      ) : (
-        wrapped
-      )}
-    </AuthProvider>
-  );
-}
+  if (!convexClient) return wrapped;
 
-function useConvexAuth() {
-  const { loading, isAuthenticated, getToken } = useAppAuth();
-  return {
-    isLoading: loading,
-    isAuthenticated,
-    fetchAccessToken: async () => getToken(),
-  };
+  return (
+    <ConvexProvider client={convexClient}>
+      <AuthProvider>
+        {wrapped}
+      </AuthProvider>
+    </ConvexProvider>
+  );
 }
