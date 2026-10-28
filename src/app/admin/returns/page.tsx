@@ -116,7 +116,7 @@ export default function AdminReturnsPage() {
   const rows = (pageData?.page ?? []) as ReturnRow[];
   const totalCount = pageData?.total ?? 0;
   const isInitialLoading = pageData === undefined;
-  const canLoadMore = offset + rows.length < totalCount;
+  const canLoadMore = rows.length < totalCount;
   const review = useMutation(api.returns.review);
 
   const returnStats = useQuery(api.returns.adminStats);
@@ -363,28 +363,15 @@ export default function AdminReturnsPage() {
                 })}
               </TableBody>
             </Table>
-            {(canLoadMore || offset > 0) && (
-              <div className="mt-4 flex justify-center gap-2">
-                {offset > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
-                    disabled={isInitialLoading}
-                  >
-                    Previous
-                  </Button>
-                )}
-                {canLoadMore && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setOffset((o) => o + PAGE_SIZE)}
-                    disabled={isInitialLoading}
-                  >
-                    Next ({Math.min(PAGE_SIZE, totalCount - offset - rows.length)})
-                  </Button>
-                )}
+            {canLoadMore && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOffset((o) => o + PAGE_SIZE)}
+                >
+                  Load more ({Math.min(PAGE_SIZE, totalCount - rows.length)})
+                </Button>
               </div>
             )}
             </>
