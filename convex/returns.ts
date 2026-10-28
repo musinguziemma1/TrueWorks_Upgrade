@@ -25,13 +25,10 @@ export const getRefundPolicy = query({
 export const adminStats = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
-    const all = await ctx.db.query("returns").order("desc").take(5000);
-    const refundedOrders = await ctx.db
-      .query("orders")
-      .withIndex("by_paymentStatus_createdAt", (q) => q.eq("paymentStatus", "refunded"))
-      .order("desc")
-      .take(5000);
+    if (!(await requireAdminSilent(ctx))) {
+      return { total: 0, pending: 0, approved: 0, completed: 0, rejected: 0, pendingValue: 0 };
+    }
+    const all = await ctx.db.query("returns").collect();
     const pending = all.filter((r) => r.status === "pending");
     const value = pending.reduce(
       (sum, r) => sum + r.items.reduce((s, i) => s + i.price * i.quantity, 0),
@@ -44,8 +41,6 @@ export const adminStats = query({
       completed: all.filter((r) => r.status === "completed").length,
       rejected: all.filter((r) => r.status === "rejected").length,
       pendingValue: value,
-      refundedOrders: refundedOrders.length,
-      refundedValue: refundedOrders.reduce((sum, order) => sum + order.total, 0),
     };
   },
 });
@@ -167,7 +162,9 @@ export const adminListPage = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    if (!(await requireAdminSilent(ctx))) {
+      return { page: [], total: 0 };
+    }
     const status =
       args.status === "pending" || args.status === "approved" || args.status === "rejected" || args.status === "completed"
         ? args.status
@@ -204,20 +201,6 @@ export const adminListPage = query({
       })
     );
     return { page: rows, total: matched.length };
-  },
-});
-
-/** Completed refunds are stored on orders even when no return request exists. */
-export const adminRefundedOrders = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const limit = Math.min(Math.max(args.limit ?? 50, 1), 100);
-    return await ctx.db
-      .query("orders")
-      .withIndex("by_paymentStatus_createdAt", (q) => q.eq("paymentStatus", "refunded"))
-      .order("desc")
-      .take(limit);
   },
 });
 

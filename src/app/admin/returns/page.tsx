@@ -10,7 +10,6 @@ import {
   Mail,
   AlertTriangle,
   FileSpreadsheet,
-  ArrowUpRight,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -128,10 +127,7 @@ export default function AdminReturnsPage() {
     completed: returnStats?.completed ?? 0,
     rejected: returnStats?.rejected ?? 0,
     pendingValue: returnStats?.pendingValue ?? 0,
-    refundedOrders: returnStats?.refundedOrders ?? 0,
-    refundedValue: returnStats?.refundedValue ?? 0,
   };
-  const refundedOrders = useQuery(api.returns.adminRefundedOrders, { limit: 50 }) ?? [];
 
   const handleReview = async () => {
     if (!decisionId) return;
@@ -193,7 +189,7 @@ export default function AdminReturnsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Pending", value: stats.pending, color: "text-amber-600" },
@@ -201,8 +197,6 @@ export default function AdminReturnsPage() {
           { label: "Completed", value: stats.completed, color: "text-muted-foreground" },
           { label: "Rejected", value: stats.rejected, color: "text-red-600" },
           { label: "Pending Value", value: fmtMoney(stats.pendingValue), color: "text-[#0B2545]" },
-          { label: "Refunded Orders", value: stats.refundedOrders, color: "text-[#0B2545]" },
-          { label: "Refunded Value", value: fmtMoney(stats.refundedValue), color: "text-[#0B2545]" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
@@ -212,53 +206,6 @@ export default function AdminReturnsPage() {
           </Card>
         ))}
       </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle>Completed refunds</CardTitle>
-              <p className="mt-1 text-sm text-muted">
-                Orders whose payment has been refunded, including refunds completed outside a return request.
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => router.push("/admin/orders?payment=refunded")} className="gap-2">
-              View orders <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {refundedOrders.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted">No completed refunds have been recorded.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Refunded</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {refundedOrders.map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                      <TableCell>
-                        <p>{order.customerName}</p>
-                        <p className="text-xs text-muted">{order.customerEmail}</p>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted">{fmtDate(order.updatedAt)}</TableCell>
-                      <TableCell className="text-right font-medium">{fmtMoney(order.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Card>
