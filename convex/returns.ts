@@ -28,12 +28,12 @@ export const adminStats = query({
     if (!(await requireAdminSilent(ctx))) {
       return { total: 0, pending: 0, approved: 0, completed: 0, rejected: 0, pendingValue: 0 };
     }
-    const all = await ctx.db
-      .query("returns")
-      .order("desc")
-      .collect();
+    const all = await ctx.db.query("returns").collect();
     const pending = all.filter((r) => r.status === "pending");
-    const value = pending.reduce((sum, r) => sum + r.items.reduce((s, i) => s + (i.price ?? 0) * (i.quantity ?? 1), 0), 0);
+    const value = pending.reduce(
+      (sum, r) => sum + r.items.reduce((s, i) => s + i.price * i.quantity, 0),
+      0
+    );
     return {
       total: all.length,
       pending: pending.length,
@@ -171,7 +171,9 @@ export const adminListPage = query({
         : undefined;
     const base = ctx.db.query("returns");
     const q = status ? base.withIndex("by_status", (idx) => idx.eq("status", status)) : base;
-    const all = await q.order("desc").collect();
+    // Keep this bounded so a malformed or unexpectedly large dataset cannot
+    // prevent the admin page from responding. The UI loads records in pages.
+    const all = await q.order("desc").take(5000);
 
     const term = sanitizeSearch(args.search).toLowerCase();
     const matched = term
@@ -183,8 +185,8 @@ export const adminListPage = query({
         )
       : all;
 
-    const offset = args.offset ?? 0;
-    const limit = Math.min(args.limit ?? 20, 100);
+    const offset = Math.max(args.offset ?? 0, 0);
+    const limit = Math.min(Math.max(args.limit ?? 20, 1), 100);
     const slice = matched.slice(offset, offset + limit);
     const rows = await Promise.all(
       slice.map(async (r) => {
@@ -302,4 +304,3 @@ export const review = mutation({
     }
   },
 });
-
