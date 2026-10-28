@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { convexClient } from "@/lib/convex";
 
 interface User {
   _id: string;
@@ -116,19 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
   }, []);
-
-  // Wire the Convex client to the IAM JWT. When a user is authenticated the
-  // client sends the short-lived token with every query; otherwise it runs
-  // unauthenticated. Clearing on logout closes the previous authorized stream
-  // so the browser no longer holds an open authenticated connection.
-  useEffect(() => {
-    if (!convexClient) return;
-    if (isAuthenticated) {
-      convexClient.setAuth(getToken);
-    } else {
-      convexClient.clearAuth();
-    }
-  }, [isAuthenticated, getToken]);
 
   return (
     <AuthContext.Provider value={{ user, loading, isAuthenticated, isAdmin, isStaff, login, register, logout, refresh, getToken }}>
