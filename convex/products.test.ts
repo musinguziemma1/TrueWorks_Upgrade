@@ -109,6 +109,41 @@ describe("products.getBySlug", () => {
   });
 });
 
+describe("products.create", () => {
+  test("assigns an unused numeric suffix when the requested slug already exists", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("products", makeProduct({ slug: "sales-pipeline-crm" }));
+    });
+
+    const asAdmin = t.withIdentity({
+      tokenIdentifier: "admin|test",
+      email: "admin@example.com",
+      name: "Admin",
+    });
+    const id = await asAdmin.mutation(api.products.create, {
+      name: "Sales Pipeline CRM",
+      slug: "sales-pipeline-crm",
+      sku: "TW-SPCRM-002",
+      shortDescription: "A sales pipeline CRM template.",
+      description: "Sales pipeline CRM template.",
+      price: 120,
+      category: "Business",
+      industry: "CRM",
+      fileType: "XLSX",
+      tags: [],
+      galleryImages: [],
+      thumbnail: "",
+      faqs: [],
+      featured: false,
+      status: "draft",
+    });
+
+    const created = await t.run(async (ctx) => ctx.db.get(id));
+    expect(created?.slug).toBe("sales-pipeline-crm-2");
+  });
+});
+
 describe("products.productType", () => {
   test("keeps books and templates in separate catalog views", async () => {
     const t = convexTest(schema, modules);

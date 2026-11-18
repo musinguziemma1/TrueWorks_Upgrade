@@ -426,13 +426,12 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await requireEditor(ctx);
-    const slug = slugify(args.slug) || slugify(args.name);
-    const existing = await ctx.db
-      .query("products")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .collect();
-    if (existing.length > 0) {
-      throw new Error(`Product with slug "${slug}" already exists`);
+    const baseSlug = slugify(args.slug) || slugify(args.name);
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await ctx.db.query("products").withIndex("by_slug", (q) => q.eq("slug", slug)).first()) {
+      suffix += 1;
+      slug = `${baseSlug}-${suffix}`;
     }
     const productType = args.productType ?? "template";
     const bookIsbn = productType === "book" ? await reserveBookIsbn(ctx, args.bookIsbn) : args.bookIsbn;
